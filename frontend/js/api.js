@@ -53,8 +53,17 @@ export async function apiFetch(endpoint, { method="GET", body=null, params={} } 
         }
         return data;
     } catch (err) {
-        console.error("API error:", err.message);
-        return { success: false, message: "Network error. Check your connection." };
+        console.error("API Fetch Error:", {
+            url,
+            method,
+            error: err.message
+        });
+        // Provide more helpful production error message
+        const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+        const helpMsg = isLocal 
+            ? "Cannot reach local backend (port 5000). Is it running?" 
+            : `Cannot reach API at ${API_BASE}. Check if backend is live.`;
+        return { success: false, message: helpMsg };
     }
 }
 

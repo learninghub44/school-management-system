@@ -232,6 +232,9 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   btn.classList.add("btn-loading");
   btn.disabled = true;
 
+  const loginData = { email, password };
+  if (mode === "school") loginData.school_code = school_code;
+
   const res = await auth.login(email, password, school_code).catch(e => ({ success:false, message:e.message }));
   
   btn.classList.remove("btn-loading");

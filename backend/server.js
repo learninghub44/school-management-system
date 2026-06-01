@@ -45,8 +45,14 @@ app.use(helmet({
 }));
 
 // ── V-10: Strict CORS — explicit origins only ─────────────────────
-const allowedOrigins = (process.env.CORS_ORIGIN || "")
+// Support comma-separated list or single origin
+let allowedOrigins = (process.env.CORS_ORIGIN || "")
     .split(",").map(s => s.trim()).filter(Boolean);
+
+// V-10: Fallback for Cloudflare Pages (from your screenshot)
+if (process.env.NODE_ENV === "production" && !allowedOrigins.includes("https://cbc-school-erp.pages.dev")) {
+    allowedOrigins.push("https://cbc-school-erp.pages.dev");
+}
 
 if (!allowedOrigins.length) {
     console.warn("⚠️  CORS_ORIGIN not set — all origins blocked in production.");
