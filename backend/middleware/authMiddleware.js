@@ -42,8 +42,9 @@ const authMiddleware = async (req, res, next) => {
 
         // Verify user still active in DB (catches deactivated accounts mid-session)
         const { rows } = await db.query(
-            `SELECT u.id, u.email, u.name, u.role, u.school_id, u.is_active,
-                    u.must_change_password, s.is_active AS school_active
+            `SELECT u.id, u.email, u.name, u.role, u.phone, u.school_id, u.is_active,
+                    u.must_change_password, s.is_active AS school_active,
+                    s.name AS school_name, s.school_code
              FROM users u
              LEFT JOIN schools s ON s.id = u.school_id
              WHERE u.id = $1`,
@@ -53,6 +54,10 @@ const authMiddleware = async (req, res, next) => {
         if (!rows.length || !rows[0].is_active) {
             return res.status(401).json({ success: false, message: "Account not found or deactivated." });
         }
+
+        // Ensure school_name and school_code are always present (for UI display)
+        if (!rows[0].school_name) rows[0].school_name = "ZETU School";
+        if (!rows[0].school_code) rows[0].school_code = "ZETU";
 
         // Block access if school deactivated (except SUPER_ADMIN)
         if (rows[0].role !== "SUPER_ADMIN" && rows[0].school_active === false) {

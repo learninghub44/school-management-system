@@ -114,7 +114,7 @@
         <div class="stat-card"><div class="val" id="st-staff">–</div><div class="lbl">Staff Accounts</div></div>
       </div>
       <div class="card">
-        <div class="card-hdr"><h4>Recent Students</h4><button class="btn btn-green" onclick="nav('students')">View All</button></div>
+        <div class="card-hdr"><h4>Recent Students</h4><button class="btn btn-green" onclick="window.nav('students')">View All</button></div>
         <div id="ov-students" class="empty">Loading…</div>
       </div>
     </div>
@@ -191,7 +191,7 @@
       <div class="fg"><label>Grade *</label><select id="s-grade"></select></div>
       <div class="fg"><label>Gender</label><select id="s-gender"><option value="">–</option><option value="male">Male</option><option value="female">Female</option></select></div>
     </div>
-    <div class="ma"><button class="btn btn-ghost" onclick="closeModal('stuModal')">Cancel</button><button class="btn btn-green" id="saveStuBtn">Save Student</button></div>
+    <div class="ma"><button class="btn btn-ghost" onclick="window.closeModal('stuModal')">Cancel</button><button class="btn btn-green" id="saveStuBtn">Save Student</button></div>
   </div>
 </div>
 
@@ -212,6 +212,7 @@ function init() {
     document.getElementById("schoolCode").textContent = me.school_code || "";
     document.getElementById("adminName").textContent = me.name;
     document.getElementById("schoolBadgeTop").textContent = me.school_code || "ZETU";
+    document.getElementById("topMeta").textContent = me.email;
     loadAll();
 }
 
@@ -228,10 +229,97 @@ document.querySelectorAll(".nav-item").forEach(el => {
 document.getElementById("logoutBtn").addEventListener("click", () => logout());
 
 async function loadAll() {
-    // Logic for loading dashboard data...
+    try {
+        const statsRes = await schools.stats(me.school_id);
+        if (statsRes?.success) {
+            document.getElementById("st-students").textContent = statsRes.data?.student_count || 0;
+            document.getElementById("st-teachers").textContent = statsRes.data?.teacher_count || 0;
+            document.getElementById("st-revenue").textContent = (statsRes.data?.total_revenue || 0).toLocaleString();
+            document.getElementById("st-staff").textContent = statsRes.data?.staff_count || 0;
+        }
+        
+        const stuRes = await students.list({ school_id: me.school_id, limit: 5 });
+        if (stuRes?.success && stuRes.data?.length) {
+            let html = "<table><thead><tr><th>Name</th><th>Admission</th><th>Grade</th></tr></thead><tbody>";
+            stuRes.data.forEach(s => {
+                html += `<tr><td>${s.name}</td><td>${s.admission_no}</td><td>${s.grade}</td></tr>`;
+            });
+            html += "</tbody></table>";
+            document.getElementById("ov-students").innerHTML = html;
+        } else {
+            document.getElementById("ov-students").textContent = "No students yet.";
+        }
+    } catch (e) { console.error("loadAll error:", e); }
 }
 
+document.getElementById("addStudentBtn")?.addEventListener("click", () => {
+    document.getElementById("stuModalTitle").textContent = "Add Student";
+    document.getElementById("s-id").value = "";
+    document.getElementById("s-name").value = "";
+    document.getElementById("s-adm").value = "";
+    document.getElementById("stuModal").classList.add("open");
+});
+
+document.getElementById("addTeacherBtn")?.addEventListener("click", async () => {
+    const name = prompt("Teacher Full Name:");
+    if (!name) return;
+    const email = prompt("Teacher Email:");
+    if (!email) return;
+    
+    const res = await teachers.create({ name, email, school_id: me.school_id });
+    if (res?.success) { alert("Teacher added successfully!"); loadAll(); }
+    else { alert("Error: " + (res?.message || "Unknown error")); }
+});
+
+document.getElementById("recordPayBtn")?.addEventListener("click", () => {
+    alert("Record payment feature coming soon");
+});
+
+document.getElementById("addFeeBtn")?.addEventListener("click", () => {
+    alert("Add fee structure feature coming soon");
+});
+
+document.getElementById("addClassBtn")?.addEventListener("click", () => {
+    alert("Add class feature coming soon");
+});
+
+document.getElementById("addStreamBtn")?.addEventListener("click", () => {
+    alert("Add stream feature coming soon");
+});
+
+document.getElementById("addYearBtn")?.addEventListener("click", () => {
+    alert("Add academic year feature coming soon");
+});
+
+document.getElementById("addCatBtn")?.addEventListener("click", () => {
+    alert("Add assessment category feature coming soon");
+});
+
+document.getElementById("addStaffBtn")?.addEventListener("click", () => {
+    alert("Add staff feature coming soon");
+});
+
+document.getElementById("loadAttBtn")?.addEventListener("click", () => {
+    alert("Attendance loading feature coming soon");
+});
+
+document.getElementById("saveStuBtn")?.addEventListener("click", async () => {
+    const name = document.getElementById("s-name").value.trim();
+    const adm = document.getElementById("s-adm").value.trim();
+    if (!name || !adm) { alert("Name and admission number required"); return; }
+    
+    const res = await students.create({ name, admission_no: adm, school_id: me.school_id });
+    if (res?.success) { alert("Student added!"); window.closeModal("stuModal"); loadAll(); }
+    else { alert("Error: " + (res?.message || "Unknown error")); }
+});
+
 window.closeModal = id => document.getElementById(id).classList.remove("open");
+window.nav = panel => {
+    document.querySelectorAll(".nav-item").forEach(x => x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(x => x.classList.remove("active"));
+    document.querySelector(`[data-p="${panel}"]`)?.classList.add("active");
+    document.getElementById("panel-"+panel)?.classList.add("active");
+};
 </script>
 </body>
 </html>
