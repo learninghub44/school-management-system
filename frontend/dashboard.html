@@ -306,24 +306,33 @@
 </div>
 
 <script type="module">
-import { getUser, clearSession } from "./js/api.js";
-import { schools, students, teachers, finance, attendance, assessments } from "./js/api.js";
+import { guardPage, logout, schools, students, teachers, finance, attendance, assessments } from "./js/api.js";
 
-const me = getUser();
-if (!me || !["TEACHER","FINANCE"].includes(me.role)) window.location.href = "login.html";
+const me = guardPage(["TEACHER", "FINANCE", "SCHOOL_ADMIN", "SUPER_ADMIN"]);
+if (!me) { window.location.href = "login.html"; }
 
+// Standardize session display
 const SCHOOL_ID = me.school_id;
-document.getElementById("userInfo").textContent = `${me.name} · ${me.role}`;
-// Show school name from session immediately
+const userInfoEl = document.getElementById("userInfo");
+if (userInfoEl) {
+    userInfoEl.textContent = `${me.name} · ${me.role}`;
+    if (me.school_code) userInfoEl.textContent += ` · ${me.school_code}`;
+}
+
 const sn = document.getElementById("schoolName");
 if (sn) sn.textContent = me.school_name || "My School";
+document.title = (me.school_name || "School") + " – Dashboard";
+
+// Update profile name
+const adminNameEl = document.getElementById("adminName");
+if (adminNameEl) adminNameEl.textContent = me.name;
 
 let allStudents = [];
 
 // Role-based nav visibility
 if (me.role === "FINANCE") {
     document.querySelectorAll(".teacher-only").forEach(el => el.style.display = "none");
-} else {
+} else if (me.role === "TEACHER") {
     document.querySelectorAll(".finance-only").forEach(el => el.style.display = "none");
 }
 
@@ -349,11 +358,6 @@ document.getElementById("logoutBtn").addEventListener("click", async (e) => {
 
 // ─── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
-    // School name
-    const schoolRes = await schools.list();
-    const school = schoolRes?.data?.[0];
-    if (school) document.getElementById("schoolName").textContent = school.name;
-
     // Stats
     const statsRes = await schools.stats(SCHOOL_ID);
     if (statsRes?.success) {
@@ -364,7 +368,7 @@ async function init() {
     }
 
     // Students
-    const studRes = await students.list(SCHOOL_ID);
+    const studRes = await students.list();
     allStudents = studRes?.data || [];
 
     renderRecentStudents(allStudents.slice(0, 8));
@@ -383,7 +387,7 @@ function renderRecentStudents(data) {
         <thead><tr><th>Adm No</th><th>Name</th><th>Grade</th><th>Gender</th></tr></thead>
         <tbody>${data.map(s => `<tr>
             <td>${s.admission_no}</td><td>${s.full_name}</td>
-            <td>${s.grades?.grade_level || "–"}</td><td>${s.gender || "–"}</td>
+            <td>${s.grade_level || "–"}</td><td>${s.gender || "–"}</td>
         </tr>`).join("")}</tbody></table>`;
 }
 
@@ -394,7 +398,7 @@ function renderStudentsList(data) {
         <thead><tr><th>Adm No</th><th>Name</th><th>Grade</th><th>Parent</th><th>Phone</th></tr></thead>
         <tbody>${data.map(s => `<tr>
             <td>${s.admission_no}</td><td><strong>${s.full_name}</strong></td>
-            <td>${s.grades?.grade_level || "–"}</td>
+            <td>${s.grade_level || "–"}</td>
             <td>${s.parent_name || "–"}</td><td>${s.parent_phone || "–"}</td>
         </tr>`).join("")}</tbody></table>`;
 }
@@ -458,14 +462,14 @@ document.getElementById("saveAttBtn").addEventListener("click", async () => {
 document.getElementById("viewAttBtn").addEventListener("click", async () => {
     const date = document.getElementById("attViewDate").value;
     if (!date) return;
-    const res = await attendance.list(SCHOOL_ID, { date });
+    const res = await attendance.list({ date });
     const data = res?.data || [];
     const el = document.getElementById("attendanceViewList");
     if (!data.length) { el.innerHTML = "<div class='empty'>No records for this date.</div>"; return; }
     el.innerHTML = `<table>
         <thead><tr><th>Student</th><th>Status</th><th>Remarks</th></tr></thead>
         <tbody>${data.map(a => `<tr>
-            <td>${a.students?.full_name || "–"} <small style="color:#9ca3af">(${a.students?.admission_no || ""})</small></td>
+            <td>${a.full_name || "–"} <small style="color:#9ca3af">(${a.admission_no || ""})</small></td>
             <td><span class="badge ${a.status === "present" ? "badge-green" : a.status === "absent" ? "badge-red" : "badge-yellow"}">${a.status}</span></td>
             <td>${a.remarks || "–"}</td>
         </tr>`).join("")}</tbody></table>`;
@@ -473,20 +477,20 @@ document.getElementById("viewAttBtn").addEventListener("click", async () => {
 
 // ─── Assessments ──────────────────────────────────────────────────────────────
 async function loadAssessments() {
-    const res = await assessments.list(SCHOOL_ID);
+    const res = await assessments.list();
     const data = res?.data || [];
     const el = document.getElementById("assessmentsList");
     if (!data.length) { el.innerHTML = "<div class='empty'>No assessments recorded.</div>"; return; }
     el.innerHTML = `<table>
         <thead><tr><th>Student</th><th>Subject</th><th>Type</th><th>Grade</th><th>Score</th><th>Term</th><th>Date</th></tr></thead>
         <tbody>${data.map(a => `<tr>
-            <td>${a.students?.full_name || "–"}</td>
-            <td>${a.subjects?.subject_name || "–"}</td>
+            <td>${a.student_name || "–"}</td>
+            <td>${a.learning_area_name || "–"}</td>
             <td>${a.assessment_type}</td>
             <td><span class="cbc-grade">${a.grade}</span></td>
             <td>${a.score ?? "–"}</td>
             <td>Term ${a.term}</td>
-            <td>${a.assessment_date || "–"}</td>
+            <td>${a.assessment_date ? new Date(a.assessment_date).toLocaleDateString() : "–"}</td>
         </tr>`).join("")}</tbody></table>`;
 }
 
@@ -521,14 +525,14 @@ document.getElementById("saveAssessmentBtn").addEventListener("click", async () 
 
 // ─── Finance ──────────────────────────────────────────────────────────────────
 async function loadPayments() {
-    const res = await finance.payments(SCHOOL_ID);
+    const res = await finance.payments();
     const data = res?.data || [];
     const el = document.getElementById("paymentsList");
     if (!data.length) { el.innerHTML = "<div class='empty'>No payments.</div>"; return; }
     el.innerHTML = `<table>
         <thead><tr><th>Student</th><th>Amount</th><th>Method</th><th>Term</th><th>Reference</th><th>Date</th></tr></thead>
         <tbody>${data.map(p => `<tr>
-            <td>${p.students?.full_name || "–"}</td>
+            <td>${p.student_name || "–"}</td>
             <td>KES ${Number(p.amount).toLocaleString()}</td>
             <td><span class="badge badge-blue">${p.method}</span></td>
             <td>Term ${p.term}</td>

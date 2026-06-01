@@ -40,6 +40,7 @@ router.get("/payments", authMiddleware, async (req, res) => {
         } else {
             const schoolId = role === "SUPER_ADMIN" ? (req.query.school_id||null) : school_id;
             if (schoolId) { params.push(schoolId); where.push(`p.school_id=$${params.length}`); }
+            else if (role !== "SUPER_ADMIN") { return res.status(403).json({ success: false, message: "School isolation error." }); }
             if (req.query.student_id) { params.push(req.query.student_id); where.push(`p.student_id=$${params.length}`); }
             if (req.query.term) { params.push(req.query.term); where.push(`p.term=$${params.length}`); }
             if (req.query.year) { params.push(req.query.year); where.push(`p.year=$${params.length}`); }
@@ -138,6 +139,7 @@ router.get("/fee-structures", authMiddleware, async (req, res) => {
         let q = `SELECT f.*, g.grade_level FROM fee_structures f LEFT JOIN grades g ON g.id=f.grade_id`;
         const params = [];
         if (schoolId) { q += " WHERE f.school_id=$1"; params.push(schoolId); }
+        else if (role !== "SUPER_ADMIN") { return res.status(403).json({ success: false, message: "School isolation error." }); }
         q += " ORDER BY f.year DESC, f.term";
         const { rows } = await db.query(q, params);
         return res.json({ success: true, data: rows });

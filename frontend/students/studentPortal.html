@@ -137,7 +137,12 @@ tr:last-child td{border-bottom:none}
 import { guardPage, logout, students, assessments, attendance, finance, auth } from "../js/api.js";
 const me = guardPage(["STUDENT"]);
 
-document.getElementById("logoutBtn").addEventListener("click", () => { clearSession(); location.href="/login.html"; });
+document.getElementById("logoutBtn").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
+  await logout();
+});
 
 document.querySelectorAll(".tab").forEach(t => {
   t.addEventListener("click", () => {

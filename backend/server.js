@@ -106,6 +106,17 @@ app.use("/api/auth/change-password", rateLimit({
     message: { success: false, message: "Too many password change attempts." },
 }));
 
+// ── V-02: Strict rate limit on data writes (prevent DB flooding) ──
+const writeLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 30,                 // 30 writes per minute per IP
+    message: { success: false, message: "Too many data modifications. Please wait a moment." },
+});
+app.post("/api/*",   writeLimiter);
+app.put("/api/*",    writeLimiter);
+app.patch("/api/*",  writeLimiter);
+app.delete("/api/*", writeLimiter);
+
 // ─── Routes ────────────────────────────────────────────────────────
 app.use("/api/auth",        require("./routes/auth"));
 app.use("/api/schools",     require("./routes/schools"));
@@ -115,6 +126,7 @@ app.use("/api/teachers",    require("./routes/teachers"));
 app.use("/api/finance",     require("./routes/finance"));
 app.use("/api/attendance",  require("./routes/attendance"));
 app.use("/api/assessments", require("./routes/assessments"));
+app.use("/api/cbc",         require("./routes/cbc"));
 
 app.get("/", (req, res) => res.json({ name: "CBC School ERP API", version: "3.0.0", status: "running" }));
 app.get("/api/health", (req, res) => res.json({ success: true, timestamp: new Date().toISOString() }));

@@ -140,6 +140,7 @@ tr:hover td{background:#f0fdf4}
     <div class="nav-item" data-p="teachers">👩‍🏫 Teachers</div>
     <div class="nav-item" data-p="finance">💰 Finance</div>
     <div class="nav-item" data-p="attendance">📋 Attendance</div>
+    <div class="nav-item" data-p="curriculum">📖 CBC Curriculum</div>
     <div class="nav-item" data-p="staff">👥 Staff Users</div>
   </nav>
   <div class="sb-footer">
@@ -235,6 +236,44 @@ tr:hover td{background:#f0fdf4}
           </div>
         </div>
         <div id="attView" class="empty">Select a date to view records.</div>
+      </div>
+    </div>
+
+    <!-- CURRICULUM -->
+    <div class="panel" id="panel-curriculum">
+      <div class="tabs">
+        <div class="tab active" data-t="classes">Classes</div>
+        <div class="tab" data-t="streams">Streams</div>
+        <div class="tab" data-t="academic-years">Academic Years</div>
+        <div class="tab" data-t="categories">Assessment Categories</div>
+      </div>
+      
+      <div id="ct-classes">
+        <div class="card">
+          <div class="card-hdr"><h4>Classes</h4><button class="btn btn-green" id="addClassBtn">+ New Class</button></div>
+          <div id="classList" class="empty">Loading…</div>
+        </div>
+      </div>
+      
+      <div id="ct-streams" style="display:none">
+        <div class="card">
+          <div class="card-hdr"><h4>Streams</h4><button class="btn btn-green" id="addStreamBtn">+ New Stream</button></div>
+          <div id="streamList" class="empty">Loading…</div>
+        </div>
+      </div>
+
+      <div id="ct-academic-years" style="display:none">
+        <div class="card">
+          <div class="card-hdr"><h4>Academic Years</h4><button class="btn btn-green" id="addYearBtn">+ New Year</button></div>
+          <div id="yearList" class="empty">Loading…</div>
+        </div>
+      </div>
+
+      <div id="ct-categories" style="display:none">
+        <div class="card">
+          <div class="card-hdr"><h4>Assessment Categories</h4><button class="btn btn-green" id="addCatBtn">+ New Category</button></div>
+          <div id="catList" class="empty">Loading…</div>
+        </div>
       </div>
     </div>
 
@@ -360,11 +399,74 @@ tr:hover td{background:#f0fdf4}
       <div class="fg"><label>Year *</label><input type="number" id="f-year" min="2020"></div>
     </div>
     <div class="fg"><label>Amount (KES) *</label><input type="number" id="f-amt" min="0"></div>
-    <div class="fg"><label>Description</label><input id="f-desc" placeholder="Optional"></div>
+    <div class="fg"><label>Description</label><input id="f-desc" placeholder="e.g. Tuition + Activity Fee"></div>
     <div id="feeAlert"></div>
     <div class="ma">
       <button class="btn btn-ghost" onclick="closeModal('feeModal')">Cancel</button>
       <button class="btn btn-green" id="saveFeeBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Stream -->
+<div class="modal-bg" id="streamModal">
+  <div class="modal">
+    <h3>Add Stream</h3>
+    <div class="fg"><label>Stream Name *</label><input id="st-name" placeholder="e.g. Blue, West, Alpha"></div>
+    <div id="streamAlert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" onclick="closeModal('streamModal')">Cancel</button>
+      <button class="btn btn-green" id="saveStreamBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Academic Year -->
+<div class="modal-bg" id="yearModal">
+  <div class="modal">
+    <h3>Add Academic Year</h3>
+    <div class="fg"><label>Year Name *</label><input id="ay-name" placeholder="e.g. 2024 Academic Year"></div>
+    <div class="fg-row">
+      <div class="fg"><label>Start Date</label><input type="date" id="ay-start"></div>
+      <div class="fg"><label>End Date</label><input type="date" id="ay-end"></div>
+    </div>
+    <div class="fg" style="display:flex;align-items:center;gap:10px">
+      <input type="checkbox" id="ay-current" style="width:auto"> <label style="margin:0">Set as Current Year</label>
+    </div>
+    <div id="yearAlert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" onclick="closeModal('yearModal')">Cancel</button>
+      <button class="btn btn-green" id="saveYearBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Assessment Category -->
+<div class="modal-bg" id="catModal">
+  <div class="modal">
+    <h3>Add Assessment Category</h3>
+    <div class="fg"><label>Category Name *</label><input id="cat-name" placeholder="e.g. Opening Exam, Mid Term"></div>
+    <div class="fg"><label>Weight (%)</label><input type="number" id="cat-weight" value="100" min="0" max="100"></div>
+    <div id="catAlert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" onclick="closeModal('catModal')">Cancel</button>
+      <button class="btn btn-green" id="saveCatBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Class -->
+<div class="modal-bg" id="classModal">
+  <div class="modal">
+    <h3>Add Class</h3>
+    <div class="fg"><label>Grade *</label><select id="cl-grade"></select></div>
+    <div class="fg"><label>Stream *</label><select id="cl-stream"></select></div>
+    <div class="fg"><label>Academic Year *</label><select id="cl-year"></select></div>
+    <div class="fg"><label>Class Teacher</label><select id="cl-teacher"></select></div>
+    <div id="classAlert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" onclick="closeModal('classModal')">Cancel</button>
+      <button class="btn btn-green" id="saveClassBtn">Save</button>
     </div>
   </div>
 </div>
@@ -410,11 +512,13 @@ tr:hover td{background:#f0fdf4}
 </div>
 
 <script type="module">
-import { guardPage, clearSession, schools, students, teachers, finance, attendance, users } from "./js/api.js";
+import { guardPage, logout, schools, students, teachers, finance, attendance, users, cbc } from "./js/api.js";
 const me = guardPage(["SCHOOL_ADMIN"]);
 document.getElementById("adminName").textContent = me.name;
-document.getElementById("topMeta").textContent = me.role + " · " + me.email;
+document.getElementById("topMeta").textContent = `${me.role} · ${me.email}`;
 document.getElementById("schoolBadgeTop").textContent = "🏫 " + (me.school_name || "My School") + (me.school_code ? " · " + me.school_code : "");
+document.getElementById("schoolName").textContent = me.school_name || "My School";
+document.getElementById("schoolCode").textContent = me.school_code || "";
 document.getElementById("logoutBtn").addEventListener("click", async (e) => {
   const btn = e.currentTarget;
   btn.classList.add("btn-loading");
@@ -459,6 +563,7 @@ document.querySelectorAll(".nav-item").forEach(el => {
     if (el.dataset.p === "attendance") {
       document.getElementById("attDate").value = new Date().toISOString().split("T")[0];
     }
+    if (el.dataset.p === "curriculum") loadCurriculum();
   });
 });
 
@@ -896,6 +1001,133 @@ window.closeModal = id => document.getElementById(id).classList.remove("open");
 function setAlert(el, msg, cls="ae") {
   document.getElementById(el).innerHTML = `<div class="alert ${cls}">${msg}</div>`;
 }
+
+// ─── CBC Curriculum Management ────────────────────────────────────────────────
+async function loadCurriculum() {
+  const activeTab = document.querySelector("#panel-curriculum .tab.active").dataset.t;
+  if (activeTab === "classes") {
+    const res = await cbc.classes();
+    const data = res?.data || [];
+    const el = document.getElementById("classList");
+    if (!data.length) { el.innerHTML = "<div class='empty'>No classes created.</div>"; return; }
+    el.innerHTML = `<table><thead><tr><th>Grade</th><th>Stream</th><th>Year</th><th>Teacher</th></tr></thead>
+      <tbody>${data.map(c => `<tr><td>${c.grade_level}</td><td>${c.stream_name}</td><td>${c.academic_year_name}</td><td>${c.teacher_name || "–"}</td></tr>`).join("")}</tbody></table>`;
+  } else if (activeTab === "streams") {
+    const res = await cbc.streams();
+    const data = res?.data || [];
+    const el = document.getElementById("streamList");
+    if (!data.length) { el.innerHTML = "<div class='empty'>No streams.</div>"; return; }
+    el.innerHTML = `<table><thead><tr><th>Stream Name</th><th>Created</th></tr></thead>
+      <tbody>${data.map(s => `<tr><td><strong>${s.name}</strong></td><td>${new Date(s.created_at).toLocaleDateString()}</td></tr>`).join("")}</tbody></table>`;
+  } else if (activeTab === "academic-years") {
+    const res = await cbc.academicYears();
+    const data = res?.data || [];
+    const el = document.getElementById("yearList");
+    if (!data.length) { el.innerHTML = "<div class='empty'>No years.</div>"; return; }
+    el.innerHTML = `<table><thead><tr><th>Year</th><th>Range</th><th>Status</th></tr></thead>
+      <tbody>${data.map(y => `<tr><td><strong>${y.name}</strong></td><td>${y.start_date} to ${y.end_date}</td><td>${y.is_current ? '<span class="badge bg">Current</span>' : ''}</td></tr>`).join("")}</tbody></table>`;
+  } else if (activeTab === "categories") {
+    const res = await cbc.categories();
+    const data = res?.data || [];
+    const el = document.getElementById("catList");
+    if (!data.length) { el.innerHTML = "<div class='empty'>No categories.</div>"; return; }
+    el.innerHTML = `<table><thead><tr><th>Category Name</th><th>Weight</th></tr></thead>
+      <tbody>${data.map(c => `<tr><td><strong>${c.name}</strong></td><td>${c.weight}%</td></tr>`).join("")}</tbody></table>`;
+  }
+}
+
+document.querySelectorAll("#panel-curriculum .tab").forEach(t => {
+  t.addEventListener("click", () => {
+    document.querySelectorAll("#panel-curriculum .tab").forEach(x => x.classList.remove("active"));
+    t.classList.add("active");
+    ["classes", "streams", "academic-years", "categories"].forEach(id => {
+      document.getElementById("ct-"+id).style.display = (id === t.dataset.t) ? "block" : "none";
+    });
+    loadCurriculum();
+  });
+});
+
+document.getElementById("addStreamBtn").addEventListener("click", () => {
+  document.getElementById("st-name").value = "";
+  document.getElementById("streamAlert").innerHTML = "";
+  document.getElementById("streamModal").classList.add("open");
+});
+
+document.getElementById("saveStreamBtn").addEventListener("click", async () => {
+  const name = document.getElementById("st-name").value.trim();
+  if (!name) return;
+  const res = await cbc.createStream({ name });
+  if (res?.success) { closeModal("streamModal"); loadCurriculum(); }
+  else setAlert("streamAlert", res?.message || "Failed.");
+});
+
+document.getElementById("addYearBtn").addEventListener("click", () => {
+  document.getElementById("ay-name").value = "";
+  document.getElementById("ay-start").value = new Date().getFullYear() + "-01-01";
+  document.getElementById("ay-end").value = new Date().getFullYear() + "-12-31";
+  document.getElementById("ay-current").checked = true;
+  document.getElementById("yearAlert").innerHTML = "";
+  document.getElementById("yearModal").classList.add("open");
+});
+
+document.getElementById("saveYearBtn").addEventListener("click", async () => {
+  const body = {
+    name: document.getElementById("ay-name").value.trim(),
+    start_date: document.getElementById("ay-start").value,
+    end_date: document.getElementById("ay-end").value,
+    is_current: document.getElementById("ay-current").checked
+  };
+  if (!body.name) return;
+  const res = await cbc.createAcademicYear(body);
+  if (res?.success) { closeModal("yearModal"); loadCurriculum(); }
+  else setAlert("yearAlert", res?.message || "Failed.");
+});
+
+document.getElementById("addCatBtn").addEventListener("click", () => {
+  document.getElementById("cat-name").value = "";
+  document.getElementById("cat-weight").value = "100";
+  document.getElementById("catAlert").innerHTML = "";
+  document.getElementById("catModal").classList.add("open");
+});
+
+document.getElementById("saveCatBtn").addEventListener("click", async () => {
+  const body = {
+    name: document.getElementById("cat-name").value.trim(),
+    weight: parseInt(document.getElementById("cat-weight").value)
+  };
+  if (!body.name) return;
+  const res = await cbc.createCategory(body);
+  if (res?.success) { closeModal("catModal"); loadCurriculum(); }
+  else setAlert("catAlert", res?.message || "Failed.");
+});
+
+document.getElementById("addClassBtn").addEventListener("click", async () => {
+  const [st, yr, tc] = await Promise.all([
+    cbc.streams(),
+    cbc.academicYears(),
+    teachers.list()
+  ]);
+  document.getElementById("cl-grade").innerHTML = GRADES.map(g => `<option value="${g.id}">${g.l}</option>`).join("");
+  document.getElementById("cl-stream").innerHTML = st.data.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
+  document.getElementById("cl-year").innerHTML = yr.data.map(y => `<option value="${y.id}">${y.name} ${y.is_current ? '(Current)' : ''}</option>`).join("");
+  document.getElementById("cl-teacher").innerHTML = `<option value="">Select Class Teacher…</option>` +
+    tc.data.map(t => `<option value="${t.user_id}">${t.full_name}</option>`).join("");
+  
+  document.getElementById("classAlert").innerHTML = "";
+  document.getElementById("classModal").classList.add("open");
+});
+
+document.getElementById("saveClassBtn").addEventListener("click", async () => {
+  const body = {
+    grade_id: parseInt(document.getElementById("cl-grade").value),
+    stream_id: parseInt(document.getElementById("cl-stream").value),
+    academic_year_id: parseInt(document.getElementById("cl-year").value),
+    teacher_id: document.getElementById("cl-teacher").value || null
+  };
+  const res = await cbc.createClass(body);
+  if (res?.success) { closeModal("classModal"); loadCurriculum(); }
+  else setAlert("classAlert", res?.message || "Failed.");
+});
 
 init();
 </script>

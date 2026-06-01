@@ -9,17 +9,14 @@ const API_BASE = window.API_BASE_URL || 'https://your-api.onrender.com/api'
 // NOT a hardcoded real Render URL with credentials
 
 // ── Session helpers ────────────────────────────────────────────────
-// Only non-sensitive profile data in localStorage (not the JWT)
+// Session is managed via httpOnly cookies. LocalStorage is only a cache.
 export const getUser    = () => { try { return JSON.parse(localStorage.getItem("user")||"null"); } catch { return null; } };
-export const getToken   = () => localStorage.getItem("token"); // kept for API clients; cookie used in browser
+export const getToken   = () => null; // Security: Do not read token from JS
 export const saveSession = (token, user) => {
-    // Store token only for API clients (curl, Postman)
-    // Browser auth uses httpOnly cookie set by server — no JS access
-    localStorage.setItem("token", token);
+    // We only store the user profile for UI, token is in httpOnly cookie
     localStorage.setItem("user", JSON.stringify(user));
 };
 export const clearSession = () => {
-    localStorage.removeItem("token");
     localStorage.removeItem("user");
 };
 
@@ -36,9 +33,8 @@ export function esc(str) {
 
 // ── Core fetch ─────────────────────────────────────────────────────
 export async function apiFetch(endpoint, { method="GET", body=null, params={} } = {}) {
-    const token = getToken();
     const headers = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+    // Bearer token is NOT sent from JS; browser sends httpOnly cookie automatically
 
     let url = `${API_BASE}${endpoint}`;
     const qs = new URLSearchParams(params).toString();
@@ -130,6 +126,18 @@ export const attendance = {
     report: (sid)  => apiFetch(`/attendance/report/${sid}`),
 };
 
+// ── CBC ────────────────────────────────────────────────────────────
+export const cbc = {
+    streams:            ()     => apiFetch("/cbc/streams"),
+    createStream:       (data) => apiFetch("/cbc/streams",          { method:"POST", body:data }),
+    academicYears:      ()     => apiFetch("/cbc/academic-years"),
+    createAcademicYear: (data) => apiFetch("/cbc/academic-years",   { method:"POST", body:data }),
+    classes:            ()     => apiFetch("/cbc/classes"),
+    createClass:        (data) => apiFetch("/cbc/classes",          { method:"POST", body:data }),
+    categories:         ()     => apiFetch("/cbc/categories"),
+    createCategory:     (data) => apiFetch("/cbc/categories",       { method:"POST", body:data }),
+};
+
 // ── Assessments ────────────────────────────────────────────────────
 export const assessments = {
     list:          (p)    => apiFetch("/assessments",                     { params:p }),
@@ -141,9 +149,8 @@ export const assessments = {
 
 // ── Role Guard ─────────────────────────────────────────────────────
 export function guardPage(allowedRoles) {
-    const user  = getUser();
-    const token = getToken();
-    if (!user || !token) { window.location.href = "/login.html"; return null; }
+    const user = getUser();
+    if (!user) { window.location.href = "/login.html"; return null; }
     if (!allowedRoles.includes(user.role)) { window.location.href = "/login.html"; return null; }
     return user;
 }

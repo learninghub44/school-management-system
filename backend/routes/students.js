@@ -49,6 +49,7 @@ router.get("/", authMiddleware, async (req, res) => {
             return res.status(403).json({ success: false, message: "Access denied." });
 
         const schoolId = role === "SUPER_ADMIN" ? (req.query.school_id||null) : school_id;
+        if (!schoolId && role !== "SUPER_ADMIN") return res.status(403).json({ success: false, message: "Isolation error." });
         let q = `SELECT s.*, g.grade_level, g.stage FROM students s LEFT JOIN grades g ON g.id=s.grade_id`;
         const params = [], where = [];
         if (schoolId) { params.push(schoolId); where.push(`s.school_id=$${params.length}`); }
@@ -165,17 +166,18 @@ router.put("/:id", authMiddleware, roleMiddleware(["SUPER_ADMIN","SCHOOL_ADMIN"]
         if (!existing.rows.length) return res.status(404).json({ success: false, message: "Student not found." });
         if (req.user.role !== "SUPER_ADMIN" && existing.rows[0].school_id !== req.user.school_id)
             return res.status(403).json({ success: false, message: "Access denied." });
-        const { full_name, grade_id, date_of_birth, gender, parent_name, parent_phone, parent_email, address, is_active } = req.body;
+        const { full_name, grade_id, stream_id, current_class_id, date_of_birth, gender, parent_name, parent_phone, parent_email, address, is_active } = req.body;
         const { rows } = await db.query(
             `UPDATE students SET
                full_name=COALESCE($1,full_name), grade_id=COALESCE($2,grade_id),
-               date_of_birth=COALESCE($3,date_of_birth), gender=COALESCE($4,gender),
-               parent_name=COALESCE($5,parent_name), parent_phone=COALESCE($6,parent_phone),
-               parent_email=COALESCE($7,parent_email), address=COALESCE($8,address),
-               is_active=COALESCE($9,is_active) WHERE id=$10 RETURNING *`,
-            [full_name||null, grade_id||null, date_of_birth||null, gender||null,
-             parent_name||null, parent_phone||null, parent_email||null, address||null,
-             is_active??null, req.params.id]
+               stream_id=COALESCE($3,stream_id), current_class_id=COALESCE($4,current_class_id),
+               date_of_birth=COALESCE($5,date_of_birth), gender=COALESCE($6,gender),
+               parent_name=COALESCE($7,parent_name), parent_phone=COALESCE($8,parent_phone),
+               parent_email=COALESCE($9,parent_email), address=COALESCE($10,address),
+               is_active=COALESCE($11,is_active) WHERE id=$12 RETURNING *`,
+            [full_name||null, grade_id||null, stream_id||null, current_class_id||null,
+             date_of_birth||null, gender||null, parent_name||null, parent_phone||null,
+             parent_email||null, address||null, is_active??null, req.params.id]
         );
         return res.json({ success: true, message: "Student updated.", data: rows[0] });
     } catch (err) {

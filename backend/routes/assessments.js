@@ -85,21 +85,21 @@ router.post("/", authMiddleware, roleMiddleware(["SUPER_ADMIN","SCHOOL_ADMIN","T
             const { student_id, learning_area_id, strand_id, teacher_id, term, year,
                     assessment_type, score, grade, competency_area, assessment_date, remarks } = req.body;
 
-            // Verify student belongs to school
-            const st = await db.query("SELECT school_id FROM students WHERE id=$1", [student_id]);
-            if (!st.rows.length) return res.status(404).json({ success: false, message: "Student not found." });
-            if (req.user.role !== "SUPER_ADMIN" && st.rows[0].school_id !== schoolId)
-                return res.status(403).json({ success: false, message: "Student not in your school." });
+        // Verify student belongs to school
+        const st = await db.query("SELECT school_id FROM students WHERE id=$1", [student_id]);
+        if (!st.rows.length) return res.status(404).json({ success: false, message: "Student not found." });
+        if (req.user.role !== "SUPER_ADMIN" && st.rows[0].school_id !== schoolId)
+            return res.status(403).json({ success: false, message: "Student not in your school." });
 
-            const { rows } = await db.query(
-                `INSERT INTO assessments
-                  (school_id, student_id, learning_area_id, strand_id, teacher_id,
-                   term, year, assessment_type, score, grade, competency_area, assessment_date, remarks)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
-                [schoolId, student_id, learning_area_id, strand_id||null, teacher_id||null,
-                 term, year, assessment_type, score||null, grade,
-                 competency_area||null, assessment_date||new Date().toISOString().split("T")[0], remarks||null]
-            );
+        const { rows } = await db.query(
+            `INSERT INTO assessments
+              (school_id, student_id, learning_area_id, strand_id, teacher_id,
+               term, year, assessment_type, score, grade, competency_area, assessment_date, remarks)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+            [st.rows[0].school_id, student_id, learning_area_id, strand_id||null, req.user.id,
+             term, year, assessment_type, score||null, grade,
+             competency_area||null, assessment_date||new Date().toISOString().split("T")[0], remarks||null]
+        );
             await audit(req, "CREATE", "assessments", rows[0].id, null, { student_id, learning_area_id, grade, term, year });
             return res.status(201).json({ success: true, message: "Assessment recorded.", data: rows[0] });
         } catch (err) {
@@ -123,6 +123,13 @@ router.get("/student/:id/report", authMiddleware, async (req, res) => {
             if (!link.rows.length) return res.status(403).json({ success: false, message: "Not your child." });
         }
         if (role === "FINANCE") return res.status(403).json({ success: false, message: "Access denied." });
+
+        // Verify student ownership for staff
+        if (["TEACHER", "SCHOOL_ADMIN"].includes(role)) {
+            const st = await db.query("SELECT school_id FROM students WHERE id=$1", [req.params.id]);
+            if (!st.rows.length || st.rows[0].school_id !== req.user.school_id)
+                return res.status(403).json({ success: false, message: "Access denied." });
+        }
 
         let q = `SELECT a.*, la.name AS learning_area_name, st.name AS strand_name, st.sub_strand
                  FROM assessments a

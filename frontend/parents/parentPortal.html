@@ -121,10 +121,15 @@ tr:last-child td{border-bottom:none}
 import { guardPage, logout, students, assessments, attendance, finance, auth } from "../js/api.js";
 const me = guardPage(["PARENT"]);
 document.getElementById("parentName").textContent = me.name;
-  // Show school name from session
-  const schoolEl = document.getElementById("parentSchool");
-  if (schoolEl) schoolEl.textContent = me.school_name || "";
-document.getElementById("logoutBtn").addEventListener("click", () => { clearSession(); location.href="/login.html"; });
+// Show school name from session
+const schoolEl = document.getElementById("parentSchool");
+if (schoolEl) schoolEl.textContent = me.school_name || "";
+document.getElementById("logoutBtn").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
+  await logout();
+});
 
 let allChildren = [], activeChild = null;
 

@@ -12,6 +12,7 @@ router.get("/", authMiddleware, roleMiddleware(["SUPER_ADMIN","SCHOOL_ADMIN","TE
         let q = "SELECT * FROM teachers";
         const params = [];
         if (schoolId) { q += " WHERE school_id=$1"; params.push(schoolId); }
+        else if (req.user.role !== "SUPER_ADMIN") return res.status(403).json({ success: false, message: "Isolation error." });
         q += " ORDER BY full_name";
         const { rows } = await db.query(q, params);
         return res.json({ success: true, data: rows, count: rows.length });
@@ -35,6 +36,7 @@ router.post("/", authMiddleware, roleMiddleware(["SUPER_ADMIN","SCHOOL_ADMIN"]),
         if (!errs.isEmpty()) return res.status(400).json({ success: false, errors: errs.array() });
         try {
             const schoolId = req.user.role === "SUPER_ADMIN" ? (req.body.school_id||req.user.school_id) : req.user.school_id;
+            if (!schoolId) return res.status(400).json({ success: false, message: "school_id required." });
             const { full_name, email, phone, tsc_no, department, subjects, user_id } = req.body;
             const { rows } = await db.query(
                 `INSERT INTO teachers (school_id, user_id, full_name, email, phone, tsc_no, department, subjects)

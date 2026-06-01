@@ -119,7 +119,7 @@ router.post("/login",
             return res.json({
                 success: true,
                 message: "Login successful",
-                token,   // still returned for API clients; frontend should use cookie
+                // Token is primarily in httpOnly cookie for browser security
                 user: {
                     id:                  user.id,
                     email:               user.email,

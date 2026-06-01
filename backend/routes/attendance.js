@@ -54,7 +54,7 @@ router.post("/", authMiddleware, async (req, res) => {
             return res.status(403).json({ success: false, message: "Access denied." });
 
         const records = Array.isArray(req.body) ? req.body : [req.body];
-        const schoolId = req.user.school_id || records[0]?.school_id;
+        const schoolId = req.user.school_id;
         const inserted = [];
 
         for (const r of records) {
@@ -63,13 +63,19 @@ router.post("/", authMiddleware, async (req, res) => {
             if (!["present","absent","late","excused"].includes(r.status))
                 return res.status(400).json({ success: false, message: `Invalid status: ${r.status}` });
 
+            // Verify student ownership
+            const st = await db.query("SELECT school_id FROM students WHERE id=$1", [r.student_id]);
+            if (!st.rows.length || (req.user.role !== "SUPER_ADMIN" && st.rows[0].school_id !== schoolId)) {
+                continue; // Skip cross-tenant or missing student
+            }
+
             const { rows } = await db.query(
                 `INSERT INTO attendance (school_id, student_id, teacher_id, date, status, remarks)
                  VALUES ($1,$2,$3,$4,$5,$6)
                  ON CONFLICT (school_id, student_id, date)
                  DO UPDATE SET status=EXCLUDED.status, remarks=EXCLUDED.remarks
                  RETURNING *`,
-                [schoolId, r.student_id, r.teacher_id||null, r.date, r.status, r.remarks||null]
+                [st.rows[0].school_id, r.student_id, req.user.id, r.date, r.status, r.remarks||null]
             );
             inserted.push(rows[0]);
         }
@@ -96,6 +102,13 @@ router.get("/report/:student_id", authMiddleware, async (req, res) => {
                 [userId, req.params.student_id]
             );
             if (!link.rows.length) return res.status(403).json({ success: false, message: "Not your child." });
+        }
+
+        // Verify student ownership for staff
+        if (["TEACHER", "SCHOOL_ADMIN"].includes(role)) {
+            const st = await db.query("SELECT school_id FROM students WHERE id=$1", [req.params.student_id]);
+            if (!st.rows.length || st.rows[0].school_id !== req.user.school_id)
+                return res.status(403).json({ success: false, message: "Access denied." });
         }
 
         const { rows } = await db.query(

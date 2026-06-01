@@ -232,7 +232,9 @@ document.querySelectorAll(".nav-item").forEach(el => {
   });
 });
 document.getElementById("logoutBtn").addEventListener("click", async (e) => {
-  const b = e.currentTarget; b.disabled=true; b.classList.add("btn-loading");
+  const btn = e.currentTarget;
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
   await logout();
 });
 

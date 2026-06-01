@@ -215,11 +215,13 @@ tr:hover td{background:#fffbeb}
 import { guardPage, logout, finance, students, schools, auth } from "../js/api.js";
 const me = guardPage(["FINANCE","SCHOOL_ADMIN"]);
 // Instant display from session — no API wait
-document.getElementById("uname").textContent = me.name + " · " + me.role;
+document.getElementById("uname").textContent = `${me.name} · ${me.role}`;
 document.getElementById("schoolName").textContent = me.school_name || "My School";
 document.title = (me.school_name || "School") + " – Finance";
-document.getElementById("logoutBtn").addEventListener("click", async(e) => {
-  const b = e.currentTarget; b.disabled=true; b.classList.add("btn-loading");
+document.getElementById("logoutBtn").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
   await logout();
 });
 

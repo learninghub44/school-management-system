@@ -82,9 +82,20 @@ tr:hover td{background:#eff6ff}
 .att-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
 .att-box{background:#eff6ff;border-radius:9px;padding:10px;text-align:center}
 .att-box .n{font-size:20px;font-weight:700;color:#1d4ed8}
-.att-box .l{font-size:10px;color:#64748b}
-
-  /* ── Fast Responsive Buttons ──────────────────────────────────── */
+	.att-box .l{font-size:10px;color:#64748b}
+    .bulk-table select, .bulk-table input {
+      padding: 4px 6px;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: inherit;
+    }
+    .bulk-table select:focus, .bulk-table input:focus {
+      border-color: #1d4ed8;
+      outline: none;
+    }
+	
+	  /* ── Fast Responsive Buttons ──────────────────────────────────── */
   *{-webkit-tap-highlight-color:transparent}
   button,a[role=button],[role=button]{touch-action:manipulation}
   .btn,.btn-blue,.btn-green,.btn-red,.btn-amber,.btn-ghost,
@@ -132,6 +143,8 @@ tr:hover td{background:#eff6ff}
     <div class="nav-item active" data-p="students">🎒 Students</div>
     <div class="nav-item" data-p="attendance">📋 Attendance</div>
     <div class="nav-item" data-p="assessments">📝 CBC Assessments</div>
+    <div class="nav-item" data-p="bulk-marks">📊 Bulk Mark Entry</div>
+    <div class="nav-item" data-p="reports">📄 Report Cards</div>
   </nav>
   <div class="sb-footer">
     <div class="uname"><strong id="tcName">…</strong>Teacher</div>
@@ -198,6 +211,44 @@ tr:hover td{background:#eff6ff}
       </div>
     </div>
 
+    <!-- BULK MARK ENTRY -->
+    <div class="panel" id="panel-bulk-marks">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Bulk Mark Entry <span class="kicd-tag">SPREADSHEET STYLE</span></h4>
+          <div class="search-row">
+            <select id="bulk-la" onchange="loadBulkStrands()"><option value="">Select Learning Area…</option></select>
+            <select id="bulk-strand"><option value="">Select Strand…</option></select>
+            <select id="bulk-grade-filter"><option value="">All Grades</option></select>
+            <button class="btn btn-blue" id="loadBulkSheetBtn">Load Class Sheet</button>
+          </div>
+        </div>
+        <div id="bulkSheetContainer" class="empty">Select Learning Area and Grade to load sheet.</div>
+        <div style="padding:16px;border-top:1px solid #f1f5f9;display:none" id="bulkActionsRow">
+          <button class="btn btn-blue" id="saveBulkBtn">Save All Marks</button>
+          <span id="bulkStatus" style="font-size:11px;margin-left:10px;color:#64748b"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORT CARDS -->
+    <div class="panel" id="panel-reports">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Generate CBC Report Cards</h4>
+          <div class="search-row">
+            <select id="rep-student"><option value="">Select Student…</option></select>
+            <select id="rep-term"><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+            <input type="number" id="rep-year" style="width:80px">
+            <button class="btn btn-blue" id="genReportBtn">Generate Report</button>
+          </div>
+        </div>
+        <div id="reportArea" style="padding:20px">
+          <div class="empty">Select a student and click Generate.</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -257,8 +308,13 @@ const tcSchoolEl = document.getElementById("schoolName");
 if (tcSchoolEl) tcSchoolEl.textContent = me.school_name || "My School";
 // Show role in topbar
 const topMetaEl = document.getElementById("topMeta");
-if (topMetaEl) topMetaEl.textContent = me.role + (me.school_code ? " · " + me.school_code : "");
-document.getElementById("logoutBtn").addEventListener("click", async(e)=>{const b=e.currentTarget;b.disabled=true;b.classList.add("btn-loading");await logout();});
+if (topMetaEl) topMetaEl.textContent = `${me.role}${me.school_code ? " · " + me.school_code : ""}`;
+document.getElementById("logoutBtn").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
+  await logout();
+});
 
 let allStudents = [], allLAs = [], selectedGrade = "";
 
@@ -271,6 +327,13 @@ document.querySelectorAll(".nav-item").forEach(el => {
     document.getElementById("panel-"+el.dataset.p).classList.add("active");
     document.getElementById("pageTitle").textContent = el.textContent.trim();
     if (el.dataset.p === "assessments") loadAssessments();
+    if (el.dataset.p === "reports") {
+      document.getElementById("rep-student").innerHTML = document.getElementById("a-student").innerHTML;
+    }
+    if (el.dataset.p === "bulk-marks") {
+      document.getElementById("bulk-la").innerHTML = document.getElementById("a-la").innerHTML;
+      populateBulkGradeFilter();
+    }
   });
 });
 
@@ -291,16 +354,196 @@ async function init() {
   // Learning Areas
   const laRes = await assessments.learningAreas();
   allLAs = laRes?.data||[];
-  document.getElementById("a-la").innerHTML =
-    `<option value="">Select learning area…</option>` +
+  const laHtml = `<option value="">Select learning area…</option>` +
     allLAs.map(la => `<option value="${la.id}">${la.name} (${la.code})</option>`).join("");
+  document.getElementById("a-la").innerHTML = laHtml;
+  document.getElementById("bulk-la").innerHTML = laHtml;
 
   // Dates
   const today = new Date().toISOString().split("T")[0];
   document.getElementById("markDate").value = today;
   document.getElementById("a-date").value = today;
   document.getElementById("a-year").value = new Date().getFullYear();
+
+  // Initial population
+  populateBulkGradeFilter();
+  document.getElementById("rep-student").innerHTML = document.getElementById("a-student").innerHTML;
+  document.getElementById("rep-year").value = new Date().getFullYear();
 }
+
+window.printReport = () => {
+  const content = document.getElementById("reportArea").innerHTML;
+  const win = window.open("", "_blank");
+  win.document.write(`<html><head><title>Report Card</title><style>
+    body{font-family:sans-serif;padding:20px}
+    .grade-badge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
+    .EE{background:#dcfce7;color:#166534} .ME{background:#dbeafe;color:#1d4ed8}
+    .AE{background:#fef9c3;color:#854d0e} .BE{background:#fee2e2;color:#dc2626}
+    @media print{.no-print{display:none}}
+  </style></head><body>${content}</body></html>`);
+  win.document.close();
+  setTimeout(() => { win.print(); win.close(); }, 500);
+};
+
+document.getElementById("genReportBtn").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  const sid = document.getElementById("rep-student").value;
+  const term = document.getElementById("rep-term").value;
+  const year = document.getElementById("rep-year").value;
+  if (!sid) { alert("Select a student."); return; }
+
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
+
+  const [stuRes, assessRes, attRes] = await Promise.all([
+    students.get(sid),
+    assessments.studentReport(sid, { term, year }),
+    attendance.report(sid)
+  ]);
+
+  btn.classList.remove("btn-loading");
+  btn.disabled = false;
+
+  if (!stuRes?.success) { alert("Failed to load student data."); return; }
+  const s = stuRes.data;
+  const asses = assessRes?.data?.assessments || [];
+  const att = attRes?.data?.summary || {};
+
+  document.getElementById("reportArea").innerHTML = `
+    <div style="border:2px solid #1e3a8a;padding:30px;background:#fff;border-radius:12px;max-width:800px;margin:0 auto">
+      <div style="text-align:center;margin-bottom:25px">
+        <h2 style="color:#1e3a8a;margin:0">${me.school_name || "SCHOOL REPORT CARD"}</h2>
+        <p style="font-size:12px;color:#64748b;margin-top:5px">P.O. BOX – CBC CURRICULUM COMPLIANT</p>
+        <div style="height:2px;background:#1e3a8a;margin:15px 0"></div>
+        <h3 style="margin:0;text-transform:uppercase">Summative Report – Term ${term}, ${year}</h3>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:25px;font-size:13px">
+        <div><strong>Student:</strong> ${s.full_name}</div>
+        <div><strong>Adm No:</strong> ${s.admission_no}</div>
+        <div><strong>Grade:</strong> ${s.grade_level}</div>
+        <div><strong>Gender:</strong> ${s.gender||"–"}</div>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;margin-bottom:25px">
+        <thead>
+          <tr style="background:#eff6ff">
+            <th style="border:1px solid #dbeafe;padding:10px;text-align:left">Learning Area</th>
+            <th style="border:1px solid #dbeafe;padding:10px;text-align:center">Grade</th>
+            <th style="border:1px solid #dbeafe;padding:10px;text-align:left">Teacher's Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${asses.length ? asses.map(a => `
+            <tr>
+              <td style="border:1px solid #f1f5f9;padding:10px">${a.learning_area_name}</td>
+              <td style="border:1px solid #f1f5f9;padding:10px;text-align:center"><span class="grade-badge ${a.grade}">${a.grade}</span></td>
+              <td style="border:1px solid #f1f5f9;padding:10px;font-size:11px">${a.remarks || "–"}</td>
+            </tr>
+          `).join("") : "<tr><td colspan='3' style='padding:20px;text-align:center;color:#9ca3af'>No assessment records found for this period.</td></tr>"}
+        </tbody>
+      </table>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:13px;border-top:1px solid #eee;padding-top:20px">
+        <div>
+          <h4 style="margin:0 0 10px">Attendance Summary</h4>
+          <p>Total Days: ${att.total || 0}</p>
+          <p>Present: ${att.present || 0} (${att.percentage || "0%"})</p>
+        </div>
+        <div style="text-align:right">
+          <p style="margin-top:40px;border-top:1px solid #000;display:inline-block;padding-top:5px;width:150px">Class Teacher</p>
+        </div>
+      </div>
+      
+      <div style="margin-top:30px;text-align:center" class="no-print">
+        <button class="btn btn-ghost btn-sm" onclick="printReport()">Print Report Card</button>
+      </div>
+    </div>`;
+});
+
+function populateBulkGradeFilter() {
+  const grades = [...new Map(allStudents.filter(s=>s.grade_level).map(s=>[s.grade_id,s])).values()];
+  const sel = document.getElementById("bulk-grade-filter");
+  sel.innerHTML = `<option value="">Select Grade…</option>` +
+    grades.sort((a,b)=>a.grade_id-b.grade_id).map(s=>`<option value="${s.grade_id}">${s.grade_level}</option>`).join("");
+}
+
+window.loadBulkStrands = async () => {
+  const laId = document.getElementById("bulk-la").value;
+  const sel = document.getElementById("bulk-strand");
+  if (!laId) { sel.innerHTML = "<option value=''>Select Learning Area…</option>"; return; }
+  const res = await assessments.strands(laId);
+  const data = res?.data||[];
+  sel.innerHTML = `<option value="">No specific strand</option>` +
+    data.map(s=>`<option value="${s.id}">${s.name}</option>`).join("");
+};
+
+document.getElementById("loadBulkSheetBtn").addEventListener("click", async () => {
+  const laId = document.getElementById("bulk-la").value;
+  const gradeId = document.getElementById("bulk-grade-filter").value;
+  if (!laId || !gradeId) { alert("Select Learning Area and Grade."); return; }
+
+  const filtered = allStudents.filter(s => String(s.grade_id) === gradeId && s.is_active);
+  if (!filtered.length) { document.getElementById("bulkSheetContainer").innerHTML = "<div class='empty'>No students in this grade.</div>"; return; }
+
+  document.getElementById("bulkActionsRow").style.display = "block";
+  document.getElementById("bulkSheetContainer").innerHTML = `
+    <table class="bulk-table">
+      <thead><tr><th>Student Name</th><th>Adm No</th><th>Performance Level (EE/ME/AE/BE)</th><th>Score (0-100)</th><th>Remarks</th></tr></thead>
+      <tbody>${filtered.map(s => `
+        <tr data-sid="${s.id}">
+          <td><strong>${s.full_name}</strong></td>
+          <td>${s.admission_no}</td>
+          <td>
+            <select class="b-grade" style="width:100%">
+              <option value="">–</option>
+              <option value="EE">EE</option><option value="ME">ME</option>
+              <option value="AE">AE</option><option value="BE">BE</option>
+            </select>
+          </td>
+          <td><input type="number" class="b-score" min="0" max="100" placeholder="Score" style="width:70px"></td>
+          <td><input type="text" class="b-remarks" placeholder="Optional remarks" style="width:100%"></td>
+        </tr>`).join("")}
+      </tbody></table>`;
+});
+
+document.getElementById("saveBulkBtn").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  const laId = parseInt(document.getElementById("bulk-la").value);
+  const strandId = parseInt(document.getElementById("bulk-strand").value) || null;
+  const term = 1; // Default for now
+  const year = new Date().getFullYear();
+  const date = new Date().toISOString().split("T")[0];
+
+  const rows = [...document.querySelectorAll("#bulkSheetContainer tr[data-sid]")];
+  const records = rows.map(row => ({
+    student_id: row.dataset.sid,
+    learning_area_id: laId,
+    strand_id: strandId,
+    assessment_type: "formative",
+    grade: row.querySelector(".b-grade").value,
+    score: row.querySelector(".b-score").value ? parseFloat(row.querySelector(".b-score").value) : null,
+    term, year, assessment_date: date,
+    remarks: row.querySelector(".b-remarks").value
+  })).filter(r => r.grade);
+
+  if (!records.length) { alert("No marks entered to save."); return; }
+
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
+  
+  let successCount = 0;
+  for (const rec of records) {
+    const res = await assessments.create(rec);
+    if (res?.success) successCount++;
+  }
+
+  btn.classList.remove("btn-loading");
+  btn.disabled = false;
+  
+  document.getElementById("bulkStatus").textContent = `✓ Saved ${successCount} of ${records.length} marks.`;
+  setTimeout(() => document.getElementById("bulkStatus").textContent = "", 3000);
+});
 
 function populateGradeFilter() {
   const grades = [...new Map(allStudents.filter(s=>s.grade_level).map(s=>[s.grade_id,s])).values()];

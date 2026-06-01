@@ -138,8 +138,14 @@ input:focus{border-color:#1d4ed8;box-shadow:0 0 0 3px rgba(29,78,216,.1)}
 import { auth, logout, saveSession, getToken, getUser } from "./js/api.js";
 
 // Already logged in?
-const t = getToken(), u = getUser();
-if (t && u) redirect(u.role);
+const u = getUser();
+if (u) {
+  // Verify session with server before redirecting
+  auth.verify().then(res => {
+    if (res?.success) redirect(u.role);
+    else logout();
+  });
+}
 
 let mode = "school";
 
