@@ -128,23 +128,26 @@ tr:hover td{background:#f0fdf4}
 </head>
 <body>
 <aside class="sidebar">
-  <div class="sb-brand"><h2>📚 ZETU</h2><p>School Management System</p></div>
-  <div class="sb-school">
+  <div class="sidebar-brand"><h2>ZETU</h2><p>School Management System</p></div>
+  <div class="school-badge">
     <span>School</span>
     <strong id="schoolName">Loading…</strong>
-    <div class="scode" id="schoolCode"></div>
+    <div id="schoolCode" style="font-size:10px;color:#94a3b8;margin-top:2px;font-family:monospace"></div>
   </div>
   <nav class="nav">
-    <div class="nav-item active" data-p="overview">📊 Dashboard</div>
-    <div class="nav-item" data-p="students">🎒 Students</div>
-    <div class="nav-item" data-p="teachers">👩‍🏫 Teachers</div>
-    <div class="nav-item" data-p="finance">💰 Finance</div>
-    <div class="nav-item" data-p="attendance">📋 Attendance</div>
-    <div class="nav-item" data-p="curriculum">📖 CBC Curriculum</div>
-    <div class="nav-item" data-p="staff">👥 Staff Users</div>
+    <div class="nav-item active" data-p="overview">Dashboard</div>
+    <div class="nav-item" data-p="students">Students</div>
+    <div class="nav-item" data-p="teachers">Teachers</div>
+    <div class="nav-item" data-p="finance">Finance</div>
+    <div class="nav-item" data-p="attendance">Attendance</div>
+    <div class="nav-item" data-p="curriculum">CBC Curriculum</div>
+    <div class="nav-item" data-p="staff">Staff Users</div>
   </nav>
-  <div class="sb-footer">
-    <div class="uinfo"><strong id="adminName">…</strong>School Admin</div>
+  <div class="sidebar-footer">
+    <div style="margin-bottom:12px;padding:0 4px">
+        <strong id="adminName" style="display:block;font-size:14px;color:#1e293b">…</strong>
+        <span style="font-size:12px;color:#64748b">School Admin</span>
+    </div>
     <button id="logoutBtn">Sign Out</button>
   </div>
 </aside>
@@ -513,7 +516,19 @@ tr:hover td{background:#f0fdf4}
 
 <script type="module">
 import { guardPage, logout, schools, students, teachers, finance, attendance, users, cbc } from "./js/api.js";
-const me = guardPage(["SCHOOL_ADMIN"]);
+let me = guardPage(["SCHOOL_ADMIN"]);
+// V-05: Server-side session re-verification on load
+(async () => {
+    const res = await auth.verify();
+    if (!res || !res.success) {
+        logout();
+    } else {
+        // Refresh profile cache
+        me = res.user;
+        localStorage.setItem("user", JSON.stringify(me));
+        init(); // Continue with initialized data
+    }
+})();
 document.getElementById("adminName").textContent = me.name;
 document.getElementById("topMeta").textContent = `${me.role} · ${me.email}`;
 document.getElementById("schoolBadgeTop").textContent = "🏫 " + (me.school_name || "My School") + (me.school_code ? " · " + me.school_code : "");

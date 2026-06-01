@@ -106,11 +106,12 @@ router.post("/login",
 
             const token = makeToken(user);
 
-            // V-05: Set httpOnly, Secure, SameSite=Strict cookie
+            // V-05: Set httpOnly, Secure cookie
+            // Cross-domain (Cloudflare -> Render) requires SameSite: "None" + Secure: true
             res.cookie("token", token, {
                 httpOnly: true,
-                secure:   process.env.NODE_ENV === "production",
-                sameSite: "Strict",
+                secure:   true, 
+                sameSite: "None",
                 maxAge:   8 * 60 * 60 * 1000, // 8 hours
             });
 
@@ -168,7 +169,7 @@ router.post("/logout", authMiddleware, async (req, res) => {
                 [req.token.jti, req.user.id, req.token.exp]
             );
         }
-        res.clearCookie("token");
+        res.clearCookie("token", { httpOnly: true, secure: true, sameSite: "None" });
         await audit(req, "LOGOUT", "auth", req.user.id);
         return res.json({ success: true, message: "Logged out." });
     } catch (err) {
@@ -239,7 +240,7 @@ router.post("/change-password", authMiddleware,
                     [req.token.jti, req.user.id, req.token.exp]
                 );
             }
-            res.clearCookie("token");
+            res.clearCookie("token", { httpOnly: true, secure: true, sameSite: "None" });
             await audit(req, "PASSWORD_CHANGED", "auth", req.user.id);
             return res.json({ success: true, message: "Password changed. Please log in again." });
         } catch (err) {

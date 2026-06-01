@@ -137,17 +137,23 @@ tr:hover td{background:#eff6ff}
 </head>
 <body>
 <aside class="sidebar">
-  <div class="sb-brand"><h2>📚 ZETU</h2><p>Teacher Portal</p></div>
-  <div class="sb-school"><span style="opacity:.65;font-size:10px">School</span><strong id="schoolName">Loading…</strong></div>
+  <div class="sidebar-brand"><h2>ZETU</h2><p>Teacher Portal</p></div>
+  <div class="school-badge">
+    <span>School</span>
+    <strong id="schoolName">Loading…</strong>
+  </div>
   <nav class="nav">
-    <div class="nav-item active" data-p="students">🎒 Students</div>
-    <div class="nav-item" data-p="attendance">📋 Attendance</div>
-    <div class="nav-item" data-p="assessments">📝 CBC Assessments</div>
-    <div class="nav-item" data-p="bulk-marks">📊 Bulk Mark Entry</div>
-    <div class="nav-item" data-p="reports">📄 Report Cards</div>
+    <div class="nav-item active" data-p="students">Students</div>
+    <div class="nav-item" data-p="attendance">Attendance</div>
+    <div class="nav-item" data-p="assessments">CBC Assessments</div>
+    <div class="nav-item" data-p="bulk-marks">Bulk Mark Entry</div>
+    <div class="nav-item" data-p="reports">Report Cards</div>
   </nav>
-  <div class="sb-footer">
-    <div class="uname"><strong id="tcName">…</strong>Teacher</div>
+  <div class="sidebar-footer">
+    <div style="margin-bottom:12px;padding:0 4px">
+        <strong id="tcName" style="display:block;font-size:14px;color:#1e293b">…</strong>
+        <span style="font-size:12px;color:#64748b">Teacher Portal</span>
+    </div>
     <button id="logoutBtn">Sign Out</button>
   </div>
 </aside>
@@ -301,7 +307,19 @@ tr:hover td{background:#eff6ff}
 
 <script type="module">
 import { guardPage, logout, students, attendance, assessments, schools, auth } from "../js/api.js";
-const me = guardPage(["TEACHER","SCHOOL_ADMIN"]);
+let me = guardPage(["TEACHER", "SCHOOL_ADMIN"]);
+// V-05: Server-side session re-verification on load
+(async () => {
+    const res = await auth.verify();
+    if (!res || !res.success) {
+        logout();
+    } else {
+        // Refresh profile cache
+        me = res.user;
+        localStorage.setItem("user", JSON.stringify(me));
+        init();
+    }
+})();
 document.getElementById("tcName").textContent = me.name;
 // Show school + role in sidebar
 const tcSchoolEl = document.getElementById("schoolName");
