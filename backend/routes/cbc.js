@@ -86,6 +86,18 @@ router.post("/classes", authMiddleware, roleMiddleware(["SUPER_ADMIN", "SCHOOL_A
         if (!str.rows.length || str.rows[0].school_id !== schoolId)
             return res.status(403).json({ success: false, message: "Stream isolation error." });
 
+        // Verify academic year belongs to same school
+        const ay = await db.query("SELECT school_id FROM academic_years WHERE id=$1", [academic_year_id]);
+        if (!ay.rows.length || ay.rows[0].school_id !== schoolId)
+            return res.status(403).json({ success: false, message: "Academic year isolation error." });
+
+        // Verify teacher belongs to same school (if provided)
+        if (teacher_id) {
+            const tch = await db.query("SELECT school_id FROM teachers WHERE id=$1", [teacher_id]);
+            if (!tch.rows.length || tch.rows[0].school_id !== schoolId)
+                return res.status(403).json({ success: false, message: "Teacher isolation error." });
+        }
+
         const { rows } = await db.query(
             "INSERT INTO classes (school_id, grade_id, stream_id, academic_year_id, teacher_id) VALUES ($1, $2, $3, $4, $5) RETURNING *",
             [schoolId, grade_id, stream_id, academic_year_id, teacher_id || null]

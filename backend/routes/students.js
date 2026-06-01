@@ -215,6 +215,9 @@ router.post("/:id/link-parent", authMiddleware, roleMiddleware(["SUPER_ADMIN","S
             const parent = await db.query("SELECT id, role, school_id FROM users WHERE id=$1", [req.body.parent_id]);
             if (!parent.rows.length) return res.status(404).json({ success: false, message: "Parent not found." });
             if (parent.rows[0].role !== "PARENT") return res.status(400).json({ success: false, message: "User is not a parent." });
+            // Verify parent belongs to same school
+            if (req.user.role !== "SUPER_ADMIN" && parent.rows[0].school_id !== student.rows[0].school_id)
+                return res.status(403).json({ success: false, message: "Parent not in same school." });
 
             await db.query(
                 `INSERT INTO parent_students (parent_id, student_id, school_id)

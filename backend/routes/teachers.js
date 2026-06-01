@@ -38,6 +38,15 @@ router.post("/", authMiddleware, roleMiddleware(["SUPER_ADMIN","SCHOOL_ADMIN"]),
             const schoolId = req.user.role === "SUPER_ADMIN" ? (req.body.school_id||req.user.school_id) : req.user.school_id;
             if (!schoolId) return res.status(400).json({ success: false, message: "school_id required." });
             const { full_name, email, phone, tsc_no, department, subjects, user_id } = req.body;
+            
+            // Verify user belongs to same school (if provided)
+            if (user_id) {
+                const usr = await db.query("SELECT school_id FROM users WHERE id=$1", [user_id]);
+                if (!usr.rows.length) return res.status(404).json({ success: false, message: "User not found." });
+                if (req.user.role !== "SUPER_ADMIN" && usr.rows[0].school_id !== schoolId)
+                    return res.status(403).json({ success: false, message: "User not in same school." });
+            }
+            
             const { rows } = await db.query(
                 `INSERT INTO teachers (school_id, user_id, full_name, email, phone, tsc_no, department, subjects)
                  VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,

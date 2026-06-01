@@ -215,8 +215,13 @@ router.put("/payments/:id", authMiddleware,
 router.get("/receipts/:payment_id", authMiddleware, async (req, res) => {
     try {
         const { payment_id } = req.params;
+        const { role, school_id, id: userId } = req.user;
+
+        if (role === "TEACHER")
+            return res.status(403).json({ success: false, message: "Access denied." });
+
         const { rows } = await db.query(
-            `SELECT r.*, p.receipt_number, s.full_name AS student_name, pc.name AS category_name
+            `SELECT r.*, p.receipt_number, s.full_name AS student_name, pc.name AS category_name, p.school_id, p.student_id
              FROM receipts r
              LEFT JOIN payments_v2 p ON p.id=r.payment_id
              LEFT JOIN students s ON s.id=p.student_id
@@ -225,7 +230,20 @@ router.get("/receipts/:payment_id", authMiddleware, async (req, res) => {
             [payment_id]
         );
         if (!rows.length) return res.status(404).json({ success: false, message: "Receipt not found." });
-        return res.json({ success: true, data: rows[0] });
+
+        const receipt = rows[0];
+        if (role === "STUDENT") {
+            const me = await db.query("SELECT id FROM students WHERE user_id=$1 AND id=$2", [userId, receipt.student_id]);
+            if (!me.rows.length) return res.status(403).json({ success: false, message: "Access denied." });
+        } else if (role === "PARENT") {
+            const link = await db.query("SELECT id FROM parent_students WHERE parent_id=$1 AND student_id=$2", [userId, receipt.student_id]);
+            if (!link.rows.length) return res.status(403).json({ success: false, message: "Access denied." });
+        } else {
+            if (role !== "SUPER_ADMIN" && receipt.school_id !== school_id)
+                return res.status(403).json({ success: false, message: "Access denied." });
+        }
+
+        return res.json({ success: true, data: receipt });
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
