@@ -114,14 +114,17 @@ tr:hover td{background:#1e293b80}
 </head>
 <body>
 <aside class="sidebar">
-  <div class="sb-brand"><h2>🏛 ZETU</h2><p>Super Admin Console</p></div>
+  <div class="sidebar-brand"><h2>ZETU</h2><p>Super Admin Console</p></div>
   <nav class="nav">
-    <div class="nav-item active" data-p="overview">📊 Overview</div>
-    <div class="nav-item" data-p="schools">🏫 Schools</div>
-    <div class="nav-item" data-p="admins">👤 School Admins</div>
+    <div class="nav-item active" data-p="overview">Overview</div>
+    <div class="nav-item" data-p="schools">Schools</div>
+    <div class="nav-item" data-p="admins">School Admins</div>
   </nav>
-  <div class="sb-footer">
-    <div class="user"><strong id="saName">Loading…</strong>Super Admin</div>
+  <div class="sidebar-footer">
+    <div style="margin-bottom:12px;padding:0 4px">
+        <strong id="saName" style="display:block;font-size:14px;color:#1e293b">Loading…</strong>
+        <span style="font-size:12px;color:#64748b">Super Admin</span>
+    </div>
     <button class="logout" id="logoutBtn">Sign Out</button>
   </div>
 </aside>
@@ -213,10 +216,29 @@ tr:hover td{background:#1e293b80}
 </div>
 
 <script type="module">
-import { guardPage, logout, schools, users } from "./js/api.js";
-const me = guardPage(["SUPER_ADMIN"]);
-document.getElementById("saName").textContent = me.name;
-document.getElementById("topInfo").textContent = me.email;
+import { guardPage, logout, schools, users, auth } from "./js/api.js";
+
+let me = guardPage(["SUPER_ADMIN"]);
+if (!me) { window.location.href = "login.html"; }
+
+// V-05: Server-side session re-verification on load
+(async () => {
+    const res = await auth.verify();
+    if (!res || !res.success) {
+        logout();
+    } else {
+        // Refresh profile cache
+        me = res.user;
+        localStorage.setItem("user", JSON.stringify(me));
+        init();
+    }
+})();
+
+function init() {
+    document.getElementById("saName").textContent = me.name;
+    document.getElementById("topInfo").textContent = me.email;
+    loadAll();
+}
 
 let allSchools = [], allAdmins = [];
 
@@ -400,7 +422,7 @@ window.resetAdminPassword = async (id, name) => {
 window.closeModal = id => document.getElementById(id).classList.remove("open");
 function setAlert(el, msg, cls="ae") { document.getElementById(el).innerHTML=`<div class="alert ${cls}">${msg}</div>`; }
 
-loadAll();
+// init(); // Called after verification
 </script>
 </body>
 </html>
