@@ -107,6 +107,8 @@ export const students = {
     update:     (id, d)  => apiFetch(`/students/${id}`,            { method:"PUT",   body:d }),
     deactivate: (id)     => apiFetch(`/students/${id}`,            { method:"DELETE" }),
     linkParent: (id,pid) => apiFetch(`/students/${id}/link-parent`,{ method:"POST",  body:{ parent_id:pid } }),
+    getProfile: ()       => apiFetch("/students/profile/me"),
+    getMyChildren: ()    => apiFetch("/students/children/mine"),
 };
 
 // ── Teachers ───────────────────────────────────────────────────────
@@ -130,6 +132,8 @@ export const finance = {
     paymentCategories:    (p)      => apiFetch("/finance/payment-categories",     { params:p }),
     createPaymentCategory:(data)   => apiFetch("/finance/payment-categories",     { method:"POST", body:data }),
     receipt:              (pid)    => apiFetch(`/finance/receipts/${pid}`),
+    getStudentFees:       (sid)    => apiFetch(`/finance/student/${sid}/fees`),
+    getStudentPayments:   (sid)    => apiFetch(`/finance/student/${sid}/payments`),
 };
 
 // ── Attendance ─────────────────────────────────────────────────────
@@ -137,6 +141,8 @@ export const attendance = {
     list:   (p)    => apiFetch("/attendance",              { params:p }),
     record: (data) => apiFetch("/attendance",              { method:"POST", body:data }),
     report: (sid)  => apiFetch(`/attendance/report/${sid}`),
+    getStudentStats: (sid) => apiFetch(`/attendance/stats/${sid}`),
+    getStudentHistory: (sid) => apiFetch(`/attendance/history/${sid}`),
 };
 
 // ── CBC ────────────────────────────────────────────────────────────
@@ -158,6 +164,7 @@ export const assessments = {
     studentReport: (id,p) => apiFetch(`/assessments/student/${id}/report`,{ params:p }),
     learningAreas: ()     => apiFetch("/assessments/learning-areas"),
     strands:       (la)   => apiFetch(`/assessments/strands/${la}`),
+    getStudentMarks: (id) => apiFetch(`/assessments/student/${id}/marks`),
 };
 
 // ── Role Guard ─────────────────────────────────────────────────────

@@ -374,7 +374,69 @@ router.get("/balance/:student_id", authMiddleware, async (req, res) => {
             return { term: t, expected, paid, balance: expected - paid };
         });
 
-        return res.json({ success: true, data: { student: student.rows[0], year, balance } });
+                return res.json({ success: true, data: { student: student.rows[0], year, balance } });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// GET /api/finance/student/:student_id/fees (Student Portal)
+router.get("/student/:student_id/fees", authMiddleware, async (req, res) => {
+    try {
+        const { role, id: userId } = req.user;
+        const studentId = req.params.student_id;
+
+        // Verify access
+        if (role === "STUDENT") {
+            const me = await db.query("SELECT id FROM students WHERE user_id=$1", [userId]);
+            if (!me.rows.length || me.rows[0].id !== parseInt(studentId))
+                return res.status(403).json({ success: false, message: "Access denied." });
+        } else if (role === "PARENT") {
+            const link = await db.query("SELECT id FROM parent_students WHERE parent_id=$1 AND student_id=$2", [userId, studentId]);
+            if (!link.rows.length) return res.status(403).json({ success: false, message: "Not your child." });
+        } else if (role !== "SUPER_ADMIN") {
+            return res.status(403).json({ success: false, message: "Access denied." });
+        }
+
+        const { rows } = await db.query(
+            `SELECT f.*, ay.year FROM fee_structures f
+             LEFT JOIN academic_years ay ON ay.id=f.academic_year_id
+             WHERE f.student_id=$1 OR (f.grade_id=(SELECT grade_id FROM students WHERE id=$1))
+             ORDER BY ay.year DESC, f.term`,
+            [studentId]
+        );
+        return res.json({ success: true, data: rows });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// GET /api/finance/student/:student_id/payments (Student Portal)
+router.get("/student/:student_id/payments", authMiddleware, async (req, res) => {
+    try {
+        const { role, id: userId } = req.user;
+        const studentId = req.params.student_id;
+
+        // Verify access
+        if (role === "STUDENT") {
+            const me = await db.query("SELECT id FROM students WHERE user_id=$1", [userId]);
+            if (!me.rows.length || me.rows[0].id !== parseInt(studentId))
+                return res.status(403).json({ success: false, message: "Access denied." });
+        } else if (role === "PARENT") {
+            const link = await db.query("SELECT id FROM parent_students WHERE parent_id=$1 AND student_id=$2", [userId, studentId]);
+            if (!link.rows.length) return res.status(403).json({ success: false, message: "Not your child." });
+        } else if (role !== "SUPER_ADMIN") {
+            return res.status(403).json({ success: false, message: "Access denied." });
+        }
+
+        const { rows } = await db.query(
+            `SELECT p.*, pc.name AS category_name FROM payments_v2 p
+             LEFT JOIN payment_categories pc ON pc.id=p.payment_category_id
+             WHERE p.student_id=$1
+             ORDER BY p.payment_date DESC LIMIT 50`,
+            [studentId]
+        );
+        return res.json({ success: true, data: rows });
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }

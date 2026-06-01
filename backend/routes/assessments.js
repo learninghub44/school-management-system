@@ -174,4 +174,37 @@ router.get("/strands/:learning_area_id", authMiddleware, async (req, res) => {
     }
 });
 
+// GET /api/assessments/student/:id/marks (Student Portal)
+router.get("/student/:id/marks", authMiddleware, async (req, res) => {
+    try {
+        const { role, id: userId } = req.user;
+        const studentId = req.params.id;
+
+        // Verify access
+        if (role === "STUDENT") {
+            const me = await db.query("SELECT id FROM students WHERE user_id=$1", [userId]);
+            if (!me.rows.length || me.rows[0].id !== parseInt(studentId))
+                return res.status(403).json({ success: false, message: "Access denied." });
+        } else if (role === "PARENT") {
+            const link = await db.query("SELECT id FROM parent_students WHERE parent_id=$1 AND student_id=$2", [userId, studentId]);
+            if (!link.rows.length) return res.status(403).json({ success: false, message: "Not your child." });
+        } else if (role !== "SUPER_ADMIN") {
+            return res.status(403).json({ success: false, message: "Access denied." });
+        }
+
+        const { rows } = await db.query(
+            `SELECT a.*, la.name AS learning_area, ac.name AS category_name
+             FROM assessments a
+             LEFT JOIN learning_areas la ON la.id=a.learning_area_id
+             LEFT JOIN assessment_categories ac ON ac.id=a.assessment_type
+             WHERE a.student_id=$1
+             ORDER BY a.assessment_date DESC`,
+            [studentId]
+        );
+        return res.json({ success: true, data: rows });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;

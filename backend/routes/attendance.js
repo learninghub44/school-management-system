@@ -124,4 +124,62 @@ router.get("/report/:student_id", authMiddleware, async (req, res) => {
     }
 });
 
+// GET /api/attendance/stats/:student_id (Student Portal)
+router.get("/stats/:student_id", authMiddleware, async (req, res) => {
+    try {
+        const { role, id: userId } = req.user;
+        const studentId = req.params.student_id;
+
+        // Verify access
+        if (role === "STUDENT") {
+            const me = await db.query("SELECT id FROM students WHERE user_id=$1", [userId]);
+            if (!me.rows.length || me.rows[0].id !== parseInt(studentId))
+                return res.status(403).json({ success: false, message: "Access denied." });
+        } else if (role === "PARENT") {
+            const link = await db.query("SELECT id FROM parent_students WHERE parent_id=$1 AND student_id=$2", [userId, studentId]);
+            if (!link.rows.length) return res.status(403).json({ success: false, message: "Not your child." });
+        } else if (role !== "SUPER_ADMIN") {
+            return res.status(403).json({ success: false, message: "Access denied." });
+        }
+
+        const { rows } = await db.query(
+            "SELECT status, COUNT(*) as count FROM attendance WHERE student_id=$1 GROUP BY status",
+            [studentId]
+        );
+        const stats = { present: 0, absent: 0, late: 0, excused: 0 };
+        rows.forEach(r => { if (stats[r.status] !== undefined) stats[r.status] = r.count; });
+        return res.json({ success: true, data: stats });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// GET /api/attendance/history/:student_id (Student Portal)
+router.get("/history/:student_id", authMiddleware, async (req, res) => {
+    try {
+        const { role, id: userId } = req.user;
+        const studentId = req.params.student_id;
+
+        // Verify access
+        if (role === "STUDENT") {
+            const me = await db.query("SELECT id FROM students WHERE user_id=$1", [userId]);
+            if (!me.rows.length || me.rows[0].id !== parseInt(studentId))
+                return res.status(403).json({ success: false, message: "Access denied." });
+        } else if (role === "PARENT") {
+            const link = await db.query("SELECT id FROM parent_students WHERE parent_id=$1 AND student_id=$2", [userId, studentId]);
+            if (!link.rows.length) return res.status(403).json({ success: false, message: "Not your child." });
+        } else if (role !== "SUPER_ADMIN") {
+            return res.status(403).json({ success: false, message: "Access denied." });
+        }
+
+        const { rows } = await db.query(
+            "SELECT * FROM attendance WHERE student_id=$1 ORDER BY date DESC LIMIT 50",
+            [studentId]
+        );
+        return res.json({ success: true, data: rows });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;

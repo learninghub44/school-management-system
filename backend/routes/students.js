@@ -231,4 +231,48 @@ router.post("/:id/link-parent", authMiddleware, roleMiddleware(["SUPER_ADMIN","S
     }
 );
 
+// ─── GET /api/students/profile/me (Student Portal) ───────────────────────────────────
+router.get("/profile/me", authMiddleware, async (req, res) => {
+    try {
+        const { id: userId, role } = req.user;
+        if (role !== "STUDENT") return res.status(403).json({ success: false, message: "Access denied." });
+        
+        const { rows } = await db.query(
+            `SELECT s.*, g.grade_level, g.stage, st.name AS stream_name, sc.name AS school_name
+             FROM students s
+             LEFT JOIN grades g ON g.id=s.grade_id
+             LEFT JOIN streams st ON st.id=s.stream_id
+             LEFT JOIN schools sc ON sc.id=s.school_id
+             WHERE s.user_id=$1`,
+            [userId]
+        );
+        if (!rows.length) return res.status(404).json({ success: false, message: "Student record not found." });
+        return res.json({ success: true, data: rows[0] });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ─── GET /api/students/children/mine (Parent Portal) ──────────────────────────────────
+router.get("/children/mine", authMiddleware, async (req, res) => {
+    try {
+        const { id: userId, role } = req.user;
+        if (role !== "PARENT") return res.status(403).json({ success: false, message: "Access denied." });
+        
+        const { rows } = await db.query(
+            `SELECT s.id, s.full_name AS name, s.admission_no, g.grade_level AS grade_name, st.name AS stream_name
+             FROM students s
+             INNER JOIN parent_students ps ON ps.student_id=s.id
+             LEFT JOIN grades g ON g.id=s.grade_id
+             LEFT JOIN streams st ON st.id=s.stream_id
+             WHERE ps.parent_id=$1 AND s.is_active=TRUE
+             ORDER BY s.full_name`,
+            [userId]
+        );
+        return res.json({ success: true, data: rows });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;
