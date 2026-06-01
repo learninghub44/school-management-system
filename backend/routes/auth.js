@@ -120,7 +120,7 @@ router.post("/login",
             return res.json({
                 success: true,
                 message: "Login successful",
-                // Token is primarily in httpOnly cookie for browser security
+                token,   // Returned in body for Bearer auth + localStorage
                 user: {
                     id:                  user.id,
                     email:               user.email,

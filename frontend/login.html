@@ -174,13 +174,14 @@ input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99, 102, 
 </div>
 
 <script type="module">
-import { auth, logout, saveSession, getToken, getUser } from "./js/api.js";
+import { auth, logout, saveSession, getToken, getUser, clearSession } from "./js/api.js";
 
 const u = getUser();
-if (u) {
+const t = getToken();
+if (u && t) {
   auth.verify().then(res => {
     if (res?.success) redirect(u.role);
-    else logout();
+    else clearSession();
   });
 }
 
@@ -242,7 +243,7 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
 
   if (!res?.success) { showAlert(res?.message || "Authentication failed."); return; }
 
-  saveSession(null, res.user);
+  saveSession(res.token, res.user);
   showAlert(`Welcome back, ${res.user.name}!`, "success");
   setTimeout(() => redirect(res.user.role), 800);
 });
