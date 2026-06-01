@@ -120,12 +120,16 @@ export const teachers = {
 
 // ── Finance ────────────────────────────────────────────────────────
 export const finance = {
-    payments:        (p)      => apiFetch("/finance/payments",       { params:p }),
-    recordPayment:   (data)   => apiFetch("/finance/payments",       { method:"POST", body:data }),
-    summary:         (p)      => apiFetch("/finance/summary",        { params:p }),
-    feeStructures:   (p)      => apiFetch("/finance/fee-structures", { params:p }),
-    createFeeStruct: (data)   => apiFetch("/finance/fee-structures", { method:"POST", body:data }),
-    balance:         (sid, y) => apiFetch(`/finance/balance/${sid}`, { params:{ year:y } }),
+    payments:              (p)      => apiFetch("/finance/payments",                { params:p }),
+    recordPayment:        (data)   => apiFetch("/finance/payments",                { method:"POST", body:data }),
+    updatePayment:        (id, d)  => apiFetch(`/finance/payments/${id}`,          { method:"PUT", body:d }),
+    summary:              (p)      => apiFetch("/finance/summary",                 { params:p }),
+    feeStructures:        (p)      => apiFetch("/finance/fee-structures",          { params:p }),
+    createFeeStruct:      (data)   => apiFetch("/finance/fee-structures",          { method:"POST", body:data }),
+    balance:              (sid, y) => apiFetch(`/finance/balance/${sid}`,          { params:{ year:y } }),
+    paymentCategories:    (p)      => apiFetch("/finance/payment-categories",     { params:p }),
+    createPaymentCategory:(data)   => apiFetch("/finance/payment-categories",     { method:"POST", body:data }),
+    receipt:              (pid)    => apiFetch(`/finance/receipts/${pid}`),
 };
 
 // ── Attendance ─────────────────────────────────────────────────────

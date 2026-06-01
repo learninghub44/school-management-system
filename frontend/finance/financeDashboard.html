@@ -1,153 +1,436 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Finance Dashboard – ZETU School Management System</title>
-<script src="/js/config.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Plus Jakarta Sans',sans-serif;background:#f8fafc;color:#0f172a;min-height:100vh;display:flex}
-    .sidebar{width:260px;background:#ffffff;display:flex;flex-direction:column;flex-shrink:0;height:100vh;position:sticky;top:0;border-right:1px solid #e2e8f0}
-    .sidebar-brand{padding:32px 24px;border-bottom:1px solid #f1f5f9}
-    .sidebar-brand h2{font-size:20px;font-weight:800;color:#4f46e5;letter-spacing:-0.5px}
-    .sidebar-brand p{font-size:12px;color:#64748b;margin-top:4px;font-weight:500}
-    .school-badge{margin:20px 24px;background:#f8fafc;border-radius:12px;padding:12px 16px;border:1px solid #e2e8f0}
-    .school-badge span{font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:700}
-    .school-badge strong{display:block;font-size:14px;color:#1e293b;margin-top:2px}
-    .nav{flex:1;padding:12px 16px}
-    .nav-item{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;display:flex;align-items:center;gap:12px;border-radius:10px;color:#64748b;margin-bottom:4px;transition:all 0.2s}
-    .nav-item:hover{background:#f1f5f9;color:#0f172a}
-    .nav-item.active{background:#4f46e5;color:#ffffff;box-shadow:0 4px 12px rgba(79, 70, 229, 0.2)}
-    .sidebar-footer{padding:24px;border-top:1px solid #f1f5f9}
-    .sidebar-footer button{background:#f1f5f9;border:none;color:#ef4444;padding:12px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700;width:100%;transition:all 0.2s}
-    .sidebar-footer button:hover{background:#fee2e2}
-    .main{flex:1;display:flex;flex-direction:column;background:#f8fafc}
-    .topbar{background:#ffffff;padding:20px 32px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between}
-    .topbar h3{font-size:20px;font-weight:700;color:#0f172a}
-    .content{flex:1;overflow-y:auto;padding:32px}
-    .panel{display:none}.panel.active{display:block}
-    .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px;margin-bottom:24px}
-    .stat-card{background:#ffffff;border-radius:16px;padding:24px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
-    .stat-card .val{font-size:32px;font-weight:800;color:#0f172a;letter-spacing:-1px}
-    .stat-card .lbl{font-size:14px;color:#64748b;margin-top:4px;font-weight:500}
-    .card{background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.05);overflow:hidden;margin-bottom:24px}
-    .card-hdr{padding:20px 24px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
-    .card-hdr h4{font-size:16px;font-weight:700;color:#0f172a}
-    .btn{padding:10px 20px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:inherit}
-    .btn-amber,.btn-blue{background:#4f46e5;color:#ffffff}
-    .btn-amber:hover,.btn-blue:hover{background:#4338ca}
-    .btn-ghost{background:#f1f5f9;color:#64748b}
-    .btn-ghost:hover{background:#e2e8f0}
-    table{width:100%;border-collapse:collapse;font-size:14px}
-    th{background:#f8fafc;padding:12px 24px;text-align:left;font-weight:600;color:#64748b;border-bottom:1px solid #e2e8f0}
-    td{padding:16px 24px;border-bottom:1px solid #f1f5f9;color:#0f172a}
-    .badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700}
-    .b-green{background:#dcfce7;color:#15803d} .b-red{background:#fee2e2;color:#b91c1c}
-    .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;align-items:center;justify-content:center}
-    .modal-bg.open{display:flex}
-    .modal{background:#ffffff;border-radius:16px;padding:32px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;border:1px solid #e2e8f0}
-    .modal h3{font-size:20px;font-weight:700;color:#0f172a;margin-bottom:24px}
-    .fg{margin-bottom:16px}
-    .fg label{display:block;font-size:12px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.025em}
-    .fg input,.fg select,.fg textarea{width:100%;padding:12px 16px;background:#ffffff;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#0f172a;font-family:inherit;outline:none}
-    .fg input:focus,.fg select:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,0.1)}
-    .empty{text-align:center;padding:48px;color:#94a3b8;font-size:14px}
-    .filter-row{display:flex;gap:12px;flex-wrap:wrap}
-    .filter-row select,.filter-row input{padding:10px 16px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;outline:none;font-family:inherit}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Dashboard – ZETU School Management System</title>
+    <script src="/js/config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Plus Jakarta Sans',sans-serif;background:#f8fafc;color:#0f172a;min-height:100vh;display:flex}
+        .sidebar{width:260px;background:#ffffff;display:flex;flex-direction:column;flex-shrink:0;height:100vh;position:sticky;top:0;border-right:1px solid #e2e8f0}
+        .sidebar-brand{padding:32px 24px;border-bottom:1px solid #f1f5f9}
+        .sidebar-brand h2{font-size:20px;font-weight:800;color:#4f46e5;letter-spacing:-0.5px}
+        .sidebar-brand p{font-size:12px;color:#64748b;margin-top:4px;font-weight:500}
+        .school-badge{margin:20px 24px;background:#f8fafc;border-radius:12px;padding:12px 16px;border:1px solid #e2e8f0}
+        .school-badge span{font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:700}
+        .school-badge strong{display:block;font-size:14px;color:#1e293b;margin-top:2px}
+        .nav{flex:1;padding:12px 16px}
+        .nav-item{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;display:flex;align-items:center;gap:12px;border-radius:10px;color:#64748b;margin-bottom:4px;transition:all 0.2s}
+        .nav-item:hover{background:#f1f5f9;color:#0f172a}
+        .nav-item.active{background:#4f46e5;color:#ffffff;box-shadow:0 4px 12px rgba(79, 70, 229, 0.2)}
+        .sidebar-footer{padding:24px;border-top:1px solid #f1f5f9}
+        .sidebar-footer button{background:#f1f5f9;border:none;color:#ef4444;padding:12px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700;width:100%;transition:all 0.2s}
+        .sidebar-footer button:hover{background:#fee2e2}
+        .main{flex:1;display:flex;flex-direction:column;background:#f8fafc}
+        .topbar{background:#ffffff;padding:20px 32px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between}
+        .topbar h3{font-size:20px;font-weight:700;color:#0f172a}
+        .topbar .user-info{font-size:14px;color:#64748b;font-weight:500}
+        .content{flex:1;overflow-y:auto;padding:32px}
+        .panel{display:none}.panel.active{display:block}
+        .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px;margin-bottom:24px}
+        .stat-card{background:#ffffff;border-radius:16px;padding:24px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+        .stat-card .value{font-size:32px;font-weight:800;color:#0f172a;letter-spacing:-1px}
+        .stat-card .label{font-size:14px;color:#64748b;margin-top:4px;font-weight:500}
+        .card{background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.05);overflow:hidden;margin-bottom:24px}
+        .card-header{padding:20px 24px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+        .card-header h4{font-size:16px;font-weight:700;color:#0f172a}
+        table{width:100%;border-collapse:collapse;font-size:14px}
+        th{background:#f8fafc;padding:12px 24px;text-align:left;font-weight:600;color:#64748b;border-bottom:1px solid #e2e8f0}
+        td{padding:16px 24px;border-bottom:1px solid #f1f5f9;color:#0f172a}
+        .badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700}
+        .badge-green{background:#dcfce7;color:#15803d}
+        .badge-yellow{background:#fef9c3;color:#854d0e}
+        .badge-red{background:#fee2e2;color:#b91c1c}
+        .btn{padding:10px 20px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:inherit}
+        .btn-primary{background:#4f46e5;color:#ffffff}
+        .btn-primary:hover{background:#4338ca}
+        .btn-ghost{background:#f1f5f9;color:#64748b}
+        .btn-ghost:hover{background:#e2e8f0}
+        .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;align-items:center;justify-content:center}
+        .modal-backdrop.open{display:flex}
+        .modal{background:#ffffff;border-radius:16px;padding:32px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;border:1px solid #e2e8f0}
+        .modal h3{font-size:20px;font-weight:700;color:#0f172a;margin-bottom:24px}
+        .form-group{margin-bottom:16px}
+        .form-group label{display:block;font-size:12px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.025em}
+        .form-group input,.form-group select{width:100%;padding:12px 16px;background:#ffffff;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#0f172a;font-family:inherit;outline:none}
+        .form-group input:focus,.form-group select:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,0.1)}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        .modal-actions{display:flex;gap:12px;margin-top:24px;justify-content:flex-end}
+        .alert{padding:12px 16px;border-radius:10px;font-size:14px;margin-top:16px;font-weight:500}
+        .alert-error{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+        .alert-success{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+        .empty{text-align:center;padding:48px;color:#94a3b8;font-size:14px}
+        .search-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+        .search-row input,.search-row select{padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px}
+        .tabs{display:flex;gap:8px;margin-bottom:24px;border-bottom:1px solid #e2e8f0;padding-bottom:1px}
+        .tab{padding:12px 20px;font-size:14px;font-weight:700;cursor:pointer;color:#64748b;border-bottom:2px solid transparent;transition:all 0.2s}
+        .tab:hover{color:#0f172a}
+        .tab.active{color:#4f46e5;border-bottom-color:#4f46e5}
+    </style>
 </head>
 <body>
-<aside class="sidebar">
-  <div class="sidebar-brand"><h2>ZETU</h2><p>Finance Management</p></div>
-  <div class="school-badge">
-    <span>School</span>
-    <strong id="schoolName">Loading…</strong>
-  </div>
-  <nav class="nav">
-    <div class="nav-item active" data-p="overview">Overview</div>
-    <div class="nav-item" data-p="payments">Payments</div>
-    <div class="nav-item" data-p="fees">Fee Structures</div>
-  </nav>
-  <div class="sidebar-footer">
-    <div style="margin-bottom:12px;padding:0 4px">
-        <strong id="userName" style="display:block;font-size:14px;color:#1e293b">…</strong>
-        <span style="font-size:12px;color:#64748b">Finance Officer</span>
-    </div>
-    <button id="logoutBtn">Sign Out</button>
-  </div>
-</aside>
-
-<div class="main">
-  <header class="topbar"><h3 id="pageTitle">Overview</h3></header>
-  <div class="content">
-    <div class="panel active" id="panel-overview">
-      <div class="stat-grid">
-        <div class="stat-card"><div class="val" id="st-collected">–</div><div class="lbl">Total Collected</div></div>
-        <div class="stat-card"><div class="val" id="st-pending">–</div><div class="lbl">Pending Dues</div></div>
-        <div class="stat-card"><div class="val" id="st-payments">–</div><div class="lbl">Transactions</div></div>
-      </div>
-      <div class="card">
-        <div class="card-hdr"><h4>Recent Payments</h4><button class="btn btn-amber" id="ovRecordBtn">+ Record Payment</button></div>
-        <div id="ov-payments" class="empty">Loading…</div>
-      </div>
-    </div>
-    
-    <div class="panel" id="panel-payments">
-      <div class="card">
-        <div class="card-hdr">
-          <h4>Transactions</h4>
-          <div class="filter-row">
-            <input id="paySearch" placeholder="Search student / ref…">
-            <button class="btn btn-amber" id="addPayBtn">+ New Payment</button>
-          </div>
+    <aside class="sidebar">
+        <div class="sidebar-brand"><h2>ZETU</h2><p>Finance Management</p></div>
+        <div class="school-badge">
+            <span>School</span>
+            <strong id="schoolName">Loading…</strong>
         </div>
-        <div id="payList" class="empty">Loading…</div>
-      </div>
+        <nav class="nav">
+            <div class="nav-item active" data-panel="overview">Dashboard</div>
+            <div class="nav-item" data-panel="payments">Record Payment</div>
+            <div class="nav-item" data-panel="history">Payment History</div>
+            <div class="nav-item" data-panel="categories">Fee Categories</div>
+            <div class="nav-item" data-panel="reports">Reports</div>
+        </nav>
+        <div class="sidebar-footer">
+            <div style="margin-bottom:12px;padding:0 4px">
+                <strong id="userName" style="display:block;font-size:14px;color:#1e293b">…</strong>
+                <span id="userRole" style="font-size:12px;color:#64748b">…</span>
+            </div>
+            <button id="logoutBtn">Sign Out</button>
+        </div>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <h3 id="pageTitle">Dashboard</h3>
+            <div class="user-info" id="topMeta"></div>
+        </header>
+        <div class="content">
+            <!-- Dashboard Panel -->
+            <div class="panel active" id="panel-overview">
+                <div class="stat-grid">
+                    <div class="stat-card"><div class="value" id="s-total-revenue">–</div><div class="label">Total Revenue (KES)</div></div>
+                    <div class="stat-card"><div class="value" id="s-pending">–</div><div class="label">Pending Balance (KES)</div></div>
+                    <div class="stat-card"><div class="value" id="s-payments-count">–</div><div class="label">Payments This Term</div></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h4>Revenue by Category</h4></div>
+                    <div id="categoryBreakdown" class="empty">Loading…</div>
+                </div>
+            </div>
+
+            <!-- Record Payment Panel -->
+            <div class="panel" id="panel-payments">
+                <div class="card">
+                    <div class="card-header"><h4>Record Payment</h4><button class="btn btn-primary" id="newPaymentBtn">+ New Payment</button></div>
+                    <div id="recentPayments" class="empty">No payments recorded yet.</div>
+                </div>
+            </div>
+
+            <!-- Payment History Panel -->
+            <div class="panel" id="panel-history">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Payment History</h4>
+                        <div class="search-row">
+                            <input id="searchStudent" placeholder="Search student name / admission…" style="flex:1;min-width:200px">
+                            <select id="filterStatus" style="min-width:150px">
+                                <option value="">All Status</option>
+                                <option value="completed">Completed</option>
+                                <option value="partial">Partial</option>
+                                <option value="pending">Pending</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="paymentsList" class="empty">Loading…</div>
+                </div>
+            </div>
+
+            <!-- Fee Categories Panel -->
+            <div class="panel" id="panel-categories">
+                <div class="card">
+                    <div class="card-header"><h4>Fee Categories</h4><button class="btn btn-primary" id="addCategoryBtn">+ Add Category</button></div>
+                    <div id="categoriesList" class="empty">Loading…</div>
+                </div>
+            </div>
+
+            <!-- Reports Panel -->
+            <div class="panel" id="panel-reports">
+                <div class="tabs">
+                    <div class="tab active" data-t="daily">Daily Collection</div>
+                    <div class="tab" data-t="student">Student Statement</div>
+                    <div class="tab" data-t="outstanding">Outstanding Balances</div>
+                </div>
+                <div id="rt-daily"><div class="card"><div id="dailyReport" class="empty">Loading…</div></div></div>
+                <div id="rt-student" style="display:none"><div class="card"><div id="studentReport" class="empty">Select a student to view statement.</div></div></div>
+                <div id="rt-outstanding" style="display:none"><div class="card"><div id="outstandingReport" class="empty">Loading…</div></div></div>
+            </div>
+        </div>
     </div>
 
-    <div class="panel" id="panel-fees">
-      <div class="card">
-        <div class="card-hdr"><h4>Fee Structures</h4><button class="btn btn-amber" id="addFeeBtn">+ Add Structure</button></div>
-        <div id="feeList" class="empty">Loading…</div>
-      </div>
+    <!-- Payment Modal -->
+    <div class="modal-backdrop" id="paymentModal">
+        <div class="modal">
+            <h3>Record Payment</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Student *</label>
+                    <select id="p-student" required>
+                        <option value="">Select Student</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Parent/Guardian</label>
+                    <select id="p-parent">
+                        <option value="">Select Parent (Optional)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Fee Category *</label>
+                    <select id="p-category" required>
+                        <option value="">Select Category</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Payment Method *</label>
+                    <select id="p-method" required>
+                        <option value="">Select Method</option>
+                        <option value="cash">Cash</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="mpesa">M-Pesa</option>
+                        <option value="card">Card</option>
+                        <option value="cheque">Cheque</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Amount Due (KES) *</label>
+                    <input id="p-amount-due" type="number" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Amount Paid (KES) *</label>
+                    <input id="p-amount-paid" type="number" step="0.01" min="0" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Term</label>
+                    <select id="p-term">
+                        <option value="">Select Term</option>
+                        <option value="1">Term 1</option>
+                        <option value="2">Term 2</option>
+                        <option value="3">Term 3</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Academic Year</label>
+                    <select id="p-year">
+                        <option value="">Select Year</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Transaction Reference (M-Pesa Code, Cheque No, etc.)</label>
+                <input id="p-reference" type="text" placeholder="e.g., ABC123456789">
+            </div>
+            <div class="form-group">
+                <label>Remarks</label>
+                <input id="p-remarks" type="text" placeholder="Additional notes">
+            </div>
+            <div id="paymentAlert"></div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="window.closeModal('paymentModal')">Cancel</button>
+                <button class="btn btn-primary" id="savePaymentBtn">Save Payment</button>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 
-<script type="module">
-import { guardPage, logout, finance, auth } from "/js/api.js";
+    <!-- Category Modal -->
+    <div class="modal-backdrop" id="categoryModal">
+        <div class="modal">
+            <h3>Add Fee Category</h3>
+            <div class="form-group">
+                <label>Category Name *</label>
+                <input id="c-name" type="text" placeholder="e.g., Tuition Fees" required>
+            </div>
+            <div class="form-group">
+                <label>Code *</label>
+                <input id="c-code" type="text" placeholder="e.g., TUI" required>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <input id="c-description" type="text" placeholder="Brief description">
+            </div>
+            <div id="categoryAlert"></div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="window.closeModal('categoryModal')">Cancel</button>
+                <button class="btn btn-primary" id="saveCategoryBtn">Save Category</button>
+            </div>
+        </div>
+    </div>
 
-let me = guardPage(["FINANCE", "SCHOOL_ADMIN"]);
-if (!me) { window.location.href = "/login.html"; }
+    <script type="module">
+        import { guardPage, logout, auth, finance, students } from "/js/api.js";
 
-(async () => {
-    const res = await auth.verify();
-    if (!res || !res.success) { logout(); }
-    else { me = res.user; localStorage.setItem("user", JSON.stringify(me)); init(); }
-})();
+        let me = guardPage(["SCHOOL_ADMIN", "FINANCE"]);
+        if (!me) { window.location.href = "/login.html"; }
 
-function init() {
-    document.getElementById("schoolName").textContent = me.school_name;
-    document.getElementById("userName").textContent = me.name;
-    loadAll();
-}
+        (async () => {
+            const res = await auth.verify();
+            if (!res || !res.success) { logout(); }
+            else { 
+                me = res.user; 
+                localStorage.setItem("user", JSON.stringify(me)); 
+                init(); 
+            }
+        })();
 
-document.querySelectorAll(".nav-item").forEach(el => {
-  el.addEventListener("click", () => {
-    document.querySelectorAll(".nav-item").forEach(x => x.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach(x => x.classList.remove("active"));
-    el.classList.add("active");
-    document.getElementById("panel-"+el.dataset.p).classList.add("active");
-    document.getElementById("pageTitle").textContent = el.textContent;
-  });
-});
+        function init() {
+            document.getElementById("schoolName").textContent = me.school_name || "ZETU School";
+            document.getElementById("userName").textContent = me.name;
+            document.getElementById("userRole").textContent = me.role.replace("_", " ");
+            document.getElementById("topMeta").textContent = me.email;
+            loadDashboard();
+            loadStudents();
+            loadCategories();
+        }
 
-document.getElementById("logoutBtn").addEventListener("click", () => logout());
+        async function loadDashboard() {
+            try {
+                const res = await finance.summary();
+                if (res?.success) {
+                    document.getElementById("s-total-revenue").textContent = (res.data.total_revenue || 0).toLocaleString();
+                    document.getElementById("s-pending").textContent = (res.data.total_pending || 0).toLocaleString();
+                    
+                    let html = "<table><thead><tr><th>Category</th><th>Count</th><th>Total (KES)</th></tr></thead><tbody>";
+                    res.data.by_category.forEach(cat => {
+                        html += `<tr><td>${cat.name}</td><td>${cat.count}</td><td>${parseFloat(cat.total).toLocaleString()}</td></tr>`;
+                    });
+                    html += "</tbody></table>";
+                    document.getElementById("categoryBreakdown").innerHTML = html;
+                }
+            } catch (e) { console.error("Dashboard load error:", e); }
+        }
 
-async function loadAll() {
-    // Logic for loading finance data...
-}
-</script>
+        async function loadStudents() {
+            try {
+                const res = await students.list({ school_id: me.school_id, limit: 100 });
+                if (res?.success && res.data?.length) {
+                    let html = "<option value=''>Select Student</option>";
+                    res.data.forEach(s => {
+                        html += `<option value='${s.id}'>${s.full_name} (${s.admission_no})</option>`;
+                    });
+                    document.getElementById("p-student").innerHTML = html;
+                }
+            } catch (e) { console.error("Students load error:", e); }
+        }
+
+        async function loadCategories() {
+            try {
+                const res = await finance.paymentCategories();
+                if (res?.success && res.data?.length) {
+                    let html = "<option value=''>Select Category</option>";
+                    res.data.forEach(cat => {
+                        html += `<option value='${cat.id}'>${cat.name}</option>`;
+                    });
+                    document.getElementById("p-category").innerHTML = html;
+                    
+                    let catHtml = "<table><thead><tr><th>Name</th><th>Code</th><th>Description</th></tr></thead><tbody>";
+                    res.data.forEach(cat => {
+                        catHtml += `<tr><td>${cat.name}</td><td><strong>${cat.code}</strong></td><td>${cat.description || '–'}</td></tr>`;
+                    });
+                    catHtml += "</tbody></table>";
+                    document.getElementById("categoriesList").innerHTML = catHtml;
+                }
+            } catch (e) { console.error("Categories load error:", e); }
+        }
+
+        // Navigation
+        document.querySelectorAll(".nav-item").forEach(el => {
+            el.addEventListener("click", () => {
+                document.querySelectorAll(".nav-item").forEach(x => x.classList.remove("active"));
+                document.querySelectorAll(".panel").forEach(x => x.classList.remove("active"));
+                el.classList.add("active");
+                document.getElementById("panel-"+el.dataset.panel).classList.add("active");
+                document.getElementById("pageTitle").textContent = el.textContent;
+            });
+        });
+
+        // Tabs
+        document.querySelectorAll(".tab").forEach(el => {
+            el.addEventListener("click", () => {
+                document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+                document.querySelectorAll("[id^='rt-']").forEach(x => x.style.display = "none");
+                el.classList.add("active");
+                document.getElementById("rt-"+el.dataset.t).style.display = "block";
+            });
+        });
+
+        // Payment Modal
+        document.getElementById("newPaymentBtn")?.addEventListener("click", () => {
+            document.getElementById("paymentModal").classList.add("open");
+        });
+
+        document.getElementById("savePaymentBtn")?.addEventListener("click", async () => {
+            const student_id = document.getElementById("p-student").value;
+            const payment_category_id = document.getElementById("p-category").value;
+            const amount_due = parseFloat(document.getElementById("p-amount-due").value);
+            const amount_paid = parseFloat(document.getElementById("p-amount-paid").value);
+            const payment_method = document.getElementById("p-method").value;
+            const transaction_reference = document.getElementById("p-reference").value;
+            const remarks = document.getElementById("p-remarks").value;
+
+            if (!student_id || !payment_category_id || !amount_due || !amount_paid || !payment_method) {
+                alert("Please fill all required fields");
+                return;
+            }
+
+            try {
+                const res = await finance.recordPayment({
+                    student_id, payment_category_id, amount_due, amount_paid, payment_method,
+                    transaction_reference: transaction_reference || null, remarks: remarks || null
+                });
+                if (res?.success) {
+                    alert("Payment recorded successfully!");
+                    window.closeModal("paymentModal");
+                    loadDashboard();
+                } else {
+                    alert("Error: " + (res?.message || "Unknown error"));
+                }
+            } catch (e) {
+                alert("Error recording payment: " + e.message);
+            }
+        });
+
+        // Category Modal
+        document.getElementById("addCategoryBtn")?.addEventListener("click", () => {
+            document.getElementById("categoryModal").classList.add("open");
+        });
+
+        document.getElementById("saveCategoryBtn")?.addEventListener("click", async () => {
+            const name = document.getElementById("c-name").value.trim();
+            const code = document.getElementById("c-code").value.trim();
+            const description = document.getElementById("c-description").value.trim();
+
+            if (!name || !code) {
+                alert("Name and code are required");
+                return;
+            }
+
+            try {
+                const res = await finance.createPaymentCategory({ name, code, description: description || null });
+                if (res?.success) {
+                    alert("Category added successfully!");
+                    window.closeModal("categoryModal");
+                    loadCategories();
+                } else {
+                    alert("Error: " + (res?.message || "Unknown error"));
+                }
+            } catch (e) {
+                alert("Error adding category: " + e.message);
+            }
+        });
+
+        document.getElementById("logoutBtn").addEventListener("click", () => logout());
+
+        window.closeModal = id => document.getElementById(id).classList.remove("open");
+    </script>
 </body>
 </html>
