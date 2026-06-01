@@ -854,7 +854,8 @@ document.getElementById("addStaffBtn").addEventListener("click", () => {
   document.getElementById("staffModal").classList.add("open");
 });
 
-document.getElementById("saveStaffBtn").addEventListener("click", async () => {
+document.getElementById("saveStaffBtn").addEventListener("click", async (e) => {
+  const btn      = e.currentTarget;
   const name     = document.getElementById("sf-name").value.trim();
   const email    = document.getElementById("sf-email").value.trim();
   const phone    = document.getElementById("sf-phone").value.trim();
@@ -862,7 +863,13 @@ document.getElementById("saveStaffBtn").addEventListener("click", async () => {
   const password = document.getElementById("sf-pass").value;
   if (!name||!email||!password) { setAlert("staffAlert","Name, email, password required."); return; }
   if (password.length<6) { setAlert("staffAlert","Password min 6 chars."); return; }
+  
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
   const res = await users.create({ name, email, phone, role, password });
+  btn.classList.remove("btn-loading");
+  btn.disabled = false;
+  
   if (!res?.success) { setAlert("staffAlert",res?.message||"Failed."); return; }
   setAlert("staffAlert","Account created!","as");
   setTimeout(() => { closeModal("staffModal"); loadStaff(); }, 700);

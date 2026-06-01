@@ -314,7 +314,8 @@ function renderAdmins() {
   });
 });
 
-document.getElementById("saveSchool").addEventListener("click", async () => {
+document.getElementById("saveSchool").addEventListener("click", async (e) => {
+  const btn=e.currentTarget;
   const name=document.getElementById("m-sName").value.trim();
   const school_code=document.getElementById("m-sCode").value.trim().toUpperCase();
   const level=document.getElementById("m-sLevel").value;
@@ -323,7 +324,13 @@ document.getElementById("saveSchool").addEventListener("click", async () => {
   const email=document.getElementById("m-sEmail").value.trim();
   const phone=document.getElementById("m-sPhone").value.trim();
   if (!name||!school_code) { setAlert("schoolAlert","Name and code required."); return; }
+  
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
   const res = await schools.create({ name, school_code, level, county, sub_county, email, phone });
+  btn.classList.remove("btn-loading");
+  btn.disabled = false;
+  
   if (!res?.success) { setAlert("schoolAlert", res?.message||"Failed."); return; }
   setAlert("schoolAlert","School created!","as");
   setTimeout(() => { closeModal("schoolModal"); loadAll(); }, 700);
@@ -349,7 +356,8 @@ window.openAddAdmin = (schoolId, schoolName) => {
 
 document.getElementById("addAdminBtn").addEventListener("click", () => window.openAddAdmin(null));
 
-document.getElementById("saveAdmin").addEventListener("click", async () => {
+document.getElementById("saveAdmin").addEventListener("click", async (e) => {
+  const btn=e.currentTarget;
   const schoolId=document.getElementById("m-aSchool").value;
   const name=document.getElementById("m-aName").value.trim();
   const email=document.getElementById("m-aEmail").value.trim();
@@ -357,7 +365,13 @@ document.getElementById("saveAdmin").addEventListener("click", async () => {
   const password=document.getElementById("m-aPass").value;
   if (!schoolId||!name||!email||!password) { setAlert("adminAlert","All fields required."); return; }
   if (password.length<8) { setAlert("adminAlert","Password min 8 chars."); return; }
+  
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
   const res = await schools.createAdmin(schoolId, { name, email, phone, password });
+  btn.classList.remove("btn-loading");
+  btn.disabled = false;
+  
   if (!res?.success) { setAlert("adminAlert", res?.message||"Failed."); return; }
   setAlert("adminAlert","Admin created!","as");
   setTimeout(() => { closeModal("adminModal"); loadAll(); }, 700);

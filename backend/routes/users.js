@@ -71,9 +71,14 @@ router.post("/", authMiddleware, roleMiddleware(["SUPER_ADMIN","SCHOOL_ADMIN"]),
 
             const hash = await bcrypt.hash(password, 12);
             const { rows } = await db.query(
-                `INSERT INTO users (email, password_hash, name, phone, role, school_id, must_change_password)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7)
-                 RETURNING id, email, name, role, phone, school_id, is_active, created_at`,
+                `WITH new_user AS (
+                    INSERT INTO users (email, password_hash, name, phone, role, school_id, must_change_password)
+                    VALUES ($1,$2,$3,$4,$5,$6,$7)
+                    RETURNING id, email, name, role, phone, school_id, is_active, created_at
+                )
+                SELECT nu.*, s.name AS school_name, s.school_code
+                FROM new_user nu
+                LEFT JOIN schools s ON s.id = nu.school_id`,
                 [email, hash, name, phone||null, role, schoolId, true] // V-19: force password change
             );
 
