@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CBC Students Module</title>
+
+<link rel="stylesheet" href="../css/style.css">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Students</title>
+    <link rel="stylesheet" href="../css/style.css">
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <h2>CBC Portal</h2>
+
+        <a href="../dashboard.html">Dashboard</a>
+        <a href="students.html" class="active">Students</a>
+        <a href="../teachers/teachers.html">Teachers</a>
+        <a href="../assessments/assessments.html">Assessments</a>
+        <a href="../parents/parents.html">Parents</a>
+        <a id="financeMenu" href="../finance/finance.html">Finance</a>
+
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <!-- TOP BAR -->
+        <header class="topbar">
+
+            <h3>Students Management (CBC System)</h3>
+
+            <button class="menu-btn" onclick="toggleMenu()">☰ Menu</button>
+
+        </header>
+
+        <!-- CONTENT -->
+        <section class="content">
+
+            <!-- ADD STUDENT FORM -->
+            <div class="card">
+
+                <h2>Add Student</h2>
+
+                <input id="admNo" type="text" placeholder="Admission Number">
+                <input id="firstName" type="text" placeholder="First Name">
+                <input id="lastName" type="text" placeholder="Last Name">
+
+                <select id="grade">
+                    <option>PP1</option>
+                    <option>PP2</option>
+                    <option>Grade 1</option>
+                    <option>Grade 2</option>
+                    <option>Grade 3</option>
+                    <option>Grade 4</option>
+                    <option>Grade 5</option>
+                    <option>Grade 6</option>
+                    <option>Grade 7</option>
+                    <option>Grade 8</option>
+                    <option>Grade 9</option>
+                </select>
+
+                <input id="parentName" type="text" placeholder="Parent Name">
+                <input id="parentPhone" type="text" placeholder="Parent Phone">
+
+                <button onclick="addStudent()">Save Student</button>
+
+            </div>
+
+            <!-- STUDENTS TABLE -->
+            <div class="table-container">
+
+                <h2>Students List</h2>
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Admission No</th>
+                            <th>Name</th>
+                            <th>Grade</th>
+                            <th>Parent</th>
+                            <th>Phone</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="studentTable">
+                        <!-- Supabase data loads here -->
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<!-- SUPABASE SCRIPT (MODULE) -->
+<script type="module" src="../js/students.js"></script>
+<link rel="stylesheet" href="css/style.css">
+</body>
+</html>

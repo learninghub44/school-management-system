@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class Management</title>
+
+<link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <h2>Classes</h2>
+
+        <a href="../dashboard.html">Dashboard</a>
+        <a href="classes.html" class="active">Class Setup</a>
+        <a href="../teachers/teacherDashboard.html">Teachers</a>
+        <a href="../students/students.html">Students</a>
+
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <header class="topbar">
+            <h3>Class Assignment System</h3>
+        </header>
+
+        <section class="content">
+
+            <!-- CREATE CLASS -->
+            <div class="card">
+
+                <h2>Create Class</h2>
+
+                <input id="className" type="text" placeholder="e.g. Grade 4 East">
+                <input id="teacherEmail" type="email" placeholder="Class Teacher Email">
+
+                <button onclick="createClass()">Create Class</button>
+
+            </div>
+
+            <!-- CLASS LIST -->
+            <div class="table-container">
+
+                <h2>All Classes</h2>
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Class Name</th>
+                            <th>Teacher</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="classTable"></tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<script type="module" src="../js/classes.js"></script>
+
+<style>
+/* Improve input and button appearance for class form */
+input[type="text"], input[type="email"] {
+    margin-bottom: 12px;
+    font-size: 1rem;
+    border: 1px solid #cbd5e1;
+    padding: 10px;
+    border-radius: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+button {
+    margin-top: 8px;
+    font-size: 1rem;
+    padding: 10px 18px;
+}
+
+  /* ── Fast Responsive Buttons ──────────────────────────────────── */
+  *{-webkit-tap-highlight-color:transparent}
+  button,a[role=button],[role=button]{touch-action:manipulation}
+  .btn,.btn-blue,.btn-green,.btn-red,.btn-amber,.btn-ghost,
+  .btn-primary,.btn-ghost,.logout,button.logout,
+  .nav-item,.tab,.tab-btn,.stab,.child-tab,.gb{
+    transition:background-color 80ms ease,
+               color 80ms ease,
+               border-color 80ms ease,
+               box-shadow 80ms ease,
+               opacity 80ms ease;
+    will-change:background-color;
+    -webkit-user-select:none;user-select:none;
+    cursor:pointer;
+  }
+  .btn:active,.btn-blue:active,.btn-green:active,
+  .btn-red:active,.btn-amber:active,.btn-ghost:active,
+  .btn-primary:active,.logout:active{
+    transform:scale(0.97);
+    transition:transform 50ms ease,background-color 50ms ease;
+  }
+  .btn:disabled,[disabled]{
+    opacity:.55;cursor:not-allowed;pointer-events:none;
+  }
+  /* Loading spinner */
+  .btn-loading{position:relative;color:transparent!important}
+  .btn-loading::after{
+    content:"";position:absolute;width:16px;height:16px;
+    top:50%;left:50%;margin:-8px 0 0 -8px;
+    border:2px solid rgba(255,255,255,.35);
+    border-top-color:#fff;border-radius:50%;
+    animation:btn-spin .6s linear infinite;
+  }
+  @keyframes btn-spin{to{transform:rotate(360deg)}}
+  .btn-loading.btn-ghost::after{
+    border-color:rgba(0,0,0,.15);border-top-color:#374151;
+  }
+
+</style>
+
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finance Module</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <aside class="sidebar">
+        <h2>CBC Portal</h2>
+
+        <a href="../dashboard.html">Dashboard</a>
+        <a href="finance.html" class="active">Finance</a>
+        <a href="dashboard.html">Finance Analytics</a>
+    </aside>
+
+    <main class="main">
+
+        <div class="topbar">
+            <h2>School Finance</h2>
+        </div>
+
+        <div class="card">
+
+            <h3>Record Payment</h3>
+
+            <select id="studentId">
+                <option value="">Select Student</option>
+            </select>
+
+            <input
+                type="number"
+                id="amountPaid"
+                placeholder="Amount Paid"
+            >
+
+            <select id="method">
+                <option value="Mpesa">Mpesa</option>
+                <option value="Cash">Cash</option>
+                <option value="Bank">Bank</option>
+            </select>
+
+            <input
+                type="text"
+                id="reference"
+                placeholder="Reference Number"
+            >
+
+            <button onclick="addPayment()">
+                Save Payment
+            </button>
+
+        </div>
+
+        <div class="table-container">
+
+            <h3>Recent Payments</h3>
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Reference</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+
+                <tbody id="paymentsTable"></tbody>
+
+            </table>
+
+        </div>
+
+    </main>
+
+</div>
+
+<script type="module" src="../js/finance.js"></script>
+
+</body>
+</html>

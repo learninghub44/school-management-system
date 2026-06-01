@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard</title>
+    <link rel="stylesheet" href="../../../../css/style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <h2>Teacher Panel</h2>
+
+        <a href="../../../../dashboard.html">Dashboard</a>
+        <a href="../../../students/students.html">Students</a>
+        <a href="../../../assessments/assessments.html">Assessments</a>
+        <a href="../../../parents/parents.html">Parents</a>
+
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <!-- TOP -->
+        <header class="topbar">
+
+            <h3>My Teacher Dashboard</h3>
+
+            <div>
+                <span id="teacherName">Loading...</span>
+            </div>
+
+        </header>
+
+        <!-- CONTENT -->
+        <section class="content">
+
+            <!-- PROFILE CARD -->
+            <div class="card">
+
+                <h2>My Profile</h2>
+
+                <p><b>Name:</b> <span id="tName"></span></p>
+                <p><b>Email:</b> <span id="tEmail"></span></p>
+                <p><b>Role:</b> <span id="tRole"></span></p>
+
+            </div>
+
+            <!-- STATS -->
+            <div class="card">
+
+                <h2>Quick Stats</h2>
+
+                <p>Total CBC Entries: <span id="totalAssessments">0</span></p>
+
+            </div>
+
+            <!-- MY CBC ENTRIES -->
+            <div class="table-container">
+
+                <h2>My CBC Assessments</h2>
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Learning Area</th>
+                            <th>Score</th>
+                            <th>Comment</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="myAssessments"></tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<script type="module" src="../js/teacherDashboard.js"></script>
+
+</body>
+</html>

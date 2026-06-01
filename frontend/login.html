@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login – CBC School ERP</title>
+<script src="/js/config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#1d4ed8 100%);padding:20px}
+.card{background:#fff;border-radius:20px;padding:40px 44px;width:100%;max-width:420px;box-shadow:0 30px 70px rgba(0,0,0,.3)}
+.brand{text-align:center;margin-bottom:28px}
+.logo{width:64px;height:64px;background:linear-gradient(135deg,#1d4ed8,#7c3aed);border-radius:18px;
+  display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 12px}
+.brand h1{font-size:22px;font-weight:700;color:#0f172a}
+.brand p{font-size:12px;color:#64748b;margin-top:3px}
+.kicd-badge{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:6px 12px;
+  font-size:11px;color:#1d4ed8;font-weight:600;text-align:center;margin-bottom:24px}
+.tabs{display:flex;background:#f1f5f9;border-radius:10px;padding:3px;margin-bottom:22px;gap:3px}
+.tab-btn{flex:1;padding:8px;border:none;border-radius:8px;font-size:12px;font-weight:600;
+  cursor:pointer;background:transparent;color:#64748b;font-family:inherit;transition:background-color 80ms ease,color 80ms ease,box-shadow 80ms ease}
+.tab-btn.active{background:#fff;color:#1d4ed8;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.field-group{display:none}.field-group.active{display:block}
+.form-group{margin-bottom:16px}
+label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px}
+input{width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;
+  font-size:14px;font-family:inherit;outline:none;transition:border-color .2s}
+input:focus{border-color:#1d4ed8;box-shadow:0 0 0 3px rgba(29,78,216,.1)}
+.btn{width:100%;padding:12px;background:linear-gradient(135deg,#1d4ed8,#7c3aed);color:#fff;
+  border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;
+  font-family:inherit;transition:background-color 80ms ease,color 80ms ease,box-shadow 80ms ease;margin-top:4px}
+
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+.alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:14px;display:none}
+.alert.show{display:block}
+.alert.error{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.alert.success{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+.roles-hint{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:18px}
+.role-chip{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;
+  padding:5px 8px;font-size:10px;font-weight:600;color:#475569;text-align:center}
+
+  /* ── Fast Responsive Buttons ──────────────────────────────────── */
+  *{-webkit-tap-highlight-color:transparent}
+  button,a[role=button],[role=button]{touch-action:manipulation}
+  .btn,.btn-blue,.btn-green,.btn-red,.btn-amber,.btn-ghost,
+  .btn-primary,.btn-ghost,.logout,button.logout,
+  .nav-item,.tab,.tab-btn,.stab,.child-tab,.gb{
+    transition:background-color 80ms ease,
+               color 80ms ease,
+               border-color 80ms ease,
+               box-shadow 80ms ease,
+               opacity 80ms ease;
+    will-change:background-color;
+    -webkit-user-select:none;user-select:none;
+    cursor:pointer;
+  }
+  .btn:active,.btn-blue:active,.btn-green:active,
+  .btn-red:active,.btn-amber:active,.btn-ghost:active,
+  .btn-primary:active,.logout:active{
+    transform:scale(0.97);
+    transition:transform 50ms ease,background-color 50ms ease;
+  }
+  .btn:disabled,[disabled]{
+    opacity:.55;cursor:not-allowed;pointer-events:none;
+  }
+  /* Loading spinner */
+  .btn-loading{position:relative;color:transparent!important}
+  .btn-loading::after{
+    content:"";position:absolute;width:16px;height:16px;
+    top:50%;left:50%;margin:-8px 0 0 -8px;
+    border:2px solid rgba(255,255,255,.35);
+    border-top-color:#fff;border-radius:50%;
+    animation:btn-spin .6s linear infinite;
+  }
+  @keyframes btn-spin{to{transform:rotate(360deg)}}
+  .btn-loading.btn-ghost::after{
+    border-color:rgba(0,0,0,.15);border-top-color:#374151;
+  }
+
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">
+    <div class="logo">🎓</div>
+    <h1>CBC School ERP</h1>
+    <p>Kenya Competency Based Curriculum</p>
+  </div>
+  <div class="kicd-badge">✦ KICD Aligned · CBC Kenya ✦</div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('school')">School Login</button>
+    <button class="tab-btn" onclick="switchTab('super')">Super Admin</button>
+  </div>
+
+  <!-- School Login (everyone with a school code) -->
+  <div class="field-group active" id="fg-school">
+    <div class="roles-hint">
+      <div class="role-chip">🏫 School Admin</div>
+      <div class="role-chip">👩‍🏫 Teacher</div>
+      <div class="role-chip">💰 Finance</div>
+      <div class="role-chip">🎒 Student</div>
+      <div class="role-chip" style="grid-column:span 2">👨‍👩‍👧 Parent</div>
+    </div>
+    <div class="form-group">
+      <label>School Code</label>
+      <input id="schoolCode" placeholder="e.g. SCH-001" autocomplete="off" style="text-transform:uppercase">
+    </div>
+    <div class="form-group">
+      <label>Email Address</label>
+      <input id="emailSchool" type="email" placeholder="you@school.ac.ke" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input id="passSchool" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+  </div>
+
+  <!-- Super Admin Login (no school code) -->
+  <div class="field-group" id="fg-super">
+    <div class="form-group">
+      <label>Email Address</label>
+      <input id="emailSuper" type="email" placeholder="superadmin@cbcerp.ac.ke" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input id="passSuper" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+  </div>
+
+  <button class="btn" id="loginBtn">Sign In</button>
+  <div class="alert" id="alert"></div>
+</div>
+
+<script type="module">
+import { auth, logout, saveSession, getToken, getUser } from "./js/api.js";
+
+// Already logged in?
+const t = getToken(), u = getUser();
+if (t && u) redirect(u.role);
+
+let mode = "school";
+
+window.switchTab = (m) => {
+  mode = m;
+  document.querySelectorAll(".tab-btn").forEach((b,i) => b.classList.toggle("active", (m==="school"&&i===0)||(m==="super"&&i===1)));
+  document.getElementById("fg-school").classList.toggle("active", m==="school");
+  document.getElementById("fg-super").classList.toggle("active", m==="super");
+  document.getElementById("alert").classList.remove("show");
+};
+
+function showAlert(msg, type="error") {
+  const el = document.getElementById("alert");
+  el.textContent = msg; el.className = `alert show ${type}`;
+}
+
+function redirect(role) {
+  const map = {
+    SUPER_ADMIN:  "super-admin.html",
+    SCHOOL_ADMIN: "school-admin.html",
+    TEACHER:      "teachers/teacherDashboard.html",
+    FINANCE:      "finance/financeDashboard.html",
+    STUDENT:      "students/studentPortal.html",
+    PARENT:       "parents/parentPortal.html",
+  };
+  window.location.href = map[role] || "dashboard.html";
+}
+
+document.getElementById("loginBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("loginBtn");
+
+  let email, password, school_code;
+  if (mode === "super") {
+    email = document.getElementById("emailSuper").value.trim();
+    password = document.getElementById("passSuper").value;
+  } else {
+    email = document.getElementById("emailSchool").value.trim();
+    password = document.getElementById("passSchool").value;
+    school_code = document.getElementById("schoolCode").value.trim().toUpperCase();
+    if (!school_code) { showAlert("School code is required."); return; }
+  }
+
+  if (!email || !password) { showAlert("Email and password required."); return; }
+
+  // Instant visual feedback — spinner, no text swap lag
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
+
+  const res = await auth.login(email, password, school_code).catch(e => ({ success:false, message:e.message }));
+  btn.classList.remove("btn-loading");
+  btn.disabled = false;
+
+  if (!res?.success) { showAlert(res?.message || "Login failed."); return; }
+
+  saveSession(res.token, res.user);
+  showAlert(`Welcome, ${res.user.name}!`, "success");
+  setTimeout(() => redirect(res.user.role), 600);
+});
+
+// Enter key support
+document.addEventListener("keypress", e => { if (e.key === "Enter") document.getElementById("loginBtn").click(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,678 @@
+/* ==================================================
+    CBC SCHOOL ERP - GLOBAL STYLE.CSS
+    ================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+/* ---------- ROOT ---------- */
+
+:root{
+    --primary:#2563eb;
+    --primary-dark:#1d4ed8;
+    --secondary:#0f172a;
+    --success:#16a34a;
+    --warning:#f59e0b;
+    --danger:#dc2626;
+    --info:#0891b2;
+    --purple:#7c3aed;
+    --purple-light:#a78bfa;
+
+    --bg:linear-gradient(135deg, #f5f7fb 0%, #e0e7ff 100%);
+    --card:#ffffff;
+    --border:#e5e7eb;
+    --text:#111827;
+    --text-light:#64748b;
+
+    --shadow:0 4px 24px rgba(44, 62, 80, 0.10);
+    --radius:16px;
+}
+
+/* ---------- RESET ---------- */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Poppins', 'Segoe UI', Arial, sans-serif;
+    min-height:100vh;
+}
+
+/* ---------- APP LAYOUT ---------- */
+
+.app{
+    display:flex;
+    min-height:100vh;
+}
+
+/* ---------- SIDEBAR ---------- */
+
+.sidebar{
+    width:250px;
+    background:linear-gradient(135deg, var(--primary), var(--purple));
+    color:white;
+    position:fixed;
+    left:0;
+    top:0;
+    bottom:0;
+    overflow-y:auto;
+    padding:24px 20px;
+    box-shadow:0 8px 32px rgba(44, 62, 80, 0.10);
+}
+
+.sidebar h2{
+    margin-bottom:28px;
+    color:var(--purple-light);
+    font-weight:700;
+    letter-spacing:1px;
+}
+
+.sidebar a{
+    display:block;
+    text-decoration:none;
+    color:#e0e7ff;
+    padding:14px 16px;
+    border-radius:10px;
+    margin-bottom:8px;
+    font-weight:500;
+    transition:.2s;
+}
+
+.sidebar a:hover,
+.sidebar a.active{
+    background:linear-gradient(90deg, var(--purple-light), var(--primary));
+    color:#fff;
+    box-shadow:0 2px 8px rgba(124, 58, 237, 0.10);
+}
+
+/* ---------- MAIN ---------- */
+
+.main{
+    flex:1;
+    margin-left:250px;
+    padding:25px;
+}
+
+/* ---------- TOPBAR ---------- */
+
+.topbar{
+    background:linear-gradient(90deg, #fff, #e0e7ff 100%);
+    border-radius:var(--radius);
+    padding:22px 28px;
+    margin-bottom:24px;
+    box-shadow:var(--shadow);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:3px solid var(--purple-light);
+}
+
+.topbar h2,
+.topbar h3{
+    margin:0;
+}
+
+/* ---------- CARDS ---------- */
+
+.card{
+    background:linear-gradient(135deg, #fff 80%, #e0e7ff 100%);
+    padding:28px 24px;
+    border-radius:var(--radius);
+    box-shadow:0 8px 32px rgba(44, 62, 80, 0.10);
+    margin-bottom:24px;
+    border:1.5px solid var(--purple-light);
+}
+
+.card h2,
+.card h3{
+    margin-bottom:15px;
+}
+
+/* ---------- DASHBOARD STATS ---------- */
+
+.stats-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+    margin-bottom:20px;
+}
+
+.stat-card{
+    background:linear-gradient(135deg, #fff 70%, var(--purple-light) 100%);
+    border-radius:var(--radius);
+    padding:24px 20px;
+    box-shadow:0 4px 24px rgba(44, 62, 80, 0.10);
+    border:1.5px solid var(--primary);
+}
+
+.stat-card h3{
+    color:var(--text-light);
+    font-size:14px;
+}
+
+.stat-card h2{
+    margin-top:10px;
+    font-size:30px;
+}
+
+/* ---------- BUTTONS ---------- */
+
+button,
+.btn{
+    background:linear-gradient(90deg, var(--primary), var(--purple));
+    color:white;
+    border:none;
+    border-radius:10px;
+    padding:14px 22px;
+    cursor:pointer;
+    transition:.2s;
+    text-decoration:none;
+    display:inline-block;
+    font-weight:600;
+    box-shadow:0 2px 8px rgba(37,99,235,0.08);
+}
+
+button:hover,
+.btn:hover{
+    background:linear-gradient(90deg, var(--purple), var(--primary));
+    box-shadow:0 4px 16px rgba(124, 58, 237, 0.12);
+}
+
+.btn-success{
+    background:var(--success);
+}
+
+.btn-danger{
+    background:var(--danger);
+}
+
+.btn-warning{
+    background:var(--warning);
+}
+
+/* ---------- FORMS ---------- */
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:15px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+}
+
+label{
+    margin-bottom:6px;
+    font-weight:600;
+}
+
+input,
+select,
+textarea{
+    width:100%;
+    padding:12px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:white;
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+    outline:none;
+    border-color:var(--primary);
+}
+
+textarea{
+    resize:vertical;
+    min-height:120px;
+}
+
+/* ---------- TABLES ---------- */
+
+.table-container{
+    background:white;
+    border-radius:var(--radius);
+    padding:20px;
+    box-shadow:var(--shadow);
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+thead{
+    background:#f8fafc;
+}
+
+th{
+    text-align:left;
+    padding:14px;
+    font-weight:600;
+}
+
+td{
+    padding:14px;
+    border-bottom:1px solid var(--border);
+}
+
+tr:hover{
+    background:#f9fafb;
+}
+
+/* ---------- BADGES ---------- */
+
+.badge{
+    display:inline-block;
+    padding:6px 10px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:600;
+}
+
+.badge-success{
+    background:#dcfce7;
+    color:#166534;
+}
+
+.badge-danger{
+    background:#fee2e2;
+    color:#991b1b;
+}
+
+.badge-warning{
+    background:#fef3c7;
+    color:#92400e;
+}
+
+.badge-info{
+    background:#dbeafe;
+    color:#1e40af;
+}
+
+/* ---------- STUDENTS ---------- */
+
+.student-card{
+    background:white;
+    border-radius:12px;
+    padding:20px;
+    box-shadow:var(--shadow);
+}
+
+.student-profile{
+    display:flex;
+    gap:20px;
+    align-items:center;
+}
+
+.student-avatar{
+    width:80px;
+    height:80px;
+    border-radius:50%;
+    background:#e5e7eb;
+}
+
+/* ---------- TEACHERS ---------- */
+
+.teacher-card{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:var(--shadow);
+}
+
+.teacher-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+/* ---------- ATTENDANCE ---------- */
+
+.attendance-present{
+    color:var(--success);
+    font-weight:bold;
+}
+
+.attendance-absent{
+    color:var(--danger);
+    font-weight:bold;
+}
+
+.attendance-late{
+    color:var(--warning);
+    font-weight:bold;
+}
+
+/* ---------- CBC GRADING ---------- */
+
+.grade-ee{
+    color:#15803d;
+    font-weight:bold;
+}
+
+.grade-me{
+    color:#2563eb;
+    font-weight:bold;
+}
+
+.grade-ae{
+    color:#f59e0b;
+    font-weight:bold;
+}
+
+.grade-be{
+    color:#dc2626;
+    font-weight:bold;
+}
+
+/* ---------- FINANCE ---------- */
+
+.finance-summary{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+    margin-bottom:20px;
+}
+
+.finance-card{
+    background:white;
+    border-radius:12px;
+    padding:20px;
+    box-shadow:var(--shadow);
+}
+
+.amount{
+    font-size:24px;
+    font-weight:bold;
+}
+
+.balance-positive{
+    color:var(--success);
+}
+
+.balance-negative{
+    color:var(--danger);
+}
+
+/* ---------- ANALYTICS ---------- */
+
+.chart-card{
+    background:white;
+    border-radius:12px;
+    padding:20px;
+    box-shadow:var(--shadow);
+    margin-bottom:20px;
+}
+
+.chart-container{
+    width:100%;
+    min-height:300px;
+}
+
+/* ---------- PARENT PORTAL ---------- */
+
+.parent-info{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:var(--shadow);
+}
+
+.child-card{
+    border:1px solid var(--border);
+    padding:15px;
+    border-radius:10px;
+    margin-top:10px;
+}
+
+/* ---------- STUDENT PORTAL ---------- */
+
+.student-dashboard{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:20px;
+}
+
+.progress-box{
+    background:white;
+    border-radius:12px;
+    padding:20px;
+    box-shadow:var(--shadow);
+}
+
+/* ---------- LOGIN ---------- */
+
+.auth-container{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.auth-card{
+    width:100%;
+    max-width:450px;
+    background:white;
+    padding:30px;
+    border-radius:15px;
+    box-shadow:var(--shadow);
+}
+
+/* ---------- ALERTS ---------- */
+
+.alert{
+    padding:15px;
+    border-radius:8px;
+    margin-bottom:15px;
+}
+
+.alert-success{
+    background:#dcfce7;
+    color:#166534;
+}
+
+.alert-danger{
+    background:#fee2e2;
+    color:#991b1b;
+}
+
+.alert-warning{
+    background:#fef3c7;
+    color:#92400e;
+}
+
+/* ---------- MODAL ---------- */
+
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.4);
+    display:none;
+    justify-content:center;
+    align-items:center;
+}
+
+.modal-content{
+    background:white;
+    width:90%;
+    max-width:600px;
+    border-radius:12px;
+    padding:25px;
+}
+
+/* ---------- UTILITIES ---------- */
+
+.mt-1{margin-top:10px;}
+.mt-2{margin-top:20px;}
+.mt-3{margin-top:30px;}
+
+.mb-1{margin-bottom:10px;}
+.mb-2{margin-bottom:20px;}
+.mb-3{margin-bottom:30px;}
+
+.text-center{
+    text-align:center;
+}
+
+.w-100{
+    width:100%;
+}
+
+/* ---------- MOBILE ---------- */
+
+@media(max-width:900px){
+
+    .sidebar{
+        width:220px;
+    }
+
+    .main{
+        margin-left:220px;
+    }
+}
+
+@media(max-width:768px){
+
+    .app{
+        flex-direction:column;
+    }
+
+    .sidebar{
+        position:relative;
+        width:100%;
+        height:auto;
+    }
+
+    .main{
+        margin-left:0;
+        padding:15px;
+    }
+
+    .topbar{
+        flex-direction:column;
+        gap:10px;
+        align-items:flex-start;
+    }
+
+    .student-profile{
+        flex-direction:column;
+        text-align:center;
+    }
+
+    .finance-summary,
+    .stats-grid,
+    .student-dashboard{
+        grid-template-columns:1fr;
+    }
+
+    table{
+        min-width:700px;
+    }
+}
+
+@media(max-width:480px){
+
+    .card,
+    .table-container,
+    .auth-card{
+        padding:15px;
+    }
+
+    button{
+        width:100%;
+    }
+
+    .topbar {
+        padding: 15px;
+        flex-direction: column;
+    }
+
+    .main {
+        padding: 10px;
+    }
+
+    input,
+    select,
+    textarea {
+        font-size: 16px;
+    }
+
+    .stats-grid,
+    .finance-summary,
+    .student-dashboard,
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    table {
+        font-size: 12px;
+    }
+
+    th, td {
+        padding: 8px;
+    }
+
+    .student-avatar {
+        width: 60px;
+        height: 60px;
+    }
+
+    .modal-content {
+        width: 95%;
+        padding: 15px;
+    }
+}
+
+/* ---------- TABLET RESPONSIVE ---------- */
+
+@media(min-width:481px) and (max-width:768px){
+
+    .card {
+        padding: 20px;
+    }
+
+    .stats-grid,
+    .finance-summary,
+    .student-dashboard {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    input,
+    select,
+    textarea {
+        font-size: 16px;
+    }
+}
+
+/* ---------- TOUCH DEVICE OPTIMIZATIONS ---------- */
+
+@media(hover: none) and (pointer: coarse) {
+    button,
+    .btn,
+    a {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 14px 16px;
+    }
+
+    input,
+    select,
+    textarea {
+        min-height: 44px;
+        padding: 12px;
+    }
+}

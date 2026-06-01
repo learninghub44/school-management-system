@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Dashboard</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <h2>Finance Dashboard</h2>
+
+        <a href="../dashboard.html">Dashboard</a>
+        <a href="finance.html">Payments</a>
+        <a href="dashboard.html" class="active">Analytics</a>
+
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <header class="topbar">
+            <h3>School Finance Analytics</h3>
+        </header>
+
+        <section class="content">
+
+            <!-- SUMMARY CARDS -->
+            <div class="card">
+
+                <h2>Financial Summary</h2>
+
+                <p>Total Income: <b id="totalIncome">0</b></p>
+                <p>Total Payments: <b id="totalPayments">0</b></p>
+                <p>Outstanding Balance: <b id="totalBalance">0</b></p>
+
+            </div>
+
+            <!-- CHARTS -->
+            <div class="card">
+
+                <h2>Income Overview</h2>
+
+                <canvas id="incomeChart"></canvas>
+
+            </div>
+
+            <div class="card">
+
+                <h2>Payment Methods Distribution</h2>
+
+                <canvas id="methodChart"></canvas>
+
+            </div>
+
+            <!-- STUDENT BALANCE TABLE -->
+            <div class="table-container">
+
+                <h2>Student Balances</h2>
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Total Paid</th>
+                            <th>Balance</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="balanceTable"></tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<script type="module" src="../js/financeDashboard.js"></script>
+
+</body>
+</html>

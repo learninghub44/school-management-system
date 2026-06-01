@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parent Portal – CBC ERP</title>
+<script src="/js/config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#eff6ff;min-height:100vh}
+.topbar{background:linear-gradient(135deg,#1e3a8a,#1d4ed8);color:#fff;padding:14px 24px;
+  display:flex;align-items:center;justify-content:space-between}
+.topbar h1{font-size:17px;font-weight:700}
+button.logout{background:rgba(255,255,255,.2);border:none;color:#fff;padding:6px 14px;
+  border-radius:7px;cursor:pointer;font-size:12px;font-family:inherit}
+.content{padding:24px;max-width:960px;margin:0 auto}
+.child-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.child-tab{padding:8px 16px;background:#fff;border:2px solid #e2e8f0;border-radius:10px;
+  cursor:pointer;font-size:13px;font-weight:600;color:#64748b}
+.child-tab.active{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.section-tabs{display:flex;gap:0;border-bottom:2px solid #dbeafe;margin-bottom:18px}
+.stab{padding:10px 18px;font-size:13px;font-weight:500;cursor:pointer;color:#64748b;border-bottom:2px solid transparent;margin-bottom:-2px}
+.stab.active{color:#1d4ed8;border-bottom-color:#1d4ed8}
+.panel{display:none}.panel.active{display:block}
+.card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:16px}
+.card h3{font-size:14px;font-weight:700;color:#0f172a;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f1f5f9}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:4px}
+.info-item{background:#eff6ff;border-radius:8px;padding:9px 12px}
+.info-item .il{font-size:10px;color:#64748b;font-weight:600}
+.info-item .iv{font-size:13px;color:#1d4ed8;font-weight:600;margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#eff6ff;padding:9px 12px;text-align:left;font-weight:600;color:#374151;border-bottom:1px solid #dbeafe}
+td{padding:10px 12px;border-bottom:1px solid #f8fafc;color:#374151}
+tr:last-child td{border-bottom:none}
+.grade-badge{padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700}
+.EE{background:#dcfce7;color:#166534} .ME{background:#dbeafe;color:#1d4ed8}
+.AE{background:#fef9c3;color:#854d0e} .BE{background:#fee2e2;color:#dc2626}
+.att-badge{padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.present{background:#dcfce7;color:#166534} .absent{background:#fee2e2;color:#dc2626}
+.late{background:#fef9c3;color:#854d0e} .excused{background:#ede9fe;color:#6d28d9}
+.att-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.att-box{background:#eff6ff;border-radius:9px;padding:10px;text-align:center}
+.att-box .n{font-size:22px;font-weight:700;color:#1d4ed8}
+.att-box .l{font-size:10px;color:#64748b}
+.balance-item{display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px solid #f0f9ff}
+.balance-item:last-child{border-bottom:none}
+.bal-paid{color:#059669;font-weight:600;font-size:13px}
+.bal-owed{color:#dc2626;font-size:12px}
+.empty{text-align:center;padding:32px;color:#9ca3af;font-size:13px}
+
+  /* ── Fast Responsive Buttons ──────────────────────────────────── */
+  *{-webkit-tap-highlight-color:transparent}
+  button,a[role=button],[role=button]{touch-action:manipulation}
+  .btn,.btn-blue,.btn-green,.btn-red,.btn-amber,.btn-ghost,
+  .btn-primary,.btn-ghost,.logout,button.logout,
+  .nav-item,.tab,.tab-btn,.stab,.child-tab,.gb{
+    transition:background-color 80ms ease,
+               color 80ms ease,
+               border-color 80ms ease,
+               box-shadow 80ms ease,
+               opacity 80ms ease;
+    will-change:background-color;
+    -webkit-user-select:none;user-select:none;
+    cursor:pointer;
+  }
+  .btn:active,.btn-blue:active,.btn-green:active,
+  .btn-red:active,.btn-amber:active,.btn-ghost:active,
+  .btn-primary:active,.logout:active{
+    transform:scale(0.97);
+    transition:transform 50ms ease,background-color 50ms ease;
+  }
+  .btn:disabled,[disabled]{
+    opacity:.55;cursor:not-allowed;pointer-events:none;
+  }
+  /* Loading spinner */
+  .btn-loading{position:relative;color:transparent!important}
+  .btn-loading::after{
+    content:"";position:absolute;width:16px;height:16px;
+    top:50%;left:50%;margin:-8px 0 0 -8px;
+    border:2px solid rgba(255,255,255,.35);
+    border-top-color:#fff;border-radius:50%;
+    animation:btn-spin .6s linear infinite;
+  }
+  @keyframes btn-spin{to{transform:rotate(360deg)}}
+  .btn-loading.btn-ghost::after{
+    border-color:rgba(0,0,0,.15);border-top-color:#374151;
+  }
+
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>👨‍👩‍👧 Parent Portal – CBC ERP</h1>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:12px;opacity:.8" id="parentName"></span>
+    <span style="font-size:11px;opacity:.65;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:6px" id="parentSchool"></span>
+    <button class="logout" id="logoutBtn">Sign Out</button>
+  </div>
+</div>
+<div class="content">
+  <div id="noChildren" class="card" style="display:none">
+    <p style="color:#64748b;font-size:14px">No children linked to your account. Contact the school admin.</p>
+  </div>
+  <div id="childrenArea">
+    <div class="child-tabs" id="childTabs"></div>
+    <div class="section-tabs">
+      <div class="stab active" data-s="profile">Profile</div>
+      <div class="stab" data-s="assessments">Assessments</div>
+      <div class="stab" data-s="attendance">Attendance</div>
+      <div class="stab" data-s="fees">Fees</div>
+    </div>
+    <div class="panel active" id="panel-profile"><div id="childProfile" class="empty">Loading…</div></div>
+    <div class="panel" id="panel-assessments"><div class="card"><h3>CBC Assessments</h3><div id="childAssess" class="empty">Loading…</div></div></div>
+    <div class="panel" id="panel-attendance"><div class="card"><h3>Attendance</h3><div class="att-grid" id="attSum"></div><div id="childAtt" class="empty">Loading…</div></div></div>
+    <div class="panel" id="panel-fees"><div class="card"><h3>Fee Balance</h3><div id="childFee" class="empty">Loading…</div></div><div class="card"><h3>Payments</h3><div id="childPay" class="empty">Loading…</div></div></div>
+  </div>
+</div>
+
+<script type="module">
+import { guardPage, logout, students, assessments, attendance, finance, auth } from "../js/api.js";
+const me = guardPage(["PARENT"]);
+document.getElementById("parentName").textContent = me.name;
+  // Show school name from session
+  const schoolEl = document.getElementById("parentSchool");
+  if (schoolEl) schoolEl.textContent = me.school_name || "";
+document.getElementById("logoutBtn").addEventListener("click", () => { clearSession(); location.href="/login.html"; });
+
+let allChildren = [], activeChild = null;
+
+document.querySelectorAll(".stab").forEach(t => {
+  t.addEventListener("click", () => {
+    document.querySelectorAll(".stab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById("panel-"+t.dataset.s).classList.add("active");
+    if (activeChild) loadSection(t.dataset.s, activeChild);
+  });
+});
+
+async function init() {
+  const res = await students.list();
+  allChildren = res?.data||[];
+  if (!allChildren.length) {
+    document.getElementById("noChildren").style.display="block";
+    document.getElementById("childrenArea").style.display="none";
+    return;
+  }
+  const tabs = document.getElementById("childTabs");
+  tabs.innerHTML = allChildren.map((c,i)=>
+    `<div class="child-tab ${i===0?"active":""}" onclick="selectChild('${c.id}')">${c.full_name}</div>`
+  ).join("");
+  selectChild(allChildren[0].id);
+}
+
+window.selectChild = (id) => {
+  activeChild = allChildren.find(c=>c.id===id);
+  document.querySelectorAll(".child-tab").forEach(t => {
+    t.classList.toggle("active", t.textContent === activeChild.full_name);
+  });
+  const active = document.querySelector(".stab.active")?.dataset?.s||"profile";
+  loadSection(active, activeChild);
+};
+
+function loadSection(section, child) {
+  if (section==="profile") renderProfile(child);
+  if (section==="assessments") loadAssessments(child);
+  if (section==="attendance") loadAttendance(child);
+  if (section==="fees") loadFees(child);
+}
+
+function renderProfile(s) {
+  document.getElementById("childProfile").innerHTML = `
+    <div class="card">
+      <h3>Student Profile</h3>
+      <div class="info-grid">
+        <div class="info-item"><div class="il">Full Name</div><div class="iv">${s.full_name}</div></div>
+        <div class="info-item"><div class="il">Admission No</div><div class="iv">${s.admission_no}</div></div>
+        <div class="info-item"><div class="il">Grade</div><div class="iv">${s.grade_level}</div></div>
+        <div class="info-item"><div class="il">Stage</div><div class="iv">${s.stage}</div></div>
+        <div class="info-item"><div class="il">Gender</div><div class="iv" style="text-transform:capitalize">${s.gender||"–"}</div></div>
+        <div class="info-item"><div class="il">Date of Birth</div><div class="iv">${s.date_of_birth||"–"}</div></div>
+      </div>
+    </div>`;
+}
+
+async function loadAssessments(child) {
+  const res = await assessments.list({ student_id: child.id });
+  const data = res?.data||[];
+  const el = document.getElementById("childAssess");
+  if (!data.length) { el.innerHTML="<div class='empty'>No assessments.</div>"; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Learning Area</th><th>Strand</th><th>Type</th><th>Grade</th><th>Term</th><th>Date</th><th>Remarks</th></tr></thead>
+    <tbody>${data.map(a=>`<tr>
+      <td>${a.learning_area_name||"–"}</td><td>${a.strand_name||"–"}</td>
+      <td>${a.assessment_type}</td>
+      <td><span class="grade-badge ${a.grade}">${a.grade}</span></td>
+      <td>Term ${a.term}</td><td>${a.assessment_date||"–"}</td><td>${a.remarks||"–"}</td>
+    </tr>`).join("")}</tbody></table>`;
+}
+
+async function loadAttendance(child) {
+  const res = await attendance.report(child.id);
+  const { records=[], summary={} } = res?.data||{};
+  const se = document.getElementById("attSum");
+  se.innerHTML = [{l:"Total",n:summary.total||0},{l:"Present",n:summary.present||0},
+    {l:"Absent",n:summary.absent||0},{l:"Late",n:summary.late||0},{l:"Rate",n:summary.percentage||"0%"}]
+    .map(x=>`<div class="att-box"><div class="n">${x.n}</div><div class="l">${x.l}</div></div>`).join("");
+  const el = document.getElementById("childAtt");
+  if (!records.length) { el.innerHTML="<div class='empty'>No attendance records.</div>"; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Date</th><th>Status</th><th>Remarks</th></tr></thead>
+    <tbody>${records.slice(0,30).map(a=>`<tr>
+      <td>${a.date}</td>
+      <td><span class="att-badge ${a.status}">${a.status}</span></td>
+      <td>${a.remarks||"–"}</td>
+    </tr>`).join("")}</tbody></table>`;
+}
+
+async function loadFees(child) {
+  const [balRes, payRes] = await Promise.all([
+    finance.balance(child.id),
+    finance.payments({ student_id: child.id })
+  ]);
+  const el = document.getElementById("childFee");
+  if (balRes?.success) {
+    el.innerHTML = balRes.data.balance.map(b=>`
+      <div class="balance-item">
+        <span style="font-weight:600">Term ${b.term}</span>
+        <div style="text-align:right">
+          <div>Expected: KES ${Number(b.expected).toLocaleString()}</div>
+          <div class="bal-paid">Paid: KES ${Number(b.paid).toLocaleString()}</div>
+          ${b.balance>0?`<div class="bal-owed">Owing: KES ${Number(b.balance).toLocaleString()}</div>`:"<div style='color:#059669;font-size:12px'>✓ Fully Paid</div>"}
+        </div>
+      </div>`).join("");
+  }
+  const ph = document.getElementById("childPay");
+  const payments = payRes?.data||[];
+  if (!payments.length) { ph.innerHTML="<div class='empty'>No payments.</div>"; return; }
+  ph.innerHTML = `<table>
+    <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Term</th><th>Reference</th></tr></thead>
+    <tbody>${payments.map(p=>`<tr>
+      <td>${new Date(p.created_at).toLocaleDateString()}</td>
+      <td>KES ${Number(p.amount).toLocaleString()}</td>
+      <td>${p.method}</td><td>Term ${p.term}</td><td>${p.reference||"–"}</td>
+    </tr>`).join("")}</tbody></table>`;
+}
+
+init();
+</script>
+</body>
+</html>

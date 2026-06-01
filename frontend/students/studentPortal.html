@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Portal – CBC ERP</title>
+<script src="/js/config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f0fdf4;min-height:100vh}
+.topbar{background:linear-gradient(135deg,#065f46,#059669);color:#fff;padding:0}
+.topbar-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 24px}
+.topbar h1{font-size:17px;font-weight:700}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.stu-badge{background:rgba(255,255,255,.15);border-radius:8px;padding:5px 12px;font-size:12px}
+button.logout{background:rgba(255,255,255,.2);border:none;color:#fff;padding:6px 14px;
+  border-radius:7px;cursor:pointer;font-size:12px;font-family:inherit}
+.tabs{background:#fff;border-bottom:2px solid #d1fae5;display:flex;padding:0 24px;gap:0}
+.tab{padding:12px 18px;font-size:13px;font-weight:500;cursor:pointer;color:#6b7280;
+  border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab.active{color:#059669;border-bottom-color:#059669}
+.content{padding:24px;max-width:900px;margin:0 auto}
+.panel{display:none}.panel.active{display:block}
+.profile-card{background:#fff;border-radius:14px;padding:24px;margin-bottom:20px;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;gap:20px;align-items:flex-start}
+.avatar{width:64px;height:64px;background:linear-gradient(135deg,#065f46,#059669);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:26px;color:#fff;flex-shrink:0}
+.profile-info h2{font-size:18px;font-weight:700;color:#0f172a}
+.profile-info p{font-size:13px;color:#64748b;margin-top:2px}
+.meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
+.meta-item{background:#f0fdf4;border-radius:8px;padding:8px 12px}
+.meta-item .ml{font-size:10px;color:#64748b;font-weight:600}
+.meta-item .mv{font-size:13px;color:#065f46;font-weight:600;margin-top:2px}
+.card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:16px}
+.card h3{font-size:14px;font-weight:700;color:#0f172a;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f0fdf4;padding:9px 12px;text-align:left;font-weight:600;color:#374151;border-bottom:1px solid #d1fae5}
+td{padding:10px 12px;border-bottom:1px solid #f0f9ff;color:#374151}
+tr:last-child td{border-bottom:none}
+.grade-badge{padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700}
+.EE{background:#dcfce7;color:#166534} .ME{background:#dbeafe;color:#1d4ed8}
+.AE{background:#fef9c3;color:#854d0e} .BE{background:#fee2e2;color:#dc2626}
+.att-badge{padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.present{background:#dcfce7;color:#166534} .absent{background:#fee2e2;color:#dc2626}
+.late{background:#fef9c3;color:#854d0e} .excused{background:#ede9fe;color:#6d28d9}
+.balance-row{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 0;border-bottom:1px solid #f0fdf4}
+.balance-row:last-child{border-bottom:none}
+.balance-row .term{font-weight:600;color:#0f172a}
+.balance-row .amounts{text-align:right;font-size:13px}
+.balance-row .amounts .paid{color:#059669;font-weight:600}
+.balance-row .amounts .owed{color:#dc2626;font-size:12px}
+.att-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.att-stat{background:#f0fdf4;border-radius:10px;padding:12px;text-align:center}
+.att-stat .n{font-size:24px;font-weight:700;color:#059669}
+.att-stat .l{font-size:11px;color:#64748b}
+.empty{text-align:center;padding:32px;color:#9ca3af;font-size:13px}
+
+  /* ── Fast Responsive Buttons ──────────────────────────────────── */
+  *{-webkit-tap-highlight-color:transparent}
+  button,a[role=button],[role=button]{touch-action:manipulation}
+  .btn,.btn-blue,.btn-green,.btn-red,.btn-amber,.btn-ghost,
+  .btn-primary,.btn-ghost,.logout,button.logout,
+  .nav-item,.tab,.tab-btn,.stab,.child-tab,.gb{
+    transition:background-color 80ms ease,
+               color 80ms ease,
+               border-color 80ms ease,
+               box-shadow 80ms ease,
+               opacity 80ms ease;
+    will-change:background-color;
+    -webkit-user-select:none;user-select:none;
+    cursor:pointer;
+  }
+  .btn:active,.btn-blue:active,.btn-green:active,
+  .btn-red:active,.btn-amber:active,.btn-ghost:active,
+  .btn-primary:active,.logout:active{
+    transform:scale(0.97);
+    transition:transform 50ms ease,background-color 50ms ease;
+  }
+  .btn:disabled,[disabled]{
+    opacity:.55;cursor:not-allowed;pointer-events:none;
+  }
+  /* Loading spinner */
+  .btn-loading{position:relative;color:transparent!important}
+  .btn-loading::after{
+    content:"";position:absolute;width:16px;height:16px;
+    top:50%;left:50%;margin:-8px 0 0 -8px;
+    border:2px solid rgba(255,255,255,.35);
+    border-top-color:#fff;border-radius:50%;
+    animation:btn-spin .6s linear infinite;
+  }
+  @keyframes btn-spin{to{transform:rotate(360deg)}}
+  .btn-loading.btn-ghost::after{
+    border-color:rgba(0,0,0,.15);border-top-color:#374151;
+  }
+
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <h1>🎒 Student Portal – CBC ERP</h1>
+    <div class="topbar-right">
+      <div class="stu-badge" id="schoolBadge">Loading…</div>
+      <button class="logout" id="logoutBtn">Sign Out</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-p="profile">My Profile</div>
+    <div class="tab" data-p="assessments">Assessments</div>
+    <div class="tab" data-p="attendance">Attendance</div>
+    <div class="tab" data-p="fees">Fees</div>
+  </div>
+</div>
+<div class="content">
+  <div class="panel active" id="panel-profile">
+    <div id="profileCard" class="empty">Loading…</div>
+  </div>
+  <div class="panel" id="panel-assessments">
+    <div class="card"><h3>My CBC Assessments</h3><div id="assessList" class="empty">Loading…</div></div>
+  </div>
+  <div class="panel" id="panel-attendance">
+    <div class="card">
+      <h3>My Attendance</h3>
+      <div class="att-summary" id="attSummary"></div>
+      <div id="attList" class="empty">Loading…</div>
+    </div>
+  </div>
+  <div class="panel" id="panel-fees">
+    <div class="card"><h3>Fee Balance</h3><div id="feeBalance" class="empty">Loading…</div></div>
+    <div class="card"><h3>Payment History</h3><div id="payHistory" class="empty">Loading…</div></div>
+  </div>
+</div>
+
+<script type="module">
+import { guardPage, logout, students, assessments, attendance, finance, auth } from "../js/api.js";
+const me = guardPage(["STUDENT"]);
+
+document.getElementById("logoutBtn").addEventListener("click", () => { clearSession(); location.href="/login.html"; });
+
+document.querySelectorAll(".tab").forEach(t => {
+  t.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById("panel-"+t.dataset.p).classList.add("active");
+  });
+});
+
+let myStudent = null;
+
+async function init() {
+  // School name from session immediately
+  document.getElementById("schoolBadge").textContent = me.school_name || "";
+  document.title = (me.school_name || "School") + " – Student Portal";
+
+  const res = await students.list();
+  myStudent = res?.data?.[0];
+  if (!myStudent) { document.getElementById("profileCard").innerHTML="<div class='empty'>No student record linked. Contact admin.</div>"; return; }
+
+  renderProfile(myStudent);
+  loadAssessments();
+  loadAttendance();
+  loadFees();
+}
+
+function renderProfile(s) {
+  document.getElementById("profileCard").innerHTML = `
+    <div class="profile-card">
+      <div class="avatar">${s.full_name.charAt(0)}</div>
+      <div class="profile-info" style="flex:1">
+        <h2>${s.full_name}</h2>
+        <p>${s.grade_level} · ${s.stage}</p>
+        <div class="meta-grid">
+          <div class="meta-item"><div class="ml">Admission No</div><div class="mv">${s.admission_no}</div></div>
+          <div class="meta-item"><div class="ml">Grade</div><div class="mv">${s.grade_level}</div></div>
+          <div class="meta-item"><div class="ml">Gender</div><div class="mv" style="text-transform:capitalize">${s.gender||"–"}</div></div>
+          <div class="meta-item"><div class="ml">Date of Birth</div><div class="mv">${s.date_of_birth||"–"}</div></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function loadAssessments() {
+  const res = await assessments.list();
+  const data = res?.data||[];
+  const el = document.getElementById("assessList");
+  if (!data.length) { el.innerHTML="<div class='empty'>No assessments recorded yet.</div>"; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Learning Area</th><th>Strand</th><th>Type</th><th>Grade</th><th>Score</th><th>Term</th><th>Date</th><th>Remarks</th></tr></thead>
+    <tbody>${data.map(a=>`<tr>
+      <td>${a.learning_area_name||"–"}</td>
+      <td>${a.strand_name||"–"}</td>
+      <td>${a.assessment_type}</td>
+      <td><span class="grade-badge ${a.grade}">${a.grade}</span></td>
+      <td>${a.score??'–'}</td>
+      <td>Term ${a.term}</td>
+      <td>${a.assessment_date||"–"}</td>
+      <td>${a.remarks||"–"}</td>
+    </tr>`).join("")}</tbody></table>`;
+}
+
+async function loadAttendance() {
+  const res = await attendance.report(myStudent.id);
+  const { records=[], summary={} } = res?.data||{};
+  const el = document.getElementById("attList");
+  const se = document.getElementById("attSummary");
+  se.innerHTML = [
+    {l:"Total",n:summary.total||0},
+    {l:"Present",n:summary.present||0},
+    {l:"Absent",n:summary.absent||0},
+    {l:"Late",n:summary.late||0},
+    {l:"Attendance",n:summary.percentage||"0%"},
+  ].map(x=>`<div class="att-stat"><div class="n">${x.n}</div><div class="l">${x.l}</div></div>`).join("");
+  if (!records.length) { el.innerHTML="<div class='empty'>No attendance records.</div>"; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Date</th><th>Status</th><th>Remarks</th></tr></thead>
+    <tbody>${records.slice(0,30).map(a=>`<tr>
+      <td>${a.date}</td>
+      <td><span class="att-badge ${a.status}">${a.status}</span></td>
+      <td>${a.remarks||"–"}</td>
+    </tr>`).join("")}</tbody></table>`;
+}
+
+async function loadFees() {
+  const balRes = await finance.balance(myStudent.id);
+  const payRes = await finance.payments({ student_id: myStudent.id });
+  const el = document.getElementById("feeBalance");
+  if (balRes?.success) {
+    const { balance } = balRes.data;
+    el.innerHTML = balance.map(b=>`
+      <div class="balance-row">
+        <div class="term">Term ${b.term}</div>
+        <div class="amounts">
+          <div>Expected: KES ${Number(b.expected).toLocaleString()}</div>
+          <div class="paid">Paid: KES ${Number(b.paid).toLocaleString()}</div>
+          ${b.balance>0?`<div class="owed">Balance: KES ${Number(b.balance).toLocaleString()}</div>`:"<div style='color:#059669;font-size:12px'>✓ Cleared</div>"}
+        </div>
+      </div>`).join("");
+  }
+  const payments = payRes?.data||[];
+  const ph = document.getElementById("payHistory");
+  if (!payments.length) { ph.innerHTML="<div class='empty'>No payments recorded.</div>"; return; }
+  ph.innerHTML = `<table>
+    <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Term</th><th>Reference</th></tr></thead>
+    <tbody>${payments.map(p=>`<tr>
+      <td>${new Date(p.created_at).toLocaleDateString()}</td>
+      <td>KES ${Number(p.amount).toLocaleString()}</td>
+      <td>${p.method}</td>
+      <td>Term ${p.term}</td>
+      <td>${p.reference||"–"}</td>
+    </tr>`).join("")}</tbody></table>`;
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard – CBC School ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Inter',sans-serif;background:#f1f5f9;color:#111827;min-height:100vh;display:flex}
+        .sidebar{width:220px;background:linear-gradient(180deg,#4c1d95 0%,#7c3aed 100%);color:#fff;display:flex;flex-direction:column;flex-shrink:0;height:100vh;position:sticky;top:0}
+        .sidebar-brand{padding:24px 20px 16px;border-bottom:1px solid rgba(255,255,255,.15)}
+        .sidebar-brand h2{font-size:15px;font-weight:700}
+        .sidebar-brand p{font-size:11px;opacity:.7;margin-top:2px}
+        .school-badge{margin:12px 20px;background:rgba(255,255,255,.15);border-radius:8px;padding:8px 12px;font-size:11px}
+        .school-badge strong{display:block;font-size:13px}
+        .nav{flex:1;padding:12px 0}
+        .nav-item{padding:10px 20px;cursor:pointer;font-size:13px;font-weight:500;display:flex;align-items:center;gap:10px;border-left:3px solid transparent;transition:background .15s}
+        .nav-item:hover{background:rgba(255,255,255,.1)}
+        .nav-item.active{background:rgba(255,255,255,.15);border-left-color:#fff}
+        .nav-item .icon{font-size:16px;width:20px}
+        .sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.15)}
+        .sidebar-footer button{background:rgba(255,255,255,.15);border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;width:100%;font-family:inherit}
+        .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+        .topbar{background:#fff;padding:16px 28px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between}
+        .topbar h3{font-size:18px;font-weight:700}
+        .topbar .user-info{font-size:13px;color:#6b7280}
+        .content{flex:1;overflow-y:auto;padding:28px}
+        .panel{display:none}.panel.active{display:block}
+        .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:28px}
+        .stat-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+        .stat-card .value{font-size:32px;font-weight:700;color:#7c3aed}
+        .stat-card .label{font-size:13px;color:#6b7280;margin-top:4px}
+        .card{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;margin-bottom:20px}
+        .card-header{padding:16px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+        .card-header h4{font-size:15px;font-weight:600}
+        table{width:100%;border-collapse:collapse;font-size:13px}
+        th{background:#f9fafb;padding:10px 16px;text-align:left;font-weight:600;color:#374151;border-bottom:1px solid #e5e7eb}
+        td{padding:11px 16px;border-bottom:1px solid #f3f4f6;color:#374151}
+        tr:last-child td{border-bottom:none}
+        tr:hover td{background:#f9fafb}
+        .badge{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+        .badge-green{background:#dcfce7;color:#16a34a}
+        .badge-red{background:#fee2e2;color:#dc2626}
+        .badge-blue{background:#dbeafe;color:#1d4ed8}
+        .badge-yellow{background:#fef9c3;color:#854d0e}
+        .btn{padding:8px 16px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+        .btn-primary{background:#7c3aed;color:#fff}.btn-primary:hover{background:#6d28d9}
+        .btn-sm{padding:5px 10px;font-size:12px}
+        .btn-ghost{background:#f1f5f9;color:#374151}.btn-ghost:hover{background:#e2e8f0}
+        .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+        .modal-backdrop.open{display:flex}
+        .modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+        .modal h3{font-size:17px;font-weight:700;margin-bottom:20px}
+        .form-group{margin-bottom:14px}
+        .form-group label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px}
+        .form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;outline:none}
+        .form-group input:focus,.form-group select:focus{border-color:#7c3aed}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+        .alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:12px}
+        .alert-error{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+        .alert-success{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+        .empty{text-align:center;padding:40px;color:#9ca3af;font-size:14px}
+        .search-row{display:flex;gap:10px;align-items:center}
+        .search-row input{padding:7px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;font-family:inherit}
+        .cbc-grade{padding:3px 8px;border-radius:6px;font-size:12px;font-weight:700;background:#ede9fe;color:#6d28d9}
+        @media(max-width:768px){.sidebar{display:none}.content{padding:16px}}
+    
+  /* ── Fast Responsive Buttons ──────────────────────────────────── */
+  *{-webkit-tap-highlight-color:transparent}
+  button,a[role=button],[role=button]{touch-action:manipulation}
+  .btn,.btn-blue,.btn-green,.btn-red,.btn-amber,.btn-ghost,
+  .btn-primary,.btn-ghost,.logout,button.logout,
+  .nav-item,.tab,.tab-btn,.stab,.child-tab,.gb{
+    transition:background-color 80ms ease,
+               color 80ms ease,
+               border-color 80ms ease,
+               box-shadow 80ms ease,
+               opacity 80ms ease;
+    will-change:background-color;
+    -webkit-user-select:none;user-select:none;
+    cursor:pointer;
+  }
+  .btn:active,.btn-blue:active,.btn-green:active,
+  .btn-red:active,.btn-amber:active,.btn-ghost:active,
+  .btn-primary:active,.logout:active{
+    transform:scale(0.97);
+    transition:transform 50ms ease,background-color 50ms ease;
+  }
+  .btn:disabled,[disabled]{
+    opacity:.55;cursor:not-allowed;pointer-events:none;
+  }
+  /* Loading spinner */
+  .btn-loading{position:relative;color:transparent!important}
+  .btn-loading::after{
+    content:"";position:absolute;width:16px;height:16px;
+    top:50%;left:50%;margin:-8px 0 0 -8px;
+    border:2px solid rgba(255,255,255,.35);
+    border-top-color:#fff;border-radius:50%;
+    animation:btn-spin .6s linear infinite;
+  }
+  @keyframes btn-spin{to{transform:rotate(360deg)}}
+  .btn-loading.btn-ghost::after{
+    border-color:rgba(0,0,0,.15);border-top-color:#374151;
+  }
+
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <h2>📚 CBC Portal</h2>
+        <p>School Management ERP</p>
+    </div>
+    <div class="school-badge">
+        <span style="opacity:.7;font-size:10px">School</span>
+        <strong id="schoolName">Loading…</strong>
+    </div>
+    <nav class="nav" id="navMenu">
+        <div class="nav-item active" data-panel="overview"><span class="icon">📊</span> Overview</div>
+        <div class="nav-item teacher-only" data-panel="students"><span class="icon">🎒</span> My Students</div>
+        <div class="nav-item teacher-only" data-panel="attendance"><span class="icon">📋</span> Attendance</div>
+        <div class="nav-item teacher-only" data-panel="assessments"><span class="icon">📝</span> Assessments</div>
+        <div class="nav-item finance-only" data-panel="finance"><span class="icon">💰</span> Finance</div>
+    </nav>
+    <div class="sidebar-footer">
+        <button id="logoutBtn">Sign Out</button>
+    </div>
+</aside>
+
+<div class="main">
+    <header class="topbar">
+        <h3 id="pageTitle">Overview</h3>
+        <span class="user-info" id="userInfo"></span>
+    </header>
+    <div class="content">
+
+        <!-- OVERVIEW -->
+        <div class="panel active" id="panel-overview">
+            <div class="stat-grid">
+                <div class="stat-card"><div class="value" id="statStudents">–</div><div class="label">Students</div></div>
+                <div class="stat-card"><div class="value" id="statTeachers">–</div><div class="label">Teachers</div></div>
+                <div class="stat-card"><div class="value" id="statAttPct">–</div><div class="label">Avg Attendance</div></div>
+                <div class="stat-card"><div class="value" id="statRevenue">–</div><div class="label">Revenue (KES)</div></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h4>Recent Students</h4></div>
+                <div id="recentStudents" class="empty">Loading…</div>
+            </div>
+        </div>
+
+        <!-- STUDENTS (Teacher view) -->
+        <div class="panel" id="panel-students">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Students</h4>
+                    <div class="search-row">
+                        <input id="studentSearch" placeholder="Search name or adm no…" oninput="filterStudents()">
+                    </div>
+                </div>
+                <div id="studentsList" class="empty">Loading…</div>
+            </div>
+        </div>
+
+        <!-- ATTENDANCE -->
+        <div class="panel" id="panel-attendance">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Mark Attendance</h4>
+                    <div class="search-row">
+                        <input type="date" id="attDate">
+                        <button class="btn btn-primary" id="markAttBtn">Mark for Date</button>
+                    </div>
+                </div>
+                <div id="attendanceMarkList" class="empty">Select a date above to begin.</div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h4>Attendance Records</h4>
+                    <div class="search-row">
+                        <input type="date" id="attViewDate">
+                        <button class="btn btn-ghost" id="viewAttBtn">View</button>
+                    </div>
+                </div>
+                <div id="attendanceViewList" class="empty">Select a date to view records.</div>
+            </div>
+        </div>
+
+        <!-- ASSESSMENTS -->
+        <div class="panel" id="panel-assessments">
+            <div class="card">
+                <div class="card-header">
+                    <h4>CBC Assessments</h4>
+                    <button class="btn btn-primary" id="addAssessmentBtn">+ Record Assessment</button>
+                </div>
+                <div id="assessmentsList" class="empty">Loading…</div>
+            </div>
+        </div>
+
+        <!-- FINANCE (Finance role) -->
+        <div class="panel" id="panel-finance">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Payment Records</h4>
+                    <button class="btn btn-primary" id="recordPaymentBtn2">+ Record Payment</button>
+                </div>
+                <div id="paymentsList" class="empty">Loading…</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- MODAL: Attendance marking -->
+<div class="modal-backdrop" id="attendanceModal">
+    <div class="modal">
+        <h3 id="attModalTitle">Mark Attendance</h3>
+        <div id="attendanceForm"></div>
+        <div id="attModalAlert"></div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="document.getElementById('attendanceModal').classList.remove('open')">Cancel</button>
+            <button class="btn btn-primary" id="saveAttBtn">Save Attendance</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Assessment -->
+<div class="modal-backdrop" id="assessmentModal">
+    <div class="modal">
+        <h3>Record Assessment</h3>
+        <div class="form-group"><label>Student *</label><select id="assStudent"></select></div>
+        <div class="form-row">
+            <div class="form-group"><label>Subject *</label>
+                <select id="assSubject">
+                    <option value="">Select…</option>
+                    <option value="1">Mathematics</option>
+                    <option value="2">English</option>
+                    <option value="3">Kiswahili</option>
+                    <option value="4">Science & Technology</option>
+                    <option value="5">Social Studies</option>
+                    <option value="6">Creative Arts</option>
+                    <option value="7">Physical Education</option>
+                    <option value="8">Life Skills</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Type *</label>
+                <select id="assType">
+                    <option value="formative">Formative</option>
+                    <option value="summative">Summative</option>
+                    <option value="project-based">Project-Based</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>CBC Grade *</label>
+                <select id="assGrade">
+                    <option value="EE">EE – Exceeds Expectation</option>
+                    <option value="ME">ME – Meets Expectation</option>
+                    <option value="AE">AE – Approaches Expectation</option>
+                    <option value="BE">BE – Below Expectation</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Score (optional)</label><input type="number" id="assScore" placeholder="0-100" min="0" max="100"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Term *</label>
+                <select id="assTerm"><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+            </div>
+            <div class="form-group"><label>Year *</label><input type="number" id="assYear" min="2020"></div>
+        </div>
+        <div class="form-group"><label>Remarks</label><textarea id="assRemarks" rows="2" placeholder="Optional…"></textarea></div>
+        <div id="assessmentModalAlert"></div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="document.getElementById('assessmentModal').classList.remove('open')">Cancel</button>
+            <button class="btn btn-primary" id="saveAssessmentBtn">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Payment (Finance role) -->
+<div class="modal-backdrop" id="paymentModal2">
+    <div class="modal">
+        <h3>Record Payment</h3>
+        <div class="form-group"><label>Student *</label><select id="payStudent2"></select></div>
+        <div class="form-row">
+            <div class="form-group"><label>Amount (KES) *</label><input type="number" id="payAmount2" min="1"></div>
+            <div class="form-group"><label>Method *</label>
+                <select id="payMethod2"><option value="">–</option><option value="MPESA">M-Pesa</option><option value="BANK">Bank</option><option value="CASH">Cash</option></select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Term *</label>
+                <select id="payTerm2"><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+            </div>
+            <div class="form-group"><label>Year</label><input type="number" id="payYear2" min="2020"></div>
+        </div>
+        <div class="form-group"><label>Reference</label><input id="payRef2" placeholder="Receipt / MPESA ref"></div>
+        <div id="paymentModal2Alert"></div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="document.getElementById('paymentModal2').classList.remove('open')">Cancel</button>
+            <button class="btn btn-primary" id="savePaymentBtn2">Record</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+import { getUser, clearSession } from "./js/api.js";
+import { schools, students, teachers, finance, attendance, assessments } from "./js/api.js";
+
+const me = getUser();
+if (!me || !["TEACHER","FINANCE"].includes(me.role)) window.location.href = "login.html";
+
+const SCHOOL_ID = me.school_id;
+document.getElementById("userInfo").textContent = `${me.name} · ${me.role}`;
+// Show school name from session immediately
+const sn = document.getElementById("schoolName");
+if (sn) sn.textContent = me.school_name || "My School";
+
+let allStudents = [];
+
+// Role-based nav visibility
+if (me.role === "FINANCE") {
+    document.querySelectorAll(".teacher-only").forEach(el => el.style.display = "none");
+} else {
+    document.querySelectorAll(".finance-only").forEach(el => el.style.display = "none");
+}
+
+// ─── Navigation ────────────────────────────────────────────────────────────────
+document.querySelectorAll(".nav-item").forEach(item => {
+    item.addEventListener("click", () => {
+        document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+        item.classList.add("active");
+        document.getElementById("panel-" + item.dataset.panel).classList.add("active");
+        document.getElementById("pageTitle").textContent = item.textContent.trim();
+        if (item.dataset.panel === "assessments") loadAssessments();
+        if (item.dataset.panel === "finance") loadPayments();
+    });
+});
+
+document.getElementById("logoutBtn").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
+  await logout();
+});
+
+// ─── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+    // School name
+    const schoolRes = await schools.list();
+    const school = schoolRes?.data?.[0];
+    if (school) document.getElementById("schoolName").textContent = school.name;
+
+    // Stats
+    const statsRes = await schools.stats(SCHOOL_ID);
+    if (statsRes?.success) {
+        document.getElementById("statStudents").textContent = statsRes.data.students;
+        document.getElementById("statTeachers").textContent = statsRes.data.teachers;
+        document.getElementById("statRevenue").textContent = Number(statsRes.data.total_revenue).toLocaleString();
+        document.getElementById("statAttPct").textContent = "–";
+    }
+
+    // Students
+    const studRes = await students.list(SCHOOL_ID);
+    allStudents = studRes?.data || [];
+
+    renderRecentStudents(allStudents.slice(0, 8));
+    renderStudentsList(allStudents);
+    populateStudentSelects();
+
+    document.getElementById("attDate").value = new Date().toISOString().split("T")[0];
+    document.getElementById("assYear").value = new Date().getFullYear();
+    document.getElementById("payYear2").value = new Date().getFullYear();
+}
+
+function renderRecentStudents(data) {
+    const el = document.getElementById("recentStudents");
+    if (!data.length) { el.innerHTML = "<div class='empty'>No students.</div>"; return; }
+    el.innerHTML = `<table>
+        <thead><tr><th>Adm No</th><th>Name</th><th>Grade</th><th>Gender</th></tr></thead>
+        <tbody>${data.map(s => `<tr>
+            <td>${s.admission_no}</td><td>${s.full_name}</td>
+            <td>${s.grades?.grade_level || "–"}</td><td>${s.gender || "–"}</td>
+        </tr>`).join("")}</tbody></table>`;
+}
+
+function renderStudentsList(data) {
+    const el = document.getElementById("studentsList");
+    if (!data.length) { el.innerHTML = "<div class='empty'>No students.</div>"; return; }
+    el.innerHTML = `<table>
+        <thead><tr><th>Adm No</th><th>Name</th><th>Grade</th><th>Parent</th><th>Phone</th></tr></thead>
+        <tbody>${data.map(s => `<tr>
+            <td>${s.admission_no}</td><td><strong>${s.full_name}</strong></td>
+            <td>${s.grades?.grade_level || "–"}</td>
+            <td>${s.parent_name || "–"}</td><td>${s.parent_phone || "–"}</td>
+        </tr>`).join("")}</tbody></table>`;
+}
+
+window.filterStudents = () => {
+    const q = document.getElementById("studentSearch").value.toLowerCase();
+    renderStudentsList(allStudents.filter(s =>
+        s.full_name.toLowerCase().includes(q) || s.admission_no.toLowerCase().includes(q)
+    ));
+};
+
+function populateStudentSelects() {
+    const opts = `<option value="">Select student…</option>` +
+        allStudents.map(s => `<option value="${s.id}">${s.full_name} (${s.admission_no})</option>`).join("");
+    document.getElementById("assStudent").innerHTML = opts;
+    document.getElementById("payStudent2").innerHTML = opts;
+}
+
+// ─── Attendance ────────────────────────────────────────────────────────────────
+document.getElementById("markAttBtn").addEventListener("click", async () => {
+    const date = document.getElementById("attDate").value;
+    if (!date) return;
+    if (!allStudents.length) { alert("No students loaded."); return; }
+
+    // Load existing for that date
+    const existing = await attendance.list(SCHOOL_ID, { date });
+    const existMap = {};
+    (existing?.data || []).forEach(a => existMap[a.student_id] = a.status);
+
+    document.getElementById("attModalTitle").textContent = `Attendance – ${date}`;
+    document.getElementById("attendanceForm").innerHTML = allStudents.map(s => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6">
+            <span style="font-size:13px;font-weight:500">${s.full_name} <span style="color:#9ca3af;font-size:12px">(${s.admission_no})</span></span>
+            <select data-student="${s.id}" style="padding:4px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px">
+                <option value="present" ${existMap[s.id] === "present" ? "selected" : ""}>Present</option>
+                <option value="absent"  ${existMap[s.id] === "absent"  ? "selected" : ""}>Absent</option>
+                <option value="late"    ${existMap[s.id] === "late"    ? "selected" : ""}>Late</option>
+                <option value="excused" ${existMap[s.id] === "excused" ? "selected" : ""}>Excused</option>
+            </select>
+        </div>`).join("");
+
+    document.getElementById("attModalAlert").innerHTML = "";
+    document.getElementById("attendanceModal").classList.add("open");
+});
+
+document.getElementById("saveAttBtn").addEventListener("click", async () => {
+    const date = document.getElementById("attDate").value;
+    const records = [...document.querySelectorAll("#attendanceForm select[data-student]")].map(sel => ({
+        student_id: sel.dataset.student, date, status: sel.value,
+    }));
+
+    const res = await attendance.record(records);
+    if (!res?.success) {
+        document.getElementById("attModalAlert").innerHTML = `<div class="alert alert-error">${res?.message || "Failed."}</div>`;
+        return;
+    }
+    document.getElementById("attModalAlert").innerHTML = `<div class="alert alert-success">Saved ${records.length} records.</div>`;
+    setTimeout(() => document.getElementById("attendanceModal").classList.remove("open"), 800);
+});
+
+document.getElementById("viewAttBtn").addEventListener("click", async () => {
+    const date = document.getElementById("attViewDate").value;
+    if (!date) return;
+    const res = await attendance.list(SCHOOL_ID, { date });
+    const data = res?.data || [];
+    const el = document.getElementById("attendanceViewList");
+    if (!data.length) { el.innerHTML = "<div class='empty'>No records for this date.</div>"; return; }
+    el.innerHTML = `<table>
+        <thead><tr><th>Student</th><th>Status</th><th>Remarks</th></tr></thead>
+        <tbody>${data.map(a => `<tr>
+            <td>${a.students?.full_name || "–"} <small style="color:#9ca3af">(${a.students?.admission_no || ""})</small></td>
+            <td><span class="badge ${a.status === "present" ? "badge-green" : a.status === "absent" ? "badge-red" : "badge-yellow"}">${a.status}</span></td>
+            <td>${a.remarks || "–"}</td>
+        </tr>`).join("")}</tbody></table>`;
+});
+
+// ─── Assessments ──────────────────────────────────────────────────────────────
+async function loadAssessments() {
+    const res = await assessments.list(SCHOOL_ID);
+    const data = res?.data || [];
+    const el = document.getElementById("assessmentsList");
+    if (!data.length) { el.innerHTML = "<div class='empty'>No assessments recorded.</div>"; return; }
+    el.innerHTML = `<table>
+        <thead><tr><th>Student</th><th>Subject</th><th>Type</th><th>Grade</th><th>Score</th><th>Term</th><th>Date</th></tr></thead>
+        <tbody>${data.map(a => `<tr>
+            <td>${a.students?.full_name || "–"}</td>
+            <td>${a.subjects?.subject_name || "–"}</td>
+            <td>${a.assessment_type}</td>
+            <td><span class="cbc-grade">${a.grade}</span></td>
+            <td>${a.score ?? "–"}</td>
+            <td>Term ${a.term}</td>
+            <td>${a.assessment_date || "–"}</td>
+        </tr>`).join("")}</tbody></table>`;
+}
+
+document.getElementById("addAssessmentBtn").addEventListener("click", () => {
+    document.getElementById("assessmentModalAlert").innerHTML = "";
+    document.getElementById("assessmentModal").classList.add("open");
+});
+
+document.getElementById("saveAssessmentBtn").addEventListener("click", async () => {
+    const body = {
+        student_id:      document.getElementById("assStudent").value,
+        subject_id:      parseInt(document.getElementById("assSubject").value),
+        assessment_type: document.getElementById("assType").value,
+        grade:           document.getElementById("assGrade").value,
+        score:           document.getElementById("assScore").value || null,
+        term:            parseInt(document.getElementById("assTerm").value),
+        year:            parseInt(document.getElementById("assYear").value),
+        remarks:         document.getElementById("assRemarks").value,
+    };
+    if (!body.student_id || !body.subject_id) {
+        document.getElementById("assessmentModalAlert").innerHTML = `<div class="alert alert-error">Student and subject required.</div>`;
+        return;
+    }
+    const res = await assessments.create(body);
+    if (!res?.success) {
+        document.getElementById("assessmentModalAlert").innerHTML = `<div class="alert alert-error">${res?.message || "Failed."}</div>`;
+        return;
+    }
+    document.getElementById("assessmentModalAlert").innerHTML = `<div class="alert alert-success">Assessment recorded!</div>`;
+    setTimeout(() => { document.getElementById("assessmentModal").classList.remove("open"); loadAssessments(); }, 700);
+});
+
+// ─── Finance ──────────────────────────────────────────────────────────────────
+async function loadPayments() {
+    const res = await finance.payments(SCHOOL_ID);
+    const data = res?.data || [];
+    const el = document.getElementById("paymentsList");
+    if (!data.length) { el.innerHTML = "<div class='empty'>No payments.</div>"; return; }
+    el.innerHTML = `<table>
+        <thead><tr><th>Student</th><th>Amount</th><th>Method</th><th>Term</th><th>Reference</th><th>Date</th></tr></thead>
+        <tbody>${data.map(p => `<tr>
+            <td>${p.students?.full_name || "–"}</td>
+            <td>KES ${Number(p.amount).toLocaleString()}</td>
+            <td><span class="badge badge-blue">${p.method}</span></td>
+            <td>Term ${p.term}</td>
+            <td>${p.reference || "–"}</td>
+            <td>${new Date(p.created_at).toLocaleDateString()}</td>
+        </tr>`).join("")}</tbody></table>`;
+}
+
+document.getElementById("recordPaymentBtn2")?.addEventListener("click", () => {
+    document.getElementById("paymentModal2Alert").innerHTML = "";
+    document.getElementById("paymentModal2").classList.add("open");
+});
+
+document.getElementById("savePaymentBtn2")?.addEventListener("click", async () => {
+    const body = {
+        student_id: document.getElementById("payStudent2").value,
+        amount:     parseFloat(document.getElementById("payAmount2").value),
+        method:     document.getElementById("payMethod2").value,
+        term:       parseInt(document.getElementById("payTerm2").value),
+        year:       parseInt(document.getElementById("payYear2").value),
+        reference:  document.getElementById("payRef2").value.trim(),
+    };
+    if (!body.student_id || !body.amount || !body.method) {
+        document.getElementById("paymentModal2Alert").innerHTML = `<div class="alert alert-error">Fill all required fields.</div>`;
+        return;
+    }
+    const res = await finance.recordPayment(body);
+    if (!res?.success) {
+        document.getElementById("paymentModal2Alert").innerHTML = `<div class="alert alert-error">${res?.message || "Failed."}</div>`;
+        return;
+    }
+    document.getElementById("paymentModal2Alert").innerHTML = `<div class="alert alert-success">Recorded!</div>`;
+    setTimeout(() => { document.getElementById("paymentModal2").classList.remove("open"); loadPayments(); }, 700);
+});
+
+init();
+</script>
+</body>
+</html>

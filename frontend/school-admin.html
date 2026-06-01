@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>School Admin – CBC ERP</title>
+<script src="/js/config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f8fafc;min-height:100vh;display:flex}
+.sidebar{width:230px;background:linear-gradient(180deg,#065f46,#047857);color:#fff;
+  display:flex;flex-direction:column;flex-shrink:0;height:100vh;position:sticky;top:0}
+.sb-brand{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.15)}
+.sb-brand h2{font-size:14px;font-weight:700}
+.sb-brand p{font-size:10px;opacity:.65;margin-top:2px}
+.sb-school{margin:10px 12px;background:rgba(255,255,255,.12);border-radius:8px;padding:8px 10px}
+.sb-school span{font-size:10px;opacity:.65}
+.sb-school strong{display:block;font-size:12px;margin-top:1px}
+.sb-school .scode{font-size:10px;opacity:.6;font-family:monospace}
+.nav{flex:1;padding:6px 0}
+.nav-item{padding:9px 16px;cursor:pointer;font-size:12px;font-weight:500;display:flex;
+  align-items:center;gap:8px;color:rgba(255,255,255,.7);border-left:3px solid transparent;transition:background-color 80ms ease,color 80ms ease,box-shadow 80ms ease}
+.nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.15);color:#fff;border-left-color:#6ee7b7}
+.sb-footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.15)}
+.sb-footer .uinfo{font-size:11px;color:rgba(255,255,255,.6);margin-bottom:6px}
+.sb-footer .uinfo strong{display:block;color:rgba(255,255,255,.85);font-size:12px}
+.sb-footer button{width:100%;padding:7px;background:rgba(255,255,255,.15);border:none;
+  color:#fff;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:#fff;padding:12px 22px;border-bottom:1px solid #e5e7eb;
+  display:flex;align-items:center;justify-content:space-between}
+.topbar h3{font-size:16px;font-weight:700;color:#0f172a}
+.topbar .meta{font-size:12px;color:#64748b}
+.content{flex:1;overflow-y:auto;padding:22px}
+.panel{display:none}.panel.active{display:block}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:#fff;border-radius:11px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.stat-card .val{font-size:28px;font-weight:700;color:#047857}
+.stat-card .lbl{font-size:11px;color:#64748b;margin-top:2px}
+.card{background:#fff;border-radius:11px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;margin-bottom:16px}
+.card-hdr{padding:13px 16px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;
+  justify-content:space-between;flex-wrap:wrap;gap:8px}
+.card-hdr h4{font-size:13px;font-weight:700;color:#0f172a}
+.search-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.search-row input,.search-row select{padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:7px;
+  font-size:12px;font-family:inherit;outline:none}
+.search-row input:focus,.search-row select:focus{border-color:#047857}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f0fdf4;padding:8px 13px;text-align:left;font-weight:600;color:#374151;
+  border-bottom:1px solid #d1fae5;white-space:nowrap}
+td{padding:9px 13px;border-bottom:1px solid #f8fafc;color:#374151}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f0fdf4}
+.badge{padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600}
+.bg{background:#dcfce7;color:#16a34a} .br{background:#fee2e2;color:#dc2626}
+.bb{background:#dbeafe;color:#1d4ed8} .by{background:#fef9c3;color:#854d0e}
+.bpu{background:#ede9fe;color:#6d28d9}
+.btn{padding:6px 13px;border:none;border-radius:7px;font-size:12px;font-weight:600;
+  cursor:pointer;font-family:inherit;transition:background-color 80ms ease,color 80ms ease,box-shadow 80ms ease}
+.btn-green{background:#047857;color:#fff}.btn-green:hover{background:#065f46}
+.btn-red{background:#dc2626;color:#fff}.btn-red:hover{background:#b91c1c}
+.btn-ghost{background:#f1f5f9;color:#374151}.btn-ghost:hover{background:#e2e8f0}
+.btn-blue{background:#1d4ed8;color:#fff}.btn-blue:hover{background:#1e40af}
+.btn-sm{padding:3px 8px;font-size:11px}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:22px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:15px;font-weight:700;color:#0f172a;margin-bottom:16px}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:4px}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 10px;border:1.5px solid #e5e7eb;
+  border-radius:7px;font-size:13px;font-family:inherit;outline:none}
+.fg input:focus,.fg select:focus{border-color:#047857}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ma{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
+.alert{padding:8px 12px;border-radius:7px;font-size:12px;margin-top:8px}
+.ae{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.as{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+.empty{text-align:center;padding:32px;color:#9ca3af;font-size:13px}
+.tabs{display:flex;gap:0;border-bottom:1px solid #e5e7eb;margin-bottom:16px}
+.tab{padding:9px 16px;font-size:12px;font-weight:500;cursor:pointer;color:#6b7280;
+  border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:#047857;border-bottom-color:#047857}
+.role-chip{padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700}
+.note{font-size:11px;color:#047857;background:#f0fdf4;padding:8px 12px;border-radius:7px;
+  border-left:3px solid #047857;margin-bottom:12px}
+
+  /* ── Fast Responsive Buttons ──────────────────────────────────── */
+  *{-webkit-tap-highlight-color:transparent}
+  button,a[role=button],[role=button]{touch-action:manipulation}
+  .btn,.btn-blue,.btn-green,.btn-red,.btn-amber,.btn-ghost,
+  .btn-primary,.btn-ghost,.logout,button.logout,
+  .nav-item,.tab,.tab-btn,.stab,.child-tab,.gb{
+    transition:background-color 80ms ease,
+               color 80ms ease,
+               border-color 80ms ease,
+               box-shadow 80ms ease,
+               opacity 80ms ease;
+    will-change:background-color;
+    -webkit-user-select:none;user-select:none;
+    cursor:pointer;
+  }
+  .btn:active,.btn-blue:active,.btn-green:active,
+  .btn-red:active,.btn-amber:active,.btn-ghost:active,
+  .btn-primary:active,.logout:active{
+    transform:scale(0.97);
+    transition:transform 50ms ease,background-color 50ms ease;
+  }
+  .btn:disabled,[disabled]{
+    opacity:.55;cursor:not-allowed;pointer-events:none;
+  }
+  /* Loading spinner */
+  .btn-loading{position:relative;color:transparent!important}
+  .btn-loading::after{
+    content:"";position:absolute;width:16px;height:16px;
+    top:50%;left:50%;margin:-8px 0 0 -8px;
+    border:2px solid rgba(255,255,255,.35);
+    border-top-color:#fff;border-radius:50%;
+    animation:btn-spin .6s linear infinite;
+  }
+  @keyframes btn-spin{to{transform:rotate(360deg)}}
+  .btn-loading.btn-ghost::after{
+    border-color:rgba(0,0,0,.15);border-top-color:#374151;
+  }
+
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sb-brand"><h2>🏫 School Admin</h2><p>CBC School ERP – KICD Aligned</p></div>
+  <div class="sb-school">
+    <span>School</span>
+    <strong id="schoolName">Loading…</strong>
+    <div class="scode" id="schoolCode"></div>
+  </div>
+  <nav class="nav">
+    <div class="nav-item active" data-p="overview">📊 Dashboard</div>
+    <div class="nav-item" data-p="students">🎒 Students</div>
+    <div class="nav-item" data-p="teachers">👩‍🏫 Teachers</div>
+    <div class="nav-item" data-p="finance">💰 Finance</div>
+    <div class="nav-item" data-p="attendance">📋 Attendance</div>
+    <div class="nav-item" data-p="staff">👥 Staff Users</div>
+  </nav>
+  <div class="sb-footer">
+    <div class="uinfo"><strong id="adminName">…</strong>School Admin</div>
+    <button id="logoutBtn">Sign Out</button>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <h3 id="pageTitle">Dashboard</h3>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:12px;background:#f0fdf4;color:#047857;padding:3px 10px;border-radius:6px;font-weight:600" id="schoolBadgeTop"></span>
+      <span class="meta" id="topMeta"></span>
+    </div>
+  </header>
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div class="panel active" id="panel-overview">
+      <div class="stat-grid">
+        <div class="stat-card"><div class="val" id="st-students">–</div><div class="lbl">Students</div></div>
+        <div class="stat-card"><div class="val" id="st-teachers">–</div><div class="lbl">Teachers</div></div>
+        <div class="stat-card"><div class="val" id="st-revenue">–</div><div class="lbl">Revenue (KES)</div></div>
+        <div class="stat-card"><div class="val" id="st-staff">–</div><div class="lbl">Staff Accounts</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><h4>Recent Students</h4><button class="btn btn-green" onclick="nav('students')">View All</button></div>
+        <div id="ov-students" class="empty">Loading…</div>
+      </div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div class="panel" id="panel-students">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Students</h4>
+          <div class="search-row">
+            <input id="stuSearch" placeholder="Search name / adm…" oninput="filterStudents()">
+            <select id="stuGradeFilter" onchange="filterStudents()">
+              <option value="">All Grades</option>
+            </select>
+            <button class="btn btn-green" id="addStudentBtn">+ Add Student</button>
+          </div>
+        </div>
+        <div id="stuList" class="empty">Loading…</div>
+      </div>
+    </div>
+
+    <!-- TEACHERS -->
+    <div class="panel" id="panel-teachers">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Teachers</h4>
+          <button class="btn btn-green" id="addTeacherBtn">+ Add Teacher</button>
+        </div>
+        <div id="tcList" class="empty">Loading…</div>
+      </div>
+    </div>
+
+    <!-- FINANCE -->
+    <div class="panel" id="panel-finance">
+      <div class="tabs">
+        <div class="tab active" data-t="payments">Payments</div>
+        <div class="tab" data-t="fees">Fee Structures</div>
+        <div class="tab" data-t="summary">Summary</div>
+      </div>
+      <div id="ft-payments">
+        <div class="card">
+          <div class="card-hdr"><h4>Payments</h4><button class="btn btn-green" id="recordPayBtn">+ Record Payment</button></div>
+          <div id="payList" class="empty">Loading…</div>
+        </div>
+      </div>
+      <div id="ft-fees" style="display:none">
+        <div class="card">
+          <div class="card-hdr"><h4>Fee Structures</h4><button class="btn btn-green" id="addFeeBtn">+ Add Fee</button></div>
+          <div id="feeList" class="empty">Loading…</div>
+        </div>
+      </div>
+      <div id="ft-summary" style="display:none">
+        <div class="stat-grid" id="finSummary"></div>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <div class="panel" id="panel-attendance">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>View Attendance</h4>
+          <div class="search-row">
+            <input type="date" id="attDate">
+            <button class="btn btn-green" id="loadAttBtn">Load</button>
+          </div>
+        </div>
+        <div id="attView" class="empty">Select a date to view records.</div>
+      </div>
+    </div>
+
+    <!-- STAFF -->
+    <div class="panel" id="panel-staff">
+      <div class="card">
+        <div class="card-hdr"><h4>Staff Accounts</h4><button class="btn btn-green" id="addStaffBtn">+ Add Staff</button></div>
+        <div id="staffList" class="empty">Loading…</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL: Student -->
+<div class="modal-bg" id="stuModal">
+  <div class="modal">
+    <h3 id="stuModalTitle">Add Student</h3>
+    <input type="hidden" id="s-id">
+    <div class="fg-row">
+      <div class="fg"><label>Full Name *</label><input id="s-name" placeholder="Jane Mwangi"></div>
+      <div class="fg"><label>Admission No *</label><input id="s-adm" placeholder="ADM-2024-001"></div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Grade *</label><select id="s-grade"></select></div>
+      <div class="fg"><label>Gender</label>
+        <select id="s-gender"><option value="">–</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select>
+      </div>
+    </div>
+    <div class="fg"><label>Date of Birth</label><input type="date" id="s-dob"></div>
+    <div class="fg-row">
+      <div class="fg"><label>Parent/Guardian Name</label><input id="s-pname" placeholder="John Mwangi"></div>
+      <div class="fg"><label>Parent Phone</label><input id="s-pphone" placeholder="0712345678"></div>
+    </div>
+    <div class="fg"><label>Parent Email</label><input type="email" id="s-pemail" placeholder="parent@gmail.com"></div>
+    <details style="margin-bottom:12px">
+      <summary style="font-size:11px;font-weight:600;color:#047857;cursor:pointer;padding:4px 0">
+        + Create Student Login Account (optional)
+      </summary>
+      <div style="margin-top:8px;background:#f0fdf4;padding:10px;border-radius:8px">
+        <div class="note">Fill these to create a login account so the student can access their portal.</div>
+        <div class="fg"><label>Student Email</label><input id="s-email" type="email" placeholder="student@email.com"></div>
+        <div class="fg"><label>Password (min 6 chars)</label><input id="s-pass" type="password" placeholder="••••••••"></div>
+      </div>
+    </details>
+    <div id="stuAlert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" onclick="closeModal('stuModal')">Cancel</button>
+      <button class="btn btn-green" id="saveStuBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Teacher -->
+<div class="modal-bg" id="tcModal">
+  <div class="modal">
+    <h3 id="tcModalTitle">Add Teacher</h3>
+    <input type="hidden" id="tc-id">
+    <div class="fg-row">
+      <div class="fg"><label>Full Name *</label><input id="tc-name" placeholder="Mr. Kamau Wanjiru"></div>
+      <div class="fg"><label>TSC Number</label><input id="tc-tsc" placeholder="TSC-12345"></div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Email</label><input type="email" id="tc-email" placeholder="teacher@school.ac.ke"></div>
+      <div class="fg"><label>Phone</label><input id="tc-phone" placeholder="0712345678"></div>
+    </div>
+    <div class="fg"><label>Department / Subject Area</label><input id="tc-dept" placeholder="Mathematics"></div>
+    <details style="margin-bottom:12px">
+      <summary style="font-size:11px;font-weight:600;color:#047857;cursor:pointer;padding:4px 0">
+        + Create Teacher Login Account
+      </summary>
+      <div style="margin-top:8px;background:#f0fdf4;padding:10px;border-radius:8px">
+        <div class="note">Fill to create a portal login for this teacher (TEACHER role).</div>
+        <div class="fg"><label>Login Email</label><input id="tc-lemail" type="email" placeholder="teacher@email.com"></div>
+        <div class="fg"><label>Password (min 6 chars)</label><input id="tc-lpass" type="password" placeholder="••••••••"></div>
+      </div>
+    </details>
+    <div id="tcAlert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" onclick="closeModal('tcModal')">Cancel</button>
+      <button class="btn btn-green" id="saveTcBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Payment -->
+<div class="modal-bg" id="payModal">
+  <div class="modal">
+    <h3>Record Payment</h3>
+    <div class="fg"><label>Student *</label><select id="p-stu"></select></div>
+    <div class="fg-row">
+      <div class="fg"><label>Amount (KES) *</label><input type="number" id="p-amt" min="1"></div>
+      <div class="fg"><label>Method *</label>
+        <select id="p-method"><option value="">–</option><option value="MPESA">M-Pesa</option>
+          <option value="BANK">Bank</option><option value="CASH">Cash</option><option value="CHEQUE">Cheque</option></select>
+      </div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Term *</label>
+        <select id="p-term"><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+      </div>
+      <div class="fg"><label>Year *</label><input type="number" id="p-year" min="2020"></div>
+    </div>
+    <div class="fg"><label>Reference</label><input id="p-ref" placeholder="M-Pesa code / receipt no."></div>
+    <div class="fg"><label>Notes</label><textarea id="p-notes" rows="2"></textarea></div>
+    <div id="payAlert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" onclick="closeModal('payModal')">Cancel</button>
+      <button class="btn btn-green" id="savePayBtn">Record</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Fee Structure -->
+<div class="modal-bg" id="feeModal">
+  <div class="modal">
+    <h3>Add Fee Structure</h3>
+    <div class="fg"><label>Grade *</label><select id="f-grade"></select></div>
+    <div class="fg-row">
+      <div class="fg"><label>Term *</label>
+        <select id="f-term"><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+      </div>
+      <div class="fg"><label>Year *</label><input type="number" id="f-year" min="2020"></div>
+    </div>
+    <div class="fg"><label>Amount (KES) *</label><input type="number" id="f-amt" min="0"></div>
+    <div class="fg"><label>Description</label><input id="f-desc" placeholder="Optional"></div>
+    <div id="feeAlert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" onclick="closeModal('feeModal')">Cancel</button>
+      <button class="btn btn-green" id="saveFeeBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Staff User -->
+<div class="modal-bg" id="staffModal">
+  <div class="modal">
+    <h3>Add Staff Account</h3>
+    <div class="fg"><label>Full Name *</label><input id="sf-name" placeholder="Jane Doe"></div>
+    <div class="fg"><label>Email *</label><input type="email" id="sf-email" placeholder="staff@school.ac.ke"></div>
+    <div class="fg-row">
+      <div class="fg"><label>Phone</label><input id="sf-phone" placeholder="0712345678"></div>
+      <div class="fg"><label>Role *</label>
+        <select id="sf-role">
+          <option value="TEACHER">Teacher</option>
+          <option value="FINANCE">Finance</option>
+          <option value="SCHOOL_ADMIN">School Admin</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Password * (min 6 chars)</label><input type="password" id="sf-pass" placeholder="••••••••"></div>
+    <div id="staffAlert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" onclick="closeModal('staffModal')">Cancel</button>
+      <button class="btn btn-green" id="saveStaffBtn">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Link Parent -->
+<div class="modal-bg" id="parentLinkModal">
+  <div class="modal">
+    <h3>Link Parent to Student</h3>
+    <input type="hidden" id="pl-stuId">
+    <div class="fg"><label>Student</label><input id="pl-stuName" readonly style="background:#f8fafc"></div>
+    <div class="fg"><label>Parent Account *</label><select id="pl-parent"><option value="">Select parent…</option></select></div>
+    <div id="plAlert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" onclick="closeModal('parentLinkModal')">Cancel</button>
+      <button class="btn btn-blue" id="savePlBtn">Link Parent</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { guardPage, clearSession, schools, students, teachers, finance, attendance, users } from "./js/api.js";
+const me = guardPage(["SCHOOL_ADMIN"]);
+document.getElementById("adminName").textContent = me.name;
+document.getElementById("topMeta").textContent = me.role + " · " + me.email;
+document.getElementById("schoolBadgeTop").textContent = "🏫 " + (me.school_name || "My School") + (me.school_code ? " · " + me.school_code : "");
+document.getElementById("logoutBtn").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
+  await logout();
+});
+
+const GRADES = [
+  {id:1,l:"PP1"},{id:2,l:"PP2"},{id:3,l:"Grade 1"},{id:4,l:"Grade 2"},{id:5,l:"Grade 3"},
+  {id:6,l:"Grade 4"},{id:7,l:"Grade 5"},{id:8,l:"Grade 6"},{id:9,l:"Grade 7"},{id:10,l:"Grade 8"},
+  {id:11,l:"Grade 9"},{id:12,l:"Grade 10"},{id:13,l:"Grade 11"},{id:14,l:"Grade 12"}
+];
+const gradeLabel = id => GRADES.find(g => g.id === parseInt(id))?.l || "–";
+
+// ─── populate grade selects ────────────────────────────────────────────────────
+function gradeOptions(sel, withAll=false) {
+  sel.innerHTML = (withAll ? "<option value=''>All Grades</option>" : "<option value=''>Select grade…</option>") +
+    GRADES.map(g => `<option value="${g.id}">${g.l}</option>`).join("");
+}
+gradeOptions(document.getElementById("s-grade"));
+gradeOptions(document.getElementById("f-grade"));
+gradeOptions(document.getElementById("stuGradeFilter"), true);
+
+let allStudents = [], allTeachers = [], allParents = [];
+
+// ─── Nav ───────────────────────────────────────────────────────────────────────
+window.nav = (p) => {
+  document.querySelectorAll(".nav-item").forEach(x => x.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(x => x.classList.remove("active"));
+  const el = document.querySelector(`.nav-item[data-p="${p}"]`);
+  if (el) el.classList.add("active");
+  document.getElementById("panel-"+p).classList.add("active");
+  document.getElementById("pageTitle").textContent = el?.textContent.trim() || p;
+};
+
+document.querySelectorAll(".nav-item").forEach(el => {
+  el.addEventListener("click", () => {
+    nav(el.dataset.p);
+    if (el.dataset.p === "staff") loadStaff();
+    if (el.dataset.p === "finance") loadFinance();
+    if (el.dataset.p === "teachers") loadTeachers();
+    if (el.dataset.p === "attendance") {
+      document.getElementById("attDate").value = new Date().toISOString().split("T")[0];
+    }
+  });
+});
+
+// Finance sub-tabs
+document.querySelectorAll(".tab").forEach(t => {
+  t.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+    t.classList.add("active");
+    ["payments","fees","summary"].forEach(id =>
+      document.getElementById("ft-"+id).style.display = id === t.dataset.t ? "" : "none"
+    );
+    if (t.dataset.t === "summary") loadFinSummary();
+    if (t.dataset.t === "fees") loadFees();
+  });
+});
+
+// ─── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  // Show school name/code instantly from session — no API wait
+  document.getElementById("schoolName").textContent = me.school_name || "My School";
+  document.getElementById("schoolCode").textContent = me.school_code || "";
+  document.title = (me.school_name || "School") + " – Admin";
+
+  const [statsRes, stuRes, parRes] = await Promise.all([
+    schools.stats(me.school_id),
+    students.list(),
+    users.list({ role:"PARENT" }),
+  ]);
+  if (statsRes?.success) {
+    document.getElementById("st-students").textContent = statsRes.data.students;
+    document.getElementById("st-teachers").textContent = statsRes.data.teachers;
+    document.getElementById("st-revenue").textContent = "KES " + Number(statsRes.data.total_revenue).toLocaleString();
+    document.getElementById("st-staff").textContent = statsRes.data.staff;
+  }
+
+  allStudents = stuRes?.data || [];
+  allParents  = parRes?.data || [];
+
+  renderStudents(allStudents);
+  renderOvStudents(allStudents.slice(0, 8));
+  populateStudentSelect();
+  populateParentSelect();
+  document.getElementById("p-year").value = new Date().getFullYear();
+  document.getElementById("f-year").value = new Date().getFullYear();
+}
+
+// ─── Students ──────────────────────────────────────────────────────────────────
+function renderStudents(data) {
+  const el = document.getElementById("stuList");
+  if (!data.length) { el.innerHTML = "<div class='empty'>No students yet.</div>"; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Adm No</th><th>Name</th><th>Grade</th><th>Gender</th><th>Parent</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${data.map(s => `<tr>
+      <td>${s.admission_no}</td>
+      <td><strong>${s.full_name}</strong></td>
+      <td>${s.grade_level||gradeLabel(s.grade_id)||"–"}</td>
+      <td style="text-transform:capitalize">${s.gender||"–"}</td>
+      <td>${s.parent_name||"–"}<br><span style="color:#9ca3af;font-size:10px">${s.parent_phone||""}</span></td>
+      <td><span class="badge ${s.is_active?"bg":"br"}">${s.is_active?"Active":"Inactive"}</span></td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick='openEditStudent(${JSON.stringify(s)})'>Edit</button>
+        <button class="btn btn-sm" style="background:#ede9fe;color:#6d28d9" onclick="openLinkParent('${s.id}','${s.full_name}')">👨‍👩‍👧</button>
+        ${s.is_active ? `<button class="btn btn-red btn-sm" onclick="deactivateStudent('${s.id}')">Remove</button>` : ""}
+      </td>
+    </tr>`).join("")}</tbody></table>`;
+}
+
+function renderOvStudents(data) {
+  const el = document.getElementById("ov-students");
+  if (!data.length) { el.innerHTML = "<div class='empty'>No students.</div>"; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Adm No</th><th>Name</th><th>Grade</th><th>Parent Phone</th></tr></thead>
+    <tbody>${data.map(s => `<tr>
+      <td>${s.admission_no}</td><td><strong>${s.full_name}</strong></td>
+      <td>${s.grade_level||gradeLabel(s.grade_id)||"–"}</td><td>${s.parent_phone||"–"}</td>
+    </tr>`).join("")}</tbody></table>`;
+}
+
+window.filterStudents = () => {
+  const q = document.getElementById("stuSearch").value.toLowerCase();
+  const gf = document.getElementById("stuGradeFilter").value;
+  renderStudents(allStudents.filter(s =>
+    (!q || s.full_name.toLowerCase().includes(q) || s.admission_no.toLowerCase().includes(q)) &&
+    (!gf || String(s.grade_id) === gf)
+  ));
+};
+
+document.getElementById("addStudentBtn").addEventListener("click", () => {
+  document.getElementById("stuModalTitle").textContent = "Add Student";
+  document.getElementById("s-id").value = "";
+  ["s-name","s-adm","s-dob","s-pname","s-pphone","s-pemail","s-email","s-pass"].forEach(i => document.getElementById(i).value = "");
+  document.getElementById("s-grade").value = "";
+  document.getElementById("s-gender").value = "";
+  document.getElementById("stuAlert").innerHTML = "";
+  document.getElementById("stuModal").classList.add("open");
+});
+
+window.openEditStudent = (s) => {
+  document.getElementById("stuModalTitle").textContent = "Edit Student";
+  document.getElementById("s-id").value = s.id;
+  document.getElementById("s-name").value = s.full_name||"";
+  document.getElementById("s-adm").value = s.admission_no||"";
+  document.getElementById("s-grade").value = s.grade_id||"";
+  document.getElementById("s-gender").value = s.gender||"";
+  document.getElementById("s-dob").value = s.date_of_birth||"";
+  document.getElementById("s-pname").value = s.parent_name||"";
+  document.getElementById("s-pphone").value = s.parent_phone||"";
+  document.getElementById("s-pemail").value = s.parent_email||"";
+  document.getElementById("stuAlert").innerHTML = "";
+  document.getElementById("stuModal").classList.add("open");
+};
+
+document.getElementById("saveStuBtn").addEventListener("click", async () => {
+  const id = document.getElementById("s-id").value;
+  const full_name    = document.getElementById("s-name").value.trim();
+  const admission_no = document.getElementById("s-adm").value.trim();
+  const grade_id     = parseInt(document.getElementById("s-grade").value);
+  const gender       = document.getElementById("s-gender").value;
+  const date_of_birth= document.getElementById("s-dob").value;
+  const parent_name  = document.getElementById("s-pname").value.trim();
+  const parent_phone = document.getElementById("s-pphone").value.trim();
+  const parent_email = document.getElementById("s-pemail").value.trim();
+  const email        = document.getElementById("s-email").value.trim();
+  const password     = document.getElementById("s-pass").value;
+
+  if (!full_name || !admission_no || !grade_id) { setAlert("stuAlert","Name, admission no and grade required."); return; }
+
+  const body = { full_name, admission_no, grade_id, gender, date_of_birth, parent_name, parent_phone, parent_email };
+  if (!id && email && password) { body.email = email; body.password = password; body.create_account = true; }
+
+  const res = id ? await students.update(id, body) : await students.create(body);
+  if (!res?.success) { setAlert("stuAlert", res?.message||"Failed."); return; }
+  setAlert("stuAlert", "Saved!", "as");
+  setTimeout(() => { closeModal("stuModal"); reloadStudents(); }, 700);
+});
+
+window.deactivateStudent = async (id) => {
+  if (!confirm("Remove this student?")) return;
+  const res = await students.deactivate(id);
+  if (res?.success) reloadStudents();
+  else alert(res?.message||"Failed.");
+};
+
+async function reloadStudents() {
+  const res = await students.list();
+  allStudents = res?.data||[];
+  renderStudents(allStudents);
+  populateStudentSelect();
+}
+
+// ─── Link Parent ───────────────────────────────────────────────────────────────
+window.openLinkParent = (stuId, stuName) => {
+  document.getElementById("pl-stuId").value = stuId;
+  document.getElementById("pl-stuName").value = stuName;
+  document.getElementById("plAlert").innerHTML = "";
+  document.getElementById("parentLinkModal").classList.add("open");
+};
+
+function populateParentSelect() {
+  const sel = document.getElementById("pl-parent");
+  sel.innerHTML = `<option value="">Select parent…</option>` +
+    allParents.map(p => `<option value="${p.id}">${p.name} (${p.email})</option>`).join("");
+}
+
+document.getElementById("savePlBtn").addEventListener("click", async () => {
+  const stuId    = document.getElementById("pl-stuId").value;
+  const parentId = document.getElementById("pl-parent").value;
+  if (!parentId) { setAlert("plAlert","Select a parent."); return; }
+  const res = await students.linkParent(stuId, parentId);
+  if (!res?.success) { setAlert("plAlert", res?.message||"Failed."); return; }
+  setAlert("plAlert","Parent linked!","as");
+  setTimeout(() => closeModal("parentLinkModal"), 700);
+});
+
+// ─── Teachers ──────────────────────────────────────────────────────────────────
+async function loadTeachers() {
+  const res = await teachers.list();
+  allTeachers = res?.data||[];
+  const el = document.getElementById("tcList");
+  if (!allTeachers.length) { el.innerHTML = "<div class='empty'>No teachers yet.</div>"; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Name</th><th>TSC No</th><th>Department</th><th>Email</th><th>Phone</th><th>Status</th><th></th></tr></thead>
+    <tbody>${allTeachers.map(t => `<tr>
+      <td><strong>${t.full_name}</strong></td>
+      <td>${t.tsc_no||"–"}</td><td>${t.department||"–"}</td>
+      <td>${t.email||"–"}</td><td>${t.phone||"–"}</td>
+      <td><span class="badge ${t.is_active?"bg":"br"}">${t.is_active?"Active":"Inactive"}</span></td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-sm" onclick='openEditTeacher(${JSON.stringify(t)})'>Edit</button>
+        ${t.is_active ? `<button class="btn btn-red btn-sm" onclick="deactivateTeacher('${t.id}')">Remove</button>` : ""}
+      </td>
+    </tr>`).join("")}</tbody></table>`;
+}
+
+document.getElementById("addTeacherBtn").addEventListener("click", () => {
+  document.getElementById("tcModalTitle").textContent = "Add Teacher";
+  document.getElementById("tc-id").value = "";
+  ["tc-name","tc-tsc","tc-email","tc-phone","tc-dept","tc-lemail","tc-lpass"].forEach(i => document.getElementById(i).value = "");
+  document.getElementById("tcAlert").innerHTML = "";
+  document.getElementById("tcModal").classList.add("open");
+});
+
+window.openEditTeacher = (t) => {
+  document.getElementById("tcModalTitle").textContent = "Edit Teacher";
+  document.getElementById("tc-id").value = t.id;
+  document.getElementById("tc-name").value = t.full_name||"";
+  document.getElementById("tc-tsc").value = t.tsc_no||"";
+  document.getElementById("tc-email").value = t.email||"";
+  document.getElementById("tc-phone").value = t.phone||"";
+  document.getElementById("tc-dept").value = t.department||"";
+  document.getElementById("tcAlert").innerHTML = "";
+  document.getElementById("tcModal").classList.add("open");
+};
+
+document.getElementById("saveTcBtn").addEventListener("click", async () => {
+  const id      = document.getElementById("tc-id").value;
+  const full_name  = document.getElementById("tc-name").value.trim();
+  const tsc_no     = document.getElementById("tc-tsc").value.trim();
+  const email      = document.getElementById("tc-email").value.trim();
+  const phone      = document.getElementById("tc-phone").value.trim();
+  const department = document.getElementById("tc-dept").value.trim();
+  const lemail     = document.getElementById("tc-lemail").value.trim();
+  const lpass      = document.getElementById("tc-lpass").value;
+
+  if (!full_name) { setAlert("tcAlert","Full name required."); return; }
+
+  // If creating new + login credentials given → create user account first
+  let user_id = null;
+  if (!id && lemail && lpass) {
+    if (lpass.length < 6) { setAlert("tcAlert","Password min 6 chars."); return; }
+    const ures = await (await import("./js/api.js")).users.create({
+      email: lemail, password: lpass, name: full_name, role:"TEACHER",
+    });
+    if (!ures?.success) { setAlert("tcAlert", "Login account: " + (ures?.message||"Failed.")); return; }
+    user_id = ures.data.id;
+  }
+
+  const body = { full_name, tsc_no, email, phone, department };
+  if (user_id) body.user_id = user_id;
+
+  const res = id ? await teachers.update(id, body) : await teachers.create(body);
+  if (!res?.success) { setAlert("tcAlert", res?.message||"Failed."); return; }
+  setAlert("tcAlert","Saved!","as");
+  setTimeout(() => { closeModal("tcModal"); loadTeachers(); }, 700);
+});
+
+window.deactivateTeacher = async (id) => {
+  if (!confirm("Remove this teacher?")) return;
+  const res = await teachers.delete(id);
+  if (res?.success) loadTeachers();
+  else alert(res?.message||"Failed.");
+};
+
+// ─── Finance ───────────────────────────────────────────────────────────────────
+function populateStudentSelect() {
+  const sel = document.getElementById("p-stu");
+  sel.innerHTML = `<option value="">Select student…</option>` +
+    allStudents.filter(s=>s.is_active).map(s=>`<option value="${s.id}">${s.full_name} (${s.admission_no})</option>`).join("");
+}
+
+async function loadFinance() {
+  const res = await finance.payments({});
+  const data = res?.data||[];
+  const el = document.getElementById("payList");
+  if (!data.length) { el.innerHTML="<div class='empty'>No payments.</div>"; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Student</th><th>Adm No</th><th>Amount</th><th>Method</th><th>Term</th><th>Ref</th><th>Date</th></tr></thead>
+    <tbody>${data.map(p=>`<tr>
+      <td>${p.student_name||"–"}</td><td>${p.admission_no||"–"}</td>
+      <td>KES ${Number(p.amount).toLocaleString()}</td>
+      <td><span class="badge bb">${p.method}</span></td>
+      <td>Term ${p.term}</td><td>${p.reference||"–"}</td>
+      <td>${new Date(p.created_at).toLocaleDateString()}</td>
+    </tr>`).join("")}</tbody></table>`;
+}
+
+async function loadFees() {
+  const res = await finance.feeStructures({});
+  const data = res?.data||[];
+  const el = document.getElementById("feeList");
+  if (!data.length) { el.innerHTML="<div class='empty'>No fee structures.</div>"; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Grade</th><th>Term</th><th>Year</th><th>Amount (KES)</th><th>Description</th></tr></thead>
+    <tbody>${data.map(f=>`<tr>
+      <td>${f.grade_level||"–"}</td><td>Term ${f.term}</td><td>${f.year}</td>
+      <td>KES ${Number(f.amount).toLocaleString()}</td><td>${f.description||"–"}</td>
+    </tr>`).join("")}</tbody></table>`;
+}
+
+async function loadFinSummary() {
+  const res = await finance.summary({ year: new Date().getFullYear() });
+  if (!res?.success) return;
+  document.getElementById("finSummary").innerHTML =
+    `<div class="stat-card"><div class="val">KES ${Number(res.data.total_revenue).toLocaleString()}</div><div class="lbl">Total ${res.data.year}</div></div>` +
+    res.data.by_term.map(t=>
+      `<div class="stat-card"><div class="val">KES ${Number(t.total).toLocaleString()}</div><div class="lbl">Term ${t.term} (${t.count} payments)</div></div>`
+    ).join("");
+}
+
+document.getElementById("recordPayBtn").addEventListener("click", () => {
+  ["p-amt","p-ref","p-notes"].forEach(i=>document.getElementById(i).value="");
+  document.getElementById("p-stu").value="";
+  document.getElementById("payAlert").innerHTML="";
+  document.getElementById("payModal").classList.add("open");
+});
+
+document.getElementById("savePayBtn").addEventListener("click", async () => {
+  const body = {
+    student_id: document.getElementById("p-stu").value,
+    amount:     parseFloat(document.getElementById("p-amt").value),
+    method:     document.getElementById("p-method").value,
+    term:       parseInt(document.getElementById("p-term").value),
+    year:       parseInt(document.getElementById("p-year").value),
+    reference:  document.getElementById("p-ref").value.trim(),
+    notes:      document.getElementById("p-notes").value.trim(),
+  };
+  if (!body.student_id||!body.amount||!body.method) { setAlert("payAlert","Fill required fields."); return; }
+  const res = await finance.recordPayment(body);
+  if (!res?.success) { setAlert("payAlert",res?.message||"Failed."); return; }
+  setAlert("payAlert","Recorded!","as");
+  setTimeout(() => { closeModal("payModal"); loadFinance(); init(); }, 700);
+});
+
+document.getElementById("addFeeBtn").addEventListener("click", () => {
+  ["f-amt","f-desc"].forEach(i=>document.getElementById(i).value="");
+  document.getElementById("feeAlert").innerHTML="";
+  document.getElementById("feeModal").classList.add("open");
+});
+
+document.getElementById("saveFeeBtn").addEventListener("click", async () => {
+  const body = {
+    grade_id:    parseInt(document.getElementById("f-grade").value),
+    term:        parseInt(document.getElementById("f-term").value),
+    year:        parseInt(document.getElementById("f-year").value),
+    amount:      parseFloat(document.getElementById("f-amt").value),
+    description: document.getElementById("f-desc").value.trim(),
+  };
+  if (!body.grade_id||!body.amount) { setAlert("feeAlert","Grade and amount required."); return; }
+  const res = await finance.createFeeStruct(body);
+  if (!res?.success) { setAlert("feeAlert",res?.message||"Failed."); return; }
+  setAlert("feeAlert","Saved!","as");
+  setTimeout(() => { closeModal("feeModal"); loadFees(); }, 700);
+});
+
+// ─── Attendance ────────────────────────────────────────────────────────────────
+document.getElementById("loadAttBtn").addEventListener("click", async () => {
+  const date = document.getElementById("attDate").value;
+  if (!date) return;
+  const res = await attendance.list({ date });
+  const data = res?.data||[];
+  const el = document.getElementById("attView");
+  if (!data.length) { el.innerHTML="<div class='empty'>No attendance records for this date.</div>"; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Student</th><th>Adm No</th><th>Status</th><th>Remarks</th></tr></thead>
+    <tbody>${data.map(a=>`<tr>
+      <td>${a.full_name||"–"}</td><td>${a.admission_no||"–"}</td>
+      <td><span class="badge ${a.status==="present"?"bg":a.status==="absent"?"br":a.status==="late"?"by":"bpu"}">${a.status}</span></td>
+      <td>${a.remarks||"–"}</td>
+    </tr>`).join("")}</tbody></table>`;
+});
+
+// ─── Staff ─────────────────────────────────────────────────────────────────────
+async function loadStaff() {
+  const res = await users.list({});
+  const data = (res?.data||[]).filter(u => !["STUDENT","PARENT"].includes(u.role));
+  const el = document.getElementById("staffList");
+  if (!data.length) { el.innerHTML="<div class='empty'>No staff accounts.</div>"; return; }
+  const schoolLabel = me.school_name ? `🏫 ${me.school_name}` : "";
+  el.innerHTML = `<table>
+    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>School</th><th>Status</th><th>Created</th><th></th></tr></thead>
+    <tbody>${data.map(u=>`<tr>
+      <td><strong>${u.name}</strong></td>
+      <td style="font-size:11px">${u.email}</td>
+      <td><span class="badge bb">${u.role}</span></td>
+      <td style="font-size:11px;color:#047857">${schoolLabel}</td>
+      <td><span class="badge ${u.is_active?"bg":"br"}">${u.is_active?"Active":"Inactive"}</span></td>
+      <td>${new Date(u.created_at).toLocaleDateString()}</td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        ${u.id!==me.id ? (
+          u.is_active
+            ? `<button class="btn btn-red btn-sm" onclick="toggleStaff('${u.id}','${u.name}',false)">Deactivate</button>`
+            : `<button class="btn btn-green btn-sm" onclick="toggleStaff('${u.id}','${u.name}',true)">Activate</button>`
+        ) : "<span style='font-size:11px;color:#9ca3af'>You</span>"}
+        ${u.id!==me.id ? `<button class="btn btn-ghost btn-sm" onclick="resetStaffPw('${u.id}','${u.name}')">Reset PW</button>` : ""}
+      </td>
+    </tr>`).join("")}</tbody></table>`;
+}
+
+document.getElementById("addStaffBtn").addEventListener("click", () => {
+  ["sf-name","sf-email","sf-phone","sf-pass"].forEach(i=>document.getElementById(i).value="");
+  document.getElementById("sf-role").value="TEACHER";
+  document.getElementById("staffAlert").innerHTML="";
+  document.getElementById("staffModal").classList.add("open");
+});
+
+document.getElementById("saveStaffBtn").addEventListener("click", async () => {
+  const name     = document.getElementById("sf-name").value.trim();
+  const email    = document.getElementById("sf-email").value.trim();
+  const phone    = document.getElementById("sf-phone").value.trim();
+  const role     = document.getElementById("sf-role").value;
+  const password = document.getElementById("sf-pass").value;
+  if (!name||!email||!password) { setAlert("staffAlert","Name, email, password required."); return; }
+  if (password.length<6) { setAlert("staffAlert","Password min 6 chars."); return; }
+  const res = await users.create({ name, email, phone, role, password });
+  if (!res?.success) { setAlert("staffAlert",res?.message||"Failed."); return; }
+  setAlert("staffAlert","Account created!","as");
+  setTimeout(() => { closeModal("staffModal"); loadStaff(); }, 700);
+});
+
+window.toggleStaff = async (id, name, activate) => {
+  const action = activate ? "Activate" : "Deactivate";
+  if (!confirm(`${action} ${name}?`)) return;
+  const res = await users.update(id, { is_active: activate });
+  if (res?.success) loadStaff();
+  else alert(res?.message || "Failed.");
+};
+
+window.resetStaffPw = async (id, name) => {
+  const pw = prompt(`New password for "${name}" (min 6 chars):`);
+  if (!pw || pw.length < 6) { if (pw !== null) alert("Min 6 chars."); return; }
+  const res = await users.resetPassword(id, pw);
+  if (res?.success) alert(`Password reset for ${name}.`);
+  else alert(res?.message || "Failed.");
+};
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+window.closeModal = id => document.getElementById(id).classList.remove("open");
+function setAlert(el, msg, cls="ae") {
+  document.getElementById(el).innerHTML = `<div class="alert ${cls}">${msg}</div>`;
+}
+
+init();
+</script>
+</body>
+</html>

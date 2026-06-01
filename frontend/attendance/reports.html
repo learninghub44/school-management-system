@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Reports</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <h2>Reports</h2>
+
+        <a href="../dashboard.html">Dashboard</a>
+        <a href="attendance.html">Mark Attendance</a>
+        <a href="reports.html" class="active">Reports</a>
+
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <header class="topbar">
+            <h3>Attendance Reports</h3>
+        </header>
+
+        <section class="content">
+
+            <!-- SUMMARY CARDS -->
+            <div class="card">
+
+                <h2>Student Attendance Summary</h2>
+
+                <select id="studentSelect"></select>
+
+                <button onclick="loadStudentReport()">Generate Report</button>
+
+            </div>
+
+            <!-- STATS -->
+            <div class="card">
+
+                <h3>Summary</h3>
+
+                <p>Present Days: <b id="presentCount">0</b></p>
+                <p>Absent Days: <b id="absentCount">0</b></p>
+                <p>Attendance %: <b id="attendancePercent">0%</b></p>
+
+            </div>
+
+            <!-- TABLE -->
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="reportTable"></tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<script type="module" src="../js/attendanceReports.js"></script>
+
+</body>
+</html>
