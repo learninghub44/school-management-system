@@ -14,7 +14,7 @@ window.CONFIG = {
   API: {
     BASE_URL: window.API_BASE_URL || (isDevelopment 
       ? "http://localhost:5000/api" 
-      : "/api"),
+      : "https://cbc-school-erp-api.onrender.com/api"),
     TIMEOUT: parseInt(process.env.REACT_APP_API_TIMEOUT || "30000"),
     RETRY_ATTEMPTS: parseInt(process.env.REACT_APP_API_RETRY || "3"),
   },
