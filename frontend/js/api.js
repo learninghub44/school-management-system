@@ -4,9 +4,13 @@
  *       localStorage only stores non-sensitive user profile for UI display
  * V-09: All rendering uses textContent / safe helpers — never innerHTML with user data
  */
-// Should only have:
-const API_BASE = window.API_BASE_URL || 'https://cbc-school-erp-api.onrender.com/api'
-// NOT a hardcoded real Render URL with credentials
+// Load API base from configuration (environment variables)
+const API_BASE = window.CONFIG?.API?.BASE_URL || window.API_BASE_URL || '/api';
+
+if (!API_BASE) {
+    console.error('❌ FATAL: API_BASE_URL not configured');
+    throw new Error('API configuration missing');
+}
 
 // ── Session helpers ────────────────────────────────────────────────
 // Session is managed via httpOnly cookies. LocalStorage is only a cache.
@@ -181,3 +185,15 @@ export async function logout() {
     clearSession();
     window.location.href = "/login.html";
 }
+
+// ── Reports & Analytics ────────────────────────────────────────────
+export const reports = {
+    dashboard:         (p) => apiFetch("/reports/dashboard",              { params:p }),
+    feeCollection:     (p) => apiFetch("/reports/fee-collection",         { params:p }),
+    dailyCollection:   (p) => apiFetch("/reports/daily-collection",       { params:p }),
+    outstandingBalances: (p) => apiFetch("/reports/outstanding-balances", { params:p }),
+    attendanceSummary: (p) => apiFetch("/reports/attendance-summary",     { params:p }),
+    cbcPerformance:    (p) => apiFetch("/reports/cbc-performance",        { params:p }),
+    studentStatement:  (id) => apiFetch(`/reports/student-statement/${id}`),
+    export:            (type, p) => apiFetch(`/reports/export/${type}`,   { params:p }),
+};

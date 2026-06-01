@@ -49,10 +49,8 @@ app.use(helmet({
 let allowedOrigins = (process.env.CORS_ORIGIN || "")
     .split(",").map(s => s.trim()).filter(Boolean);
 
-// V-10: Fallback for Cloudflare Pages (from your screenshot)
-if (process.env.NODE_ENV === "production" && !allowedOrigins.includes("https://cbc-school-erp.pages.dev")) {
-    allowedOrigins.push("https://cbc-school-erp.pages.dev");
-}
+// V-10: Only use explicitly configured origins
+// Do NOT add hardcoded fallback domains
 
 if (!allowedOrigins.length) {
     console.warn("⚠️  CORS_ORIGIN not set — all origins blocked in production.");
@@ -133,6 +131,7 @@ app.use("/api/finance",     require("./routes/finance"));
 app.use("/api/attendance",  require("./routes/attendance"));
 app.use("/api/assessments", require("./routes/assessments"));
 app.use("/api/cbc",         require("./routes/cbc"));
+app.use("/api/reports",     require("./routes/reports"));
 
 app.get("/", (req, res) => res.json({ name: "ZETU School Management System API", version: "3.0.0", status: "running" }));
 app.get("/api/health", (req, res) => res.json({ success: true, timestamp: new Date().toISOString() }));
@@ -146,8 +145,15 @@ app.use((err, req, res, next) => {
         return res.status(403).json({ success: false, message: "Forbidden." });
     }
     // Log full error server-side only
-    console.error(`[ERROR] ${req.method} ${req.path}:`, err.message);
-    return res.status(500).json({ success: false, message: "An unexpected error occurred." });
+    console.error(`[ERROR] ${req.method} ${req.path}:`, err.message, err.stack);
+    
+    // Don't expose stack traces in production
+    const isDev = process.env.NODE_ENV !== "production";
+    return res.status(500).json({
+        success: false,
+        message: "An unexpected error occurred.",
+        ...(isDev && { error: err.message })
+    });
 });
 
 const PORT = process.env.PORT || 5000;
