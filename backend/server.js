@@ -128,7 +128,7 @@ app.use("/api/attendance",  require("./routes/attendance"));
 app.use("/api/assessments", require("./routes/assessments"));
 app.use("/api/cbc",         require("./routes/cbc"));
 
-app.get("/", (req, res) => res.json({ name: "CBC School ERP API", version: "3.0.0", status: "running" }));
+app.get("/", (req, res) => res.json({ name: "ZETU School Management System API", version: "3.0.0", status: "running" }));
 app.get("/api/health", (req, res) => res.json({ success: true, timestamp: new Date().toISOString() }));
 
 // ─── 404 ───────────────────────────────────────────────────────────
@@ -145,4 +145,4 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅  CBC School ERP API on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅  ZETU School Management System API on port ${PORT}`));
