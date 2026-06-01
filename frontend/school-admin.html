@@ -8,7 +8,7 @@
 <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Plus Jakarta Sans',sans-serif;background:#f8fafc;color:#0f172a;min-height:100vh;display:flex}
-    .sidebar{width:260px;background:#ffffff;display:flex;flex-direction:column;flex-shrink:0;height:100vh;position:sticky;top:0;border-right:1px solid #e2e8f0}
+    .sidebar{width:260px;background:#ffffff;display:flex;flex-direction:column;flex-shrink:0;height:100vh;position:sticky;top:0;border-right:1px solid #e2e8f0;overflow-y:auto}
     .sidebar-brand{padding:32px 24px;border-bottom:1px solid #f1f5f9}
     .sidebar-brand h2{font-size:20px;font-weight:800;color:#4f46e5;letter-spacing:-0.5px}
     .sidebar-brand p{font-size:12px;color:#64748b;margin-top:4px;font-weight:500}
@@ -36,8 +36,8 @@
     .stat-card .val{font-size:32px;font-weight:800;color:#0f172a;letter-spacing:-1px}
     .stat-card .lbl{font-size:14px;color:#64748b;margin-top:4px;font-weight:500}
     .btn{padding:10px 20px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:inherit}
-    .btn-green,.btn-blue{background:#4f46e5;color:#ffffff}
-    .btn-green:hover,.btn-blue:hover{background:#4338ca}
+    .btn-blue{background:#4f46e5;color:#ffffff}
+    .btn-blue:hover{background:#4338ca}
     .btn-red{background:#ef4444;color:#fff}
     .btn-ghost{background:#f1f5f9;color:#64748b}
     .btn-ghost:hover{background:#e2e8f0}
@@ -46,17 +46,19 @@
     th{background:#f8fafc;padding:12px 24px;text-align:left;font-weight:600;color:#64748b;border-bottom:1px solid #e2e8f0}
     td{padding:16px 24px;border-bottom:1px solid #f1f5f9;color:#0f172a}
     .badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700}
-    .bg{background:#dcfce7;color:#15803d} .br{background:#fee2e2;color:#b91c1c}
-    .bb{background:#e0e7ff;color:#4338ca} .by{background:#fef9c3;color:#854d0e}
-    .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;align-items:center;justify-content:center}
+    .bg{background:#dcfce7;color:#15803d}.br{background:#fee2e2;color:#b91c1c}.bb{background:#e0e7ff;color:#4338ca}.by{background:#fef9c3;color:#854d0e}
+    .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;overflow-y:auto;padding:20px}
     .modal-bg.open{display:flex}
-    .modal{background:#ffffff;border-radius:16px;padding:32px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;border:1px solid #e2e8f0}
-    .modal h3{font-size:20px;font-weight:700;color:#0f172a;margin-bottom:24px}
+    .modal{background:#ffffff;border-radius:16px;padding:32px;width:100%;max-width:600px;border:1px solid #e2e8f0;box-shadow:0 20px 25px rgba(0,0,0,0.15);margin:auto}
+    .modal h3{font-size:20px;font-weight:700;color:#0f172a;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between}
+    .modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:#94a3b8}
+    .modal-close:hover{color:#0f172a}
     .fg{margin-bottom:16px}
     .fg label{display:block;font-size:12px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.025em}
     .fg input,.fg select,.fg textarea{width:100%;padding:12px 16px;background:#ffffff;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#0f172a;font-family:inherit;outline:none}
-    .fg input:focus,.fg select:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,0.1)}
+    .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,0.1)}
     .fg-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .fg-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
     .ma{display:flex;gap:12px;margin-top:24px;justify-content:flex-end}
     .alert{padding:12px 16px;border-radius:10px;font-size:14px;margin-top:16px;font-weight:500}
     .ae{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
@@ -69,6 +71,8 @@
     .btn-loading{position:relative;color:transparent!important}
     .btn-loading::after{content:"";position:absolute;width:18px;height:18px;top:50%;left:50%;margin:-9px 0 0 -9px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.6s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
+    .action-btns{display:flex;gap:8px}
+    .action-btns .btn{padding:6px 12px;font-size:12px}
 </style>
 </head>
 <body>
@@ -80,13 +84,14 @@
     <div id="schoolCode" style="font-size:10px;color:#94a3b8;margin-top:2px;font-family:monospace"></div>
   </div>
   <nav class="nav">
-    <div class="nav-item active" data-p="overview">Dashboard</div>
-    <div class="nav-item" data-p="students">Students</div>
-    <div class="nav-item" data-p="teachers">Teachers</div>
-    <div class="nav-item" data-p="finance">Finance</div>
-    <div class="nav-item" data-p="attendance">Attendance</div>
-    <div class="nav-item" data-p="curriculum">CBC Curriculum</div>
-    <div class="nav-item" data-p="staff">Staff Users</div>
+    <div class="nav-item active" data-p="overview">📊 Dashboard</div>
+    <div class="nav-item" data-p="students">👥 Students</div>
+    <div class="nav-item" data-p="teachers">👨‍🏫 Teachers</div>
+    <div class="nav-item" data-p="parents">👨‍👩‍👧 Parents</div>
+    <div class="nav-item" data-p="finance">💰 Finance</div>
+    <div class="nav-item" data-p="attendance">📋 Attendance</div>
+    <div class="nav-item" data-p="curriculum">📚 CBC Curriculum</div>
+    <div class="nav-item" data-p="staff">🔐 Staff Users</div>
   </nav>
   <div class="sidebar-footer">
     <div style="margin-bottom:12px;padding:0 4px">
@@ -100,106 +105,298 @@
 <div class="main">
   <header class="topbar">
     <h3 id="pageTitle">Dashboard</h3>
-    <div style="display:flex;align-items:center;gap:12px">
-      <span style="font-size:12px;background:#e0e7ff;color:#4338ca;padding:4px 12px;border-radius:8px;font-weight:700" id="schoolBadgeTop"></span>
-      <span class="user-info" id="topMeta"></span>
-    </div>
+    <div class="user-info" id="userInfo">Loading…</div>
   </header>
+
   <div class="content">
+    <!-- DASHBOARD PANEL -->
     <div class="panel active" id="panel-overview">
       <div class="stat-grid">
-        <div class="stat-card"><div class="val" id="st-students">–</div><div class="lbl">Students</div></div>
-        <div class="stat-card"><div class="val" id="st-teachers">–</div><div class="lbl">Teachers</div></div>
-        <div class="stat-card"><div class="val" id="st-revenue">–</div><div class="lbl">Revenue (KES)</div></div>
-        <div class="stat-card"><div class="val" id="st-staff">–</div><div class="lbl">Staff Accounts</div></div>
+        <div class="stat-card"><div class="val" id="totalStudents">0</div><div class="lbl">Total Students</div></div>
+        <div class="stat-card"><div class="val" id="totalTeachers">0</div><div class="lbl">Total Teachers</div></div>
+        <div class="stat-card"><div class="val" id="totalParents">0</div><div class="lbl">Total Parents</div></div>
+        <div class="stat-card"><div class="val" id="outstandingFees">KES 0</div><div class="lbl">Outstanding Fees</div></div>
       </div>
       <div class="card">
-        <div class="card-hdr"><h4>Recent Students</h4><button class="btn btn-green" onclick="window.nav('students')">View All</button></div>
-        <div id="ov-students" class="empty">Loading…</div>
+        <div class="card-hdr"><h4>Recent Activity</h4></div>
+        <div style="padding:24px" id="recentActivity" class="empty">Loading…</div>
       </div>
     </div>
+
+    <!-- STUDENTS PANEL -->
     <div class="panel" id="panel-students">
       <div class="card">
         <div class="card-hdr">
-          <h4>Students</h4>
-          <div style="display:flex;gap:10px">
-            <input id="stuSearch" placeholder="Search name / adm…" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px">
-            <select id="stuGradeFilter" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px"><option value="">All Grades</option></select>
-            <button class="btn btn-green" id="addStudentBtn">+ Add Student</button>
-          </div>
+          <h4>Students Management</h4>
+          <button class="btn btn-blue" id="addStudentBtn">+ Add Student</button>
         </div>
-        <div id="stuList" class="empty">Loading…</div>
+        <div style="padding:24px">
+          <div id="studentsList" class="empty">Loading…</div>
+        </div>
       </div>
     </div>
+
+    <!-- TEACHERS PANEL -->
     <div class="panel" id="panel-teachers">
       <div class="card">
-        <div class="card-hdr"><h4>Teachers</h4><button class="btn btn-green" id="addTeacherBtn">+ Add Teacher</button></div>
-        <div id="tcList" class="empty">Loading…</div>
+        <div class="card-hdr">
+          <h4>Teachers Management</h4>
+          <button class="btn btn-blue" id="addTeacherBtn">+ Add Teacher</button>
+        </div>
+        <div style="padding:24px">
+          <div id="teachersList" class="empty">Loading…</div>
+        </div>
       </div>
     </div>
+
+    <!-- PARENTS PANEL -->
+    <div class="panel" id="panel-parents">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Parents Management</h4>
+          <button class="btn btn-blue" id="addParentBtn">+ Add Parent</button>
+        </div>
+        <div style="padding:24px">
+          <div id="parentsList" class="empty">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FINANCE PANEL -->
     <div class="panel" id="panel-finance">
-      <div class="tabs">
-        <div class="tab active" data-t="payments">Payments</div>
-        <div class="tab" data-t="fees">Fee Structures</div>
-        <div class="tab" data-t="summary">Summary</div>
-      </div>
-      <div id="ft-payments">
-        <div class="card">
-          <div class="card-hdr"><h4>Payments</h4><button class="btn btn-green" id="recordPayBtn">+ Record Payment</button></div>
-          <div id="payList" class="empty">Loading…</div>
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Finance Management</h4>
+          <button class="btn btn-blue" id="recordPaymentBtn">+ Record Payment</button>
+        </div>
+        <div style="padding:24px">
+          <div id="paymentsList" class="empty">Loading…</div>
         </div>
       </div>
-      <div id="ft-fees" style="display:none">
-        <div class="card">
-          <div class="card-hdr"><h4>Fee Structures</h4><button class="btn btn-green" id="addFeeBtn">+ Add Fee</button></div>
-          <div id="feeList" class="empty">Loading…</div>
-        </div>
-      </div>
-      <div id="ft-summary" style="display:none"><div class="stat-grid" id="finSummary"></div></div>
     </div>
+
+    <!-- ATTENDANCE PANEL -->
     <div class="panel" id="panel-attendance">
       <div class="card">
-        <div class="card-hdr"><h4>Attendance</h4><div style="display:flex;gap:10px"><input type="date" id="attDate" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px"><button class="btn btn-green" id="loadAttBtn">Load</button></div></div>
-        <div id="attView" class="empty">Select a date to view records.</div>
+        <div class="card-hdr">
+          <h4>Attendance Management</h4>
+          <button class="btn btn-blue" id="recordAttendanceBtn">+ Record Attendance</button>
+        </div>
+        <div style="padding:24px">
+          <div id="attendanceList" class="empty">Loading…</div>
+        </div>
       </div>
     </div>
+
+    <!-- CURRICULUM PANEL -->
     <div class="panel" id="panel-curriculum">
-      <div class="tabs">
-        <div class="tab active" data-t="classes">Classes</div>
-        <div class="tab" data-t="streams">Streams</div>
-        <div class="tab" data-t="academic-years">Academic Years</div>
-        <div class="tab" data-t="categories">Assessment Categories</div>
+      <div class="card">
+        <div class="card-hdr">
+          <h4>CBC Curriculum Management</h4>
+          <button class="btn btn-blue" id="recordAssessmentBtn">+ Record Assessment</button>
+        </div>
+        <div style="padding:24px">
+          <div id="assessmentsList" class="empty">Loading…</div>
+        </div>
       </div>
-      <div id="ct-classes"><div class="card"><div class="card-hdr"><h4>Classes</h4><button class="btn btn-green" id="addClassBtn">+ New Class</button></div><div id="classList" class="empty">Loading…</div></div></div>
-      <div id="ct-streams" style="display:none"><div class="card"><div class="card-hdr"><h4>Streams</h4><button class="btn btn-green" id="addStreamBtn">+ New Stream</button></div><div id="streamList" class="empty">Loading…</div></div></div>
-      <div id="ct-academic-years" style="display:none"><div class="card"><div class="card-hdr"><h4>Academic Years</h4><button class="btn btn-green" id="addYearBtn">+ New Year</button></div><div id="yearList" class="empty">Loading…</div></div></div>
-      <div id="ct-categories" style="display:none"><div class="card"><div class="card-hdr"><h4>Assessment Categories</h4><button class="btn btn-green" id="addCatBtn">+ New Category</button></div><div id="catList" class="empty">Loading…</div></div></div>
     </div>
-    <div class="panel" id="panel-staff"><div class="card"><div class="card-hdr"><h4>Staff Accounts</h4><button class="btn btn-green" id="addStaffBtn">+ Add Staff</button></div><div id="staffList" class="empty">Loading…</div></div></div>
+
+    <!-- STAFF PANEL -->
+    <div class="panel" id="panel-staff">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Staff Users Management</h4>
+          <button class="btn btn-blue" id="addStaffBtn">+ Add Staff User</button>
+        </div>
+        <div style="padding:24px">
+          <div id="staffList" class="empty">Loading…</div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<div class="modal-bg" id="stuModal">
+<!-- MODALS -->
+
+<!-- ADD STUDENT MODAL -->
+<div class="modal-bg" id="modal-student">
   <div class="modal">
-    <h3 id="stuModalTitle">Add Student</h3>
-    <input type="hidden" id="s-id">
-    <div class="fg-row">
-      <div class="fg"><label>Full Name *</label><input id="s-name" placeholder="Jane Mwangi"></div>
-      <div class="fg"><label>Admission No *</label><input id="s-adm" placeholder="ADM-2024-001"></div>
-    </div>
-    <div class="fg-row">
-      <div class="fg"><label>Grade *</label><select id="s-grade"></select></div>
-      <div class="fg"><label>Gender</label><select id="s-gender"><option value="">–</option><option value="male">Male</option><option value="female">Female</option></select></div>
-    </div>
-    <div class="ma"><button class="btn btn-ghost" onclick="window.closeModal('stuModal')">Cancel</button><button class="btn btn-green" id="saveStuBtn">Save Student</button></div>
+    <h3>Add New Student <button class="modal-close" onclick="closeModal('modal-student')">×</button></h3>
+    <form id="form-student">
+      <div class="fg-row">
+        <div class="fg"><label>First Name *</label><input type="text" id="s-fname" required></div>
+        <div class="fg"><label>Last Name *</label><input type="text" id="s-lname" required></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Admission Number *</label><input type="text" id="s-adm" required></div>
+        <div class="fg"><label>Gender *</label><select id="s-gender" required><option>Select Gender</option><option>Male</option><option>Female</option></select></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Date of Birth *</label><input type="date" id="s-dob" required></div>
+        <div class="fg"><label>Grade *</label><select id="s-grade" required><option>Select Grade</option></select></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Stream</label><select id="s-stream"><option>Select Stream</option></select></div>
+        <div class="fg"><label>Status</label><select id="s-status"><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
+      </div>
+      <div class="fg"><label>Special Needs Information</label><textarea id="s-special" placeholder="Any special needs or requirements..."></textarea></div>
+      <div class="ma"><button type="button" class="btn btn-ghost" onclick="closeModal('modal-student')">Cancel</button><button type="submit" class="btn btn-blue">Add Student</button></div>
+      <div id="s-alert"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ADD TEACHER MODAL -->
+<div class="modal-bg" id="modal-teacher">
+  <div class="modal">
+    <h3>Add New Teacher <button class="modal-close" onclick="closeModal('modal-teacher')">×</button></h3>
+    <form id="form-teacher">
+      <div class="fg-row">
+        <div class="fg"><label>First Name *</label><input type="text" id="t-fname" required></div>
+        <div class="fg"><label>Last Name *</label><input type="text" id="t-lname" required></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>National ID *</label><input type="text" id="t-nid" required></div>
+        <div class="fg"><label>TSC Number</label><input type="text" id="t-tsc"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Email *</label><input type="email" id="t-email" required></div>
+        <div class="fg"><label>Phone Number *</label><input type="tel" id="t-phone" required></div>
+      </div>
+      <div class="fg"><label>Subject(s) Taught *</label><input type="text" id="t-subjects" placeholder="e.g., Mathematics, Science" required></div>
+      <div class="fg-row">
+        <div class="fg"><label>Grade/Class Assigned</label><select id="t-grade"><option>Select Grade</option></select></div>
+        <div class="fg"><label>Employment Date *</label><input type="date" id="t-empdate" required></div>
+      </div>
+      <div class="fg"><label>Status</label><select id="t-status"><option value="Active">Active</option><option value="Inactive">Inactive</option><option value="On Leave">On Leave</option></select></div>
+      <div class="ma"><button type="button" class="btn btn-ghost" onclick="closeModal('modal-teacher')">Cancel</button><button type="submit" class="btn btn-blue">Add Teacher</button></div>
+      <div id="t-alert"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ADD PARENT MODAL -->
+<div class="modal-bg" id="modal-parent">
+  <div class="modal">
+    <h3>Add New Parent/Guardian <button class="modal-close" onclick="closeModal('modal-parent')">×</button></h3>
+    <form id="form-parent">
+      <div class="fg-row">
+        <div class="fg"><label>First Name *</label><input type="text" id="p-fname" required></div>
+        <div class="fg"><label>Last Name *</label><input type="text" id="p-lname" required></div>
+      </div>
+      <div class="fg"><label>Relationship to Student *</label><select id="p-rel" required><option>Select Relationship</option><option>Father</option><option>Mother</option><option>Guardian</option><option>Uncle</option><option>Aunt</option></select></div>
+      <div class="fg-row">
+        <div class="fg"><label>National ID/Passport *</label><input type="text" id="p-nid" required></div>
+        <div class="fg"><label>Occupation</label><input type="text" id="p-occ"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Phone Number *</label><input type="tel" id="p-phone" required></div>
+        <div class="fg"><label>Alternative Phone</label><input type="tel" id="p-phone2"></div>
+      </div>
+      <div class="fg"><label>Email Address</label><input type="email" id="p-email"></div>
+      <div class="fg"><label>Physical Address</label><textarea id="p-addr" placeholder="Street, City, Postal Code..."></textarea></div>
+      <div class="fg"><label>Emergency Contact</label><input type="tel" id="p-emerg"></div>
+      <div class="ma"><button type="button" class="btn btn-ghost" onclick="closeModal('modal-parent')">Cancel</button><button type="submit" class="btn btn-blue">Add Parent</button></div>
+      <div id="p-alert"></div>
+    </form>
+  </div>
+</div>
+
+<!-- RECORD PAYMENT MODAL -->
+<div class="modal-bg" id="modal-payment">
+  <div class="modal">
+    <h3>Record Payment <button class="modal-close" onclick="closeModal('modal-payment')">×</button></h3>
+    <form id="form-payment">
+      <div class="fg-row">
+        <div class="fg"><label>Student *</label><select id="py-student" required><option>Select Student</option></select></div>
+        <div class="fg"><label>Payment Category *</label><select id="py-category" required><option>Select Category</option></select></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Amount Paid (KES) *</label><input type="number" id="py-amount" min="0" step="0.01" required></div>
+        <div class="fg"><label>Payment Method *</label><select id="py-method" required><option>Select Method</option><option>Cash</option><option>Bank Transfer</option><option>M-Pesa</option><option>Card</option></select></div>
+      </div>
+      <div class="fg"><label>Transaction Reference</label><input type="text" id="py-ref" placeholder="e.g., ABC123456789"></div>
+      <div class="fg-row">
+        <div class="fg"><label>Payment Date *</label><input type="date" id="py-date" required></div>
+        <div class="fg"><label>Academic Year *</label><select id="py-year" required><option>Select Year</option></select></div>
+      </div>
+      <div class="fg"><label>Term *</label><select id="py-term" required><option>Select Term</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select></div>
+      <div class="fg"><label>Remarks</label><textarea id="py-remarks" placeholder="Additional notes..."></textarea></div>
+      <div class="ma"><button type="button" class="btn btn-ghost" onclick="closeModal('modal-payment')">Cancel</button><button type="submit" class="btn btn-blue">Record Payment</button></div>
+      <div id="py-alert"></div>
+    </form>
+  </div>
+</div>
+
+<!-- RECORD ATTENDANCE MODAL -->
+<div class="modal-bg" id="modal-attendance">
+  <div class="modal">
+    <h3>Record Attendance <button class="modal-close" onclick="closeModal('modal-attendance')">×</button></h3>
+    <form id="form-attendance">
+      <div class="fg-row">
+        <div class="fg"><label>Date *</label><input type="date" id="a-date" required></div>
+        <div class="fg"><label>Grade/Class *</label><select id="a-grade" required><option>Select Grade</option></select></div>
+      </div>
+      <div class="fg"><label>Students</label><div id="a-students" style="max-height:300px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:10px;padding:12px"></div></div>
+      <div class="ma"><button type="button" class="btn btn-ghost" onclick="closeModal('modal-attendance')">Cancel</button><button type="submit" class="btn btn-blue">Save Attendance</button></div>
+      <div id="a-alert"></div>
+    </form>
+  </div>
+</div>
+
+<!-- RECORD ASSESSMENT MODAL -->
+<div class="modal-bg" id="modal-assessment">
+  <div class="modal">
+    <h3>Record CBC Assessment <button class="modal-close" onclick="closeModal('modal-assessment')">×</button></h3>
+    <form id="form-assessment">
+      <div class="fg-row">
+        <div class="fg"><label>Student *</label><select id="as-student" required><option>Select Student</option></select></div>
+        <div class="fg"><label>Grade *</label><select id="as-grade" required><option>Select Grade</option></select></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Learning Area *</label><select id="as-area" required><option>Select Learning Area</option></select></div>
+        <div class="fg"><label>Strand *</label><select id="as-strand" required><option>Select Strand</option></select></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Assessment Type *</label><select id="as-type" required><option>Select Type</option><option>Test</option><option>Assignment</option><option>Project</option><option>Observation</option></select></div>
+        <div class="fg"><label>Score (0-100) *</label><input type="number" id="as-score" min="0" max="100" required></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Assessment Date *</label><input type="date" id="as-date" required></div>
+        <div class="fg"><label>Term *</label><select id="as-term" required><option>Select Term</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select></div>
+      </div>
+      <div class="fg"><label>Teacher Remarks</label><textarea id="as-remarks" placeholder="Comments on student performance..."></textarea></div>
+      <div class="ma"><button type="button" class="btn btn-ghost" onclick="closeModal('modal-assessment')">Cancel</button><button type="submit" class="btn btn-blue">Record Assessment</button></div>
+      <div id="as-alert"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ADD STAFF MODAL -->
+<div class="modal-bg" id="modal-staff">
+  <div class="modal">
+    <h3>Add Staff User <button class="modal-close" onclick="closeModal('modal-staff')">×</button></h3>
+    <form id="form-staff">
+      <div class="fg-row">
+        <div class="fg"><label>Full Name *</label><input type="text" id="st-name" required></div>
+        <div class="fg"><label>Email *</label><input type="email" id="st-email" required></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Role *</label><select id="st-role" required><option>Select Role</option><option value="SCHOOL_ADMIN">School Admin</option><option value="FINANCE">Finance Officer</option><option value="TEACHER">Teacher</option></select></div>
+        <div class="fg"><label>Phone Number</label><input type="tel" id="st-phone"></div>
+      </div>
+      <div class="fg"><label>Temporary Password *</label><input type="password" id="st-pass" required></div>
+      <div class="ma"><button type="button" class="btn btn-ghost" onclick="closeModal('modal-staff')">Cancel</button><button type="submit" class="btn btn-blue">Add Staff User</button></div>
+      <div id="st-alert"></div>
+    </form>
   </div>
 </div>
 
 <script type="module">
-import { guardPage, logout, schools, students, teachers, finance, attendance, assessments, auth, cbc } from "./js/api.js";
+import { guardPage, logout, students, teachers, parents, finance, attendance, assessments, auth } from "/js/api.js";
 
 let me = guardPage(["SCHOOL_ADMIN"]);
-if (!me) { window.location.href = "login.html"; }
+if (!me) { window.location.href = "/login.html"; }
 
 (async () => {
     const res = await auth.verify();
@@ -208,118 +405,228 @@ if (!me) { window.location.href = "login.html"; }
 })();
 
 function init() {
-    document.getElementById("schoolName").textContent = me.school_name || "My School";
-    document.getElementById("schoolCode").textContent = me.school_code || "";
     document.getElementById("adminName").textContent = me.name;
-    document.getElementById("schoolBadgeTop").textContent = me.school_code || "ZETU";
-    document.getElementById("topMeta").textContent = me.email;
-    loadAll();
+    document.getElementById("schoolName").textContent = me.school_name;
+    document.getElementById("schoolCode").textContent = me.school_code;
+    setupNavigation();
+    setupButtons();
+    loadDashboard();
 }
 
-document.querySelectorAll(".nav-item").forEach(el => {
-  el.addEventListener("click", () => {
-    document.querySelectorAll(".nav-item").forEach(x => x.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach(x => x.classList.remove("active"));
-    el.classList.add("active");
-    document.getElementById("panel-"+el.dataset.p).classList.add("active");
-    document.getElementById("pageTitle").textContent = el.textContent;
-  });
-});
+function setupNavigation() {
+    document.querySelectorAll(".nav-item").forEach(el => {
+        el.addEventListener("click", () => {
+            document.querySelectorAll(".nav-item").forEach(x => x.classList.remove("active"));
+            document.querySelectorAll(".panel").forEach(x => x.classList.remove("active"));
+            el.classList.add("active");
+            const panel = el.dataset.p;
+            document.getElementById("panel-"+panel).classList.add("active");
+            document.getElementById("pageTitle").textContent = el.textContent;
+            if (panel === "students") loadStudents();
+            if (panel === "teachers") loadTeachers();
+            if (panel === "parents") loadParents();
+            if (panel === "finance") loadPayments();
+            if (panel === "attendance") loadAttendance();
+            if (panel === "curriculum") loadAssessments();
+            if (panel === "staff") loadStaff();
+        });
+    });
+    document.getElementById("logoutBtn").addEventListener("click", () => logout());
+}
 
-document.getElementById("logoutBtn").addEventListener("click", () => logout());
+function setupButtons() {
+    document.getElementById("addStudentBtn").addEventListener("click", () => openModal("modal-student"));
+    document.getElementById("addTeacherBtn").addEventListener("click", () => openModal("modal-teacher"));
+    document.getElementById("addParentBtn").addEventListener("click", () => openModal("modal-parent"));
+    document.getElementById("recordPaymentBtn").addEventListener("click", () => openModal("modal-payment"));
+    document.getElementById("recordAttendanceBtn").addEventListener("click", () => openModal("modal-attendance"));
+    document.getElementById("recordAssessmentBtn").addEventListener("click", () => openModal("modal-assessment"));
+    document.getElementById("addStaffBtn").addEventListener("click", () => openModal("modal-staff"));
 
-async function loadAll() {
-    try {
-        const statsRes = await schools.stats(me.school_id);
-        if (statsRes?.success) {
-            document.getElementById("st-students").textContent = statsRes.data?.student_count || 0;
-            document.getElementById("st-teachers").textContent = statsRes.data?.teacher_count || 0;
-            document.getElementById("st-revenue").textContent = (statsRes.data?.total_revenue || 0).toLocaleString();
-            document.getElementById("st-staff").textContent = statsRes.data?.staff_count || 0;
-        }
-        
-        const stuRes = await students.list({ school_id: me.school_id, limit: 5 });
-        if (stuRes?.success && stuRes.data?.length) {
-            let html = "<table><thead><tr><th>Name</th><th>Admission</th><th>Grade</th></tr></thead><tbody>";
-            stuRes.data.forEach(s => {
-                html += `<tr><td>${s.name}</td><td>${s.admission_no}</td><td>${s.grade}</td></tr>`;
-            });
-            html += "</tbody></table>";
-            document.getElementById("ov-students").innerHTML = html;
+    document.getElementById("form-student").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = {
+            full_name: document.getElementById("s-fname").value + " " + document.getElementById("s-lname").value,
+            admission_no: document.getElementById("s-adm").value,
+            gender: document.getElementById("s-gender").value,
+            date_of_birth: document.getElementById("s-dob").value,
+            grade_id: document.getElementById("s-grade").value,
+            stream_id: document.getElementById("s-stream").value || null,
+            special_needs: document.getElementById("s-special").value,
+            is_active: document.getElementById("s-status").value === "Active"
+        };
+        const res = await students.create(data);
+        const alert = document.getElementById("s-alert");
+        if (res?.success) {
+            alert.innerHTML = '<div class="alert as">✓ Student added successfully</div>';
+            setTimeout(() => { closeModal("modal-student"); loadStudents(); }, 1000);
         } else {
-            document.getElementById("ov-students").textContent = "No students yet.";
+            alert.innerHTML = `<div class="alert ae">✗ ${res?.message || "Error adding student"}</div>`;
         }
-    } catch (e) { console.error("loadAll error:", e); }
+    });
+
+    document.getElementById("form-teacher").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = {
+            full_name: document.getElementById("t-fname").value + " " + document.getElementById("t-lname").value,
+            national_id: document.getElementById("t-nid").value,
+            tsc_number: document.getElementById("t-tsc").value,
+            email: document.getElementById("t-email").value,
+            phone: document.getElementById("t-phone").value,
+            subjects_taught: document.getElementById("t-subjects").value,
+            grade_id: document.getElementById("t-grade").value || null,
+            employment_date: document.getElementById("t-empdate").value,
+            status: document.getElementById("t-status").value
+        };
+        const res = await teachers.create(data);
+        const alert = document.getElementById("t-alert");
+        if (res?.success) {
+            alert.innerHTML = '<div class="alert as">✓ Teacher added successfully</div>';
+            setTimeout(() => { closeModal("modal-teacher"); loadTeachers(); }, 1000);
+        } else {
+            alert.innerHTML = `<div class="alert ae">✗ ${res?.message || "Error adding teacher"}</div>`;
+        }
+    });
+
+    document.getElementById("form-parent").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = {
+            full_name: document.getElementById("p-fname").value + " " + document.getElementById("p-lname").value,
+            relationship: document.getElementById("p-rel").value,
+            national_id: document.getElementById("p-nid").value,
+            occupation: document.getElementById("p-occ").value,
+            phone_number: document.getElementById("p-phone").value,
+            phone_number_alt: document.getElementById("p-phone2").value,
+            email_address: document.getElementById("p-email").value,
+            physical_address: document.getElementById("p-addr").value,
+            emergency_contact: document.getElementById("p-emerg").value
+        };
+        const res = await parents.create(data);
+        const alert = document.getElementById("p-alert");
+        if (res?.success) {
+            alert.innerHTML = '<div class="alert as">✓ Parent added successfully</div>';
+            setTimeout(() => { closeModal("modal-parent"); loadParents(); }, 1000);
+        } else {
+            alert.innerHTML = `<div class="alert ae">✗ ${res?.message || "Error adding parent"}</div>`;
+        }
+    });
+
+    document.getElementById("form-payment").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = {
+            student_id: document.getElementById("py-student").value,
+            payment_category_id: document.getElementById("py-category").value,
+            amount_paid: parseFloat(document.getElementById("py-amount").value),
+            payment_method: document.getElementById("py-method").value,
+            transaction_reference: document.getElementById("py-ref").value,
+            payment_date: document.getElementById("py-date").value,
+            year: document.getElementById("py-year").value,
+            term: document.getElementById("py-term").value,
+            remarks: document.getElementById("py-remarks").value
+        };
+        const res = await finance.recordPayment(data);
+        const alert = document.getElementById("py-alert");
+        if (res?.success) {
+            alert.innerHTML = '<div class="alert as">✓ Payment recorded successfully</div>';
+            setTimeout(() => { closeModal("modal-payment"); loadPayments(); }, 1000);
+        } else {
+            alert.innerHTML = `<div class="alert ae">✗ ${res?.message || "Error recording payment"}</div>`;
+        }
+    });
+
+    document.getElementById("form-assessment").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = {
+            student_id: document.getElementById("as-student").value,
+            grade_id: document.getElementById("as-grade").value,
+            learning_area_id: document.getElementById("as-area").value,
+            strand_id: document.getElementById("as-strand").value,
+            assessment_type: document.getElementById("as-type").value,
+            score: parseInt(document.getElementById("as-score").value),
+            assessment_date: document.getElementById("as-date").value,
+            term: document.getElementById("as-term").value,
+            teacher_remarks: document.getElementById("as-remarks").value
+        };
+        const res = await assessments.create(data);
+        const alert = document.getElementById("as-alert");
+        if (res?.success) {
+            alert.innerHTML = '<div class="alert as">✓ Assessment recorded successfully</div>';
+            setTimeout(() => { closeModal("modal-assessment"); loadAssessments(); }, 1000);
+        } else {
+            alert.innerHTML = `<div class="alert ae">✗ ${res?.message || "Error recording assessment"}</div>`;
+        }
+    });
 }
 
-document.getElementById("addStudentBtn")?.addEventListener("click", () => {
-    document.getElementById("stuModalTitle").textContent = "Add Student";
-    document.getElementById("s-id").value = "";
-    document.getElementById("s-name").value = "";
-    document.getElementById("s-adm").value = "";
-    document.getElementById("stuModal").classList.add("open");
-});
+async function loadDashboard() {
+    const [studRes, teachRes, parRes, finRes] = await Promise.all([
+        students.list({}),
+        teachers.list({}),
+        parents.list({}),
+        finance.summary({})
+    ]);
+    document.getElementById("totalStudents").textContent = studRes?.data?.length || 0;
+    document.getElementById("totalTeachers").textContent = teachRes?.data?.length || 0;
+    document.getElementById("totalParents").textContent = parRes?.data?.length || 0;
+    document.getElementById("outstandingFees").textContent = "KES " + (finRes?.data?.total_outstanding || 0).toLocaleString();
+}
 
-document.getElementById("addTeacherBtn")?.addEventListener("click", async () => {
-    const name = prompt("Teacher Full Name:");
-    if (!name) return;
-    const email = prompt("Teacher Email:");
-    if (!email) return;
-    
-    const res = await teachers.create({ name, email, school_id: me.school_id });
-    if (res?.success) { alert("Teacher added successfully!"); loadAll(); }
-    else { alert("Error: " + (res?.message || "Unknown error")); }
-});
+async function loadStudents() {
+    const res = await students.list({});
+    const list = document.getElementById("studentsList");
+    if (!res?.data?.length) { list.innerHTML = '<div class="empty">No students found</div>'; return; }
+    list.innerHTML = `<table><thead><tr><th>Name</th><th>Admission No</th><th>Grade</th><th>Status</th><th>Actions</th></tr></thead><tbody>` +
+        res.data.map(s => `<tr><td>${s.full_name}</td><td>${s.admission_no}</td><td>${s.grade_level || "–"}</td><td><span class="badge ${s.is_active ? 'bg' : 'br'}">${s.is_active ? 'Active' : 'Inactive'}</span></td><td><div class="action-btns"><button class="btn btn-sm btn-ghost">Edit</button><button class="btn btn-sm btn-red">Delete</button></div></td></tr>`).join("") + `</tbody></table>`;
+}
 
-document.getElementById("recordPayBtn")?.addEventListener("click", () => {
-    alert("Record payment feature coming soon");
-});
+async function loadTeachers() {
+    const res = await teachers.list({});
+    const list = document.getElementById("teachersList");
+    if (!res?.data?.length) { list.innerHTML = '<div class="empty">No teachers found</div>'; return; }
+    list.innerHTML = `<table><thead><tr><th>Name</th><th>Email</th><th>Subjects</th><th>Status</th><th>Actions</th></tr></thead><tbody>` +
+        res.data.map(t => `<tr><td>${t.full_name}</td><td>${t.email}</td><td>${t.subjects_taught || "–"}</td><td><span class="badge ${t.status === 'Active' ? 'bg' : 'br'}">${t.status}</span></td><td><div class="action-btns"><button class="btn btn-sm btn-ghost">Edit</button><button class="btn btn-sm btn-red">Delete</button></div></td></tr>`).join("") + `</tbody></table>`;
+}
 
-document.getElementById("addFeeBtn")?.addEventListener("click", () => {
-    alert("Add fee structure feature coming soon");
-});
+async function loadParents() {
+    const res = await parents.list({});
+    const list = document.getElementById("parentsList");
+    if (!res?.data?.length) { list.innerHTML = '<div class="empty">No parents found</div>'; return; }
+    list.innerHTML = `<table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Relationship</th><th>Actions</th></tr></thead><tbody>` +
+        res.data.map(p => `<tr><td>${p.full_name}</td><td>${p.phone_number}</td><td>${p.email_address || "–"}</td><td>${p.relationship}</td><td><div class="action-btns"><button class="btn btn-sm btn-ghost">Edit</button><button class="btn btn-sm btn-red">Delete</button></div></td></tr>`).join("") + `</tbody></table>`;
+}
 
-document.getElementById("addClassBtn")?.addEventListener("click", () => {
-    alert("Add class feature coming soon");
-});
+async function loadPayments() {
+    const res = await finance.payments({});
+    const list = document.getElementById("paymentsList");
+    if (!res?.data?.length) { list.innerHTML = '<div class="empty">No payments found</div>'; return; }
+    list.innerHTML = `<table><thead><tr><th>Student</th><th>Amount</th><th>Category</th><th>Date</th><th>Status</th></tr></thead><tbody>` +
+        res.data.map(p => `<tr><td>${p.student_name || "–"}</td><td>KES ${p.amount_paid}</td><td>${p.category_name || "–"}</td><td>${new Date(p.payment_date).toLocaleDateString()}</td><td><span class="badge bg">${p.payment_status}</span></td></tr>`).join("") + `</tbody></table>`;
+}
 
-document.getElementById("addStreamBtn")?.addEventListener("click", () => {
-    alert("Add stream feature coming soon");
-});
+async function loadAttendance() {
+    const res = await attendance.list({});
+    const list = document.getElementById("attendanceList");
+    if (!res?.data?.length) { list.innerHTML = '<div class="empty">No attendance records found</div>'; return; }
+    list.innerHTML = `<table><thead><tr><th>Student</th><th>Date</th><th>Status</th><th>Remarks</th></tr></thead><tbody>` +
+        res.data.map(a => `<tr><td>${a.student_name || "–"}</td><td>${new Date(a.date).toLocaleDateString()}</td><td><span class="badge ${a.status === 'present' ? 'bg' : 'br'}">${a.status}</span></td><td>${a.remarks || "–"}</td></tr>`).join("") + `</tbody></table>`;
+}
 
-document.getElementById("addYearBtn")?.addEventListener("click", () => {
-    alert("Add academic year feature coming soon");
-});
+async function loadAssessments() {
+    const res = await assessments.list({});
+    const list = document.getElementById("assessmentsList");
+    if (!res?.data?.length) { list.innerHTML = '<div class="empty">No assessments found</div>'; return; }
+    list.innerHTML = `<table><thead><tr><th>Student</th><th>Subject</th><th>Score</th><th>Grade</th><th>Date</th></tr></thead><tbody>` +
+        res.data.map(a => `<tr><td>${a.student_name || "–"}</td><td>${a.learning_area || "–"}</td><td>${a.score}</td><td><span class="badge bb">${a.grade || "–"}</span></td><td>${new Date(a.assessment_date).toLocaleDateString()}</td></tr>`).join("") + `</tbody></table>`;
+}
 
-document.getElementById("addCatBtn")?.addEventListener("click", () => {
-    alert("Add assessment category feature coming soon");
-});
+async function loadStaff() {
+    const res = await students.list({});
+    const list = document.getElementById("staffList");
+    list.innerHTML = '<div class="empty">Staff management coming soon</div>';
+}
 
-document.getElementById("addStaffBtn")?.addEventListener("click", () => {
-    alert("Add staff feature coming soon");
-});
-
-document.getElementById("loadAttBtn")?.addEventListener("click", () => {
-    alert("Attendance loading feature coming soon");
-});
-
-document.getElementById("saveStuBtn")?.addEventListener("click", async () => {
-    const name = document.getElementById("s-name").value.trim();
-    const adm = document.getElementById("s-adm").value.trim();
-    if (!name || !adm) { alert("Name and admission number required"); return; }
-    
-    const res = await students.create({ name, admission_no: adm, school_id: me.school_id });
-    if (res?.success) { alert("Student added!"); window.closeModal("stuModal"); loadAll(); }
-    else { alert("Error: " + (res?.message || "Unknown error")); }
-});
-
-window.closeModal = id => document.getElementById(id).classList.remove("open");
-window.nav = panel => {
-    document.querySelectorAll(".nav-item").forEach(x => x.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach(x => x.classList.remove("active"));
-    document.querySelector(`[data-p="${panel}"]`)?.classList.add("active");
-    document.getElementById("panel-"+panel)?.classList.add("active");
-};
+window.openModal = (id) => { document.getElementById(id).classList.add("open"); };
+window.closeModal = (id) => { document.getElementById(id).classList.remove("open"); };
 </script>
 </body>
 </html>
