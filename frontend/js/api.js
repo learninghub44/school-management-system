@@ -5,7 +5,7 @@
  * V-09: All rendering uses textContent / safe helpers — never innerHTML with user data
  */
 // Should only have:
-const API_BASE = window.API_BASE_URL || 'https://your-api.onrender.com/api'
+const API_BASE = window.API_BASE_URL || 'https://cbc-school-erp-api.onrender.com/api'
 // NOT a hardcoded real Render URL with credentials
 
 // ── Session helpers ────────────────────────────────────────────────
