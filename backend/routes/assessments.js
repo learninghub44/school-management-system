@@ -51,7 +51,10 @@ router.get("/", authMiddleware, async (req, res) => {
             const ids = kids.rows.map(r => r.student_id);
             params.push(ids); where.push(`a.student_id = ANY($${params.length})`);
         } else {
-            const schoolId = role === "SUPER_ADMIN" ? (req.query.school_id||null) : school_id;
+            const schoolId = role === "SUPER_ADMIN" ? (req.query.school_id || null) : school_id;
+            // V-03: Non-SUPER_ADMIN must always be scoped to their own school
+            if (!schoolId && role !== "SUPER_ADMIN")
+                return res.status(403).json({ success: false, message: "School isolation error." });
             if (schoolId) { params.push(schoolId); where.push(`a.school_id=$${params.length}`); }
             if (req.query.student_id) { params.push(req.query.student_id); where.push(`a.student_id=$${params.length}`); }
             if (req.query.term) { params.push(req.query.term); where.push(`a.term=$${params.length}`); }

@@ -6,627 +6,1097 @@
 <script src="/js/config.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Plus Jakarta Sans',sans-serif;background:#f8fafc;color:#0f172a;min-height:100vh;display:flex}
-    .sidebar{width:260px;background:#ffffff;display:flex;flex-direction:column;flex-shrink:0;height:100vh;position:sticky;top:0;border-right:1px solid #e2e8f0;overflow-y:auto}
-    .sidebar-brand{padding:32px 24px;border-bottom:1px solid #f1f5f9}
-    .sidebar-brand h2{font-size:20px;font-weight:800;color:#4f46e5;letter-spacing:-0.5px}
-    .sidebar-brand p{font-size:12px;color:#64748b;margin-top:4px;font-weight:500}
-    .school-badge{margin:20px 24px;background:#f8fafc;border-radius:12px;padding:12px 16px;border:1px solid #e2e8f0}
-    .school-badge span{font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:700}
-    .school-badge strong{display:block;font-size:14px;color:#1e293b;margin-top:2px}
-    .nav{flex:1;padding:12px 16px}
-    .nav-item{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;display:flex;align-items:center;gap:12px;border-radius:10px;color:#64748b;margin-bottom:4px;transition:all 0.2s}
-    .nav-item:hover{background:#f1f5f9;color:#0f172a}
-    .nav-item.active{background:#4f46e5;color:#ffffff;box-shadow:0 4px 12px rgba(79, 70, 229, 0.2)}
-    .sidebar-footer{padding:24px;border-top:1px solid #f1f5f9}
-    .sidebar-footer button{background:#f1f5f9;border:none;color:#ef4444;padding:12px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700;width:100%;transition:all 0.2s}
-    .sidebar-footer button:hover{background:#fee2e2}
-    .main{flex:1;display:flex;flex-direction:column;background:#f8fafc}
-    .topbar{background:#ffffff;padding:20px 32px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between}
-    .topbar h3{font-size:20px;font-weight:700;color:#0f172a}
-    .topbar .user-info{font-size:14px;color:#64748b;font-weight:500}
-    .content{flex:1;overflow-y:auto;padding:32px}
-    .panel{display:none}.panel.active{display:block}
-    .card{background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.05);overflow:hidden;margin-bottom:24px}
-    .card-hdr{padding:20px 24px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
-    .card-hdr h4{font-size:16px;font-weight:700;color:#0f172a}
-    .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px;margin-bottom:24px}
-    .stat-card{background:#ffffff;border-radius:16px;padding:24px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
-    .stat-card .val{font-size:32px;font-weight:800;color:#0f172a;letter-spacing:-1px}
-    .stat-card .lbl{font-size:14px;color:#64748b;margin-top:4px;font-weight:500}
-    .btn{padding:10px 20px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:inherit}
-    .btn-blue{background:#4f46e5;color:#ffffff}
-    .btn-blue:hover{background:#4338ca}
-    .btn-red{background:#ef4444;color:#fff}
-    .btn-ghost{background:#f1f5f9;color:#64748b}
-    .btn-ghost:hover{background:#e2e8f0}
-    .btn-sm{padding:6px 12px;font-size:12px}
-    table{width:100%;border-collapse:collapse;font-size:14px}
-    th{background:#f8fafc;padding:12px 24px;text-align:left;font-weight:600;color:#64748b;border-bottom:1px solid #e2e8f0}
-    td{padding:16px 24px;border-bottom:1px solid #f1f5f9;color:#0f172a}
-    .badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700}
-    .bg{background:#dcfce7;color:#15803d}.br{background:#fee2e2;color:#b91c1c}.bb{background:#e0e7ff;color:#4338ca}.by{background:#fef9c3;color:#854d0e}
-    .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;overflow-y:auto;padding:20px}
-    .modal-bg.open{display:flex}
-    .modal{background:#ffffff;border-radius:16px;padding:32px;width:100%;max-width:600px;border:1px solid #e2e8f0;box-shadow:0 20px 25px rgba(0,0,0,0.15);margin:auto}
-    .modal h3{font-size:20px;font-weight:700;color:#0f172a;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between}
-    .modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:#94a3b8}
-    .modal-close:hover{color:#0f172a}
-    .fg{margin-bottom:16px}
-    .fg label{display:block;font-size:12px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.025em}
-    .fg input,.fg select,.fg textarea{width:100%;padding:12px 16px;background:#ffffff;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#0f172a;font-family:inherit;outline:none}
-    .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,0.1)}
-    .fg-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    .fg-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
-    .ma{display:flex;gap:12px;margin-top:24px;justify-content:flex-end}
-    .alert{padding:12px 16px;border-radius:10px;font-size:14px;margin-top:16px;font-weight:500}
-    .ae{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
-    .as{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
-    .tabs{display:flex;gap:8px;margin-bottom:24px;border-bottom:1px solid #e2e8f0;padding-bottom:1px}
-    .tab{padding:12px 20px;font-size:14px;font-weight:700;cursor:pointer;color:#64748b;border-bottom:2px solid transparent;transition:all 0.2s}
-    .tab:hover{color:#0f172a}
-    .tab.active{color:#4f46e5;border-bottom-color:#4f46e5}
-    .empty{text-align:center;padding:48px;color:#94a3b8;font-size:14px}
-    .btn-loading{position:relative;color:transparent!important}
-    .btn-loading::after{content:"";position:absolute;width:18px;height:18px;top:50%;left:50%;margin:-9px 0 0 -9px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.6s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .action-btns{display:flex;gap:8px}
-    .action-btns .btn{padding:6px 12px;font-size:12px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:#f8fafc;color:#0f172a;min-height:100vh;display:flex}
+.sidebar{width:260px;background:#fff;display:flex;flex-direction:column;flex-shrink:0;height:100vh;position:sticky;top:0;border-right:1px solid #e2e8f0;overflow-y:auto}
+.sidebar-brand{padding:28px 24px;border-bottom:1px solid #f1f5f9}
+.sidebar-brand h2{font-size:20px;font-weight:800;color:#4f46e5;letter-spacing:-0.5px}
+.sidebar-brand p{font-size:12px;color:#64748b;margin-top:4px;font-weight:500}
+.school-badge{margin:16px 20px;background:#f8fafc;border-radius:12px;padding:12px 14px;border:1px solid #e2e8f0}
+.school-badge span{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;font-weight:700}
+.school-badge strong{display:block;font-size:14px;color:#1e293b;margin-top:2px}
+.school-badge code{font-size:11px;color:#94a3b8;font-family:monospace}
+.nav{flex:1;padding:10px 14px}
+.nav-item{padding:11px 14px;cursor:pointer;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:10px;border-radius:10px;color:#64748b;margin-bottom:2px;transition:all .15s;user-select:none}
+.nav-item:hover{background:#f1f5f9;color:#0f172a}
+.nav-item.active{background:#4f46e5;color:#fff;box-shadow:0 4px 12px rgba(79,70,229,.2)}
+.sidebar-footer{padding:20px;border-top:1px solid #f1f5f9}
+.user-card{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:#4f46e5;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.user-card-info strong{display:block;font-size:13px;color:#1e293b;font-weight:700}
+.user-card-info span{font-size:11px;color:#64748b}
+.btn-logout{background:#f1f5f9;border:none;color:#ef4444;padding:10px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;width:100%;transition:all .2s;font-family:inherit}
+.btn-logout:hover{background:#fee2e2}
+.main{flex:1;display:flex;flex-direction:column;background:#f8fafc;min-width:0}
+.topbar{background:#fff;padding:18px 28px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar h3{font-size:18px;font-weight:700;color:#0f172a}
+.topbar .topbar-right{font-size:13px;color:#64748b;font-weight:500}
+.content{flex:1;overflow-y:auto;padding:28px}
+.panel{display:none}.panel.active{display:block}
+.card{background:#fff;border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden;margin-bottom:24px}
+.card-hdr{padding:18px 22px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.card-hdr h4{font-size:15px;font-weight:700;color:#0f172a}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:18px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:16px;padding:22px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.stat-card .val{font-size:30px;font-weight:800;color:#0f172a;letter-spacing:-1px}
+.stat-card .lbl{font-size:13px;color:#64748b;margin-top:4px;font-weight:500}
+.btn{padding:9px 18px;border:none;border-radius:10px;font-size:13.5px;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit}
+.btn-primary{background:#4f46e5;color:#fff}.btn-primary:hover{background:#4338ca}
+.btn-danger{background:#ef4444;color:#fff}.btn-danger:hover{background:#dc2626}
+.btn-ghost{background:#f1f5f9;color:#64748b}.btn-ghost:hover{background:#e2e8f0}
+.btn-sm{padding:5px 11px;font-size:12px;border-radius:8px}
+.btn-warn{background:#f59e0b;color:#fff}.btn-warn:hover{background:#d97706}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{background:#f8fafc;padding:11px 20px;text-align:left;font-weight:600;color:#64748b;border-bottom:1px solid #e2e8f0;white-space:nowrap}
+td{padding:14px 20px;border-bottom:1px solid #f8fafc;color:#0f172a}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbff}
+.badge{padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:700}
+.bg{background:#dcfce7;color:#15803d}.br{background:#fee2e2;color:#b91c1c}
+.bb{background:#e0e7ff;color:#4338ca}.by{background:#fef9c3;color:#854d0e}
+.bpurple{background:#f3e8ff;color:#7e22ce}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 20px}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:560px;box-shadow:0 20px 40px rgba(0,0,0,.15);margin:auto}
+.modal h3{font-size:18px;font-weight:700;color:#0f172a;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1}
+.modal-close:hover{color:#0f172a}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:11.5px;font-weight:700;color:#64748b;margin-bottom:5px;text-transform:uppercase;letter-spacing:.025em}
+.fg input,.fg select,.fg textarea{width:100%;padding:10px 14px;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13.5px;color:#0f172a;font-family:inherit;outline:none;transition:border-color .15s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.fg textarea{resize:vertical;min-height:70px}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ma{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+.alert{padding:11px 14px;border-radius:10px;font-size:13.5px;margin-top:14px;font-weight:500}
+.alert-err{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+.alert-ok{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.empty{text-align:center;padding:44px;color:#94a3b8;font-size:14px}
+.btn-loading{position:relative;color:transparent!important;pointer-events:none}
+.btn-loading::after{content:"";position:absolute;width:16px;height:16px;top:50%;left:50%;margin:-8px 0 0 -8px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.action-btns{display:flex;gap:6px}
+.table-wrap{overflow-x:auto}
+.filter-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.filter-bar input,.filter-bar select{padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;color:#0f172a;background:#fff;font-family:inherit;outline:none}
+.filter-bar input:focus,.filter-bar select:focus{border-color:#4f46e5}
 </style>
 </head>
 <body>
+
 <aside class="sidebar">
-  <div class="sidebar-brand"><h2>ZETU</h2><p>School Management System</p></div>
+  <div class="sidebar-brand">
+    <h2>ZETU</h2>
+    <p>School Management System</p>
+  </div>
   <div class="school-badge">
-    <span>School</span>
+    <span>Active School</span>
     <strong id="schoolName">Loading…</strong>
-    <div id="schoolCode" style="font-size:10px;color:#94a3b8;margin-top:2px;font-family:monospace"></div>
+    <code id="schoolCode"></code>
   </div>
   <nav class="nav">
-    <div class="nav-item active" data-p="overview">📊 Dashboard</div>
-    <div class="nav-item" data-p="students">👥 Students</div>
-    <div class="nav-item" data-p="teachers">👨‍🏫 Teachers</div>
-    <div class="nav-item" data-p="parents">👨‍👩‍👧 Parents</div>
-    <div class="nav-item" data-p="finance">💰 Finance</div>
-    <div class="nav-item" data-p="attendance">📋 Attendance</div>
-    <div class="nav-item" data-p="curriculum">📚 CBC Curriculum</div>
-    <div class="nav-item" data-p="staff">🔐 Staff Users</div>
+    <div class="nav-item active" data-panel="overview">📊 Dashboard</div>
+    <div class="nav-item" data-panel="students">👥 Students</div>
+    <div class="nav-item" data-panel="teachers">👨‍🏫 Teachers</div>
+    <div class="nav-item" data-panel="parents">👨‍👩‍👧 Parents</div>
+    <div class="nav-item" data-panel="finance">💰 Finance</div>
+    <div class="nav-item" data-panel="attendance">📋 Attendance</div>
+    <div class="nav-item" data-panel="assessments">📚 Assessments</div>
+    <div class="nav-item" data-panel="staff">🔐 Staff Users</div>
   </nav>
   <div class="sidebar-footer">
-    <div style="margin-bottom:12px;padding:0 4px">
-        <strong id="adminName" style="display:block;font-size:14px;color:#1e293b">…</strong>
-        <span style="font-size:12px;color:#64748b">School Admin</span>
+    <div class="user-card">
+      <div class="user-avatar" id="userInitials">?</div>
+      <div class="user-card-info">
+        <strong id="adminName">…</strong>
+        <span>School Admin</span>
+      </div>
     </div>
-    <button id="logoutBtn">Sign Out</button>
+    <button class="btn-logout" id="logoutBtn">🚪 Sign Out</button>
   </div>
 </aside>
 
 <div class="main">
   <header class="topbar">
     <h3 id="pageTitle">Dashboard</h3>
-    <div class="user-info" id="userInfo">Loading…</div>
+    <div class="topbar-right" id="topbarInfo"></div>
   </header>
-
   <div class="content">
-    <!-- DASHBOARD PANEL -->
+
+    <!-- DASHBOARD -->
     <div class="panel active" id="panel-overview">
       <div class="stat-grid">
-        <div class="stat-card"><div class="val" id="totalStudents">0</div><div class="lbl">Total Students</div></div>
-        <div class="stat-card"><div class="val" id="totalTeachers">0</div><div class="lbl">Total Teachers</div></div>
-        <div class="stat-card"><div class="val" id="totalParents">0</div><div class="lbl">Total Parents</div></div>
-        <div class="stat-card"><div class="val" id="outstandingFees">KES 0</div><div class="lbl">Outstanding Fees</div></div>
+        <div class="stat-card"><div class="val" id="st-students">–</div><div class="lbl">Total Students</div></div>
+        <div class="stat-card"><div class="val" id="st-teachers">–</div><div class="lbl">Total Teachers</div></div>
+        <div class="stat-card"><div class="val" id="st-parents">–</div><div class="lbl">Parents Registered</div></div>
+        <div class="stat-card"><div class="val" id="st-revenue">–</div><div class="lbl">Revenue Collected</div></div>
+        <div class="stat-card"><div class="val" id="st-pending">–</div><div class="lbl">Fees Outstanding</div></div>
       </div>
       <div class="card">
-        <div class="card-hdr"><h4>Recent Activity</h4></div>
-        <div style="padding:24px" id="recentActivity" class="empty">Loading…</div>
+        <div class="card-hdr"><h4>Recent Audit Activity</h4></div>
+        <div style="padding:22px" id="auditLog"><div class="empty">Loading…</div></div>
       </div>
     </div>
 
-    <!-- STUDENTS PANEL -->
+    <!-- STUDENTS -->
     <div class="panel" id="panel-students">
       <div class="card">
         <div class="card-hdr">
-          <h4>Students Management</h4>
-          <button class="btn btn-blue" id="addStudentBtn">+ Add Student</button>
+          <h4>Students</h4>
+          <button class="btn btn-primary" id="btnAddStudent">+ Add Student</button>
         </div>
-        <div style="padding:24px">
-          <div id="studentsList" class="empty">Loading…</div>
+        <div style="padding:18px 22px">
+          <div class="filter-bar">
+            <input type="text" id="filterStudents" placeholder="Search by name or admission no…" style="flex:1;min-width:180px">
+            <select id="filterStudentGrade"><option value="">All Grades</option></select>
+          </div>
+          <div class="table-wrap" id="studentsList"><div class="empty">Loading…</div></div>
         </div>
       </div>
     </div>
 
-    <!-- TEACHERS PANEL -->
+    <!-- TEACHERS -->
     <div class="panel" id="panel-teachers">
       <div class="card">
         <div class="card-hdr">
-          <h4>Teachers Management</h4>
-          <button class="btn btn-blue" id="addTeacherBtn">+ Add Teacher</button>
+          <h4>Teachers</h4>
+          <button class="btn btn-primary" id="btnAddTeacher">+ Add Teacher</button>
         </div>
-        <div style="padding:24px">
-          <div id="teachersList" class="empty">Loading…</div>
+        <div style="padding:18px 22px">
+          <div class="table-wrap" id="teachersList"><div class="empty">Loading…</div></div>
         </div>
       </div>
     </div>
 
-    <!-- PARENTS PANEL -->
+    <!-- PARENTS -->
     <div class="panel" id="panel-parents">
       <div class="card">
         <div class="card-hdr">
-          <h4>Parents Management</h4>
-          <button class="btn btn-blue" id="addParentBtn">+ Add Parent</button>
+          <h4>Parents / Guardians</h4>
+          <button class="btn btn-primary" id="btnAddParent">+ Add Parent</button>
         </div>
-        <div style="padding:24px">
-          <div id="parentsList" class="empty">Loading…</div>
+        <div style="padding:18px 22px">
+          <div class="table-wrap" id="parentsList"><div class="empty">Loading…</div></div>
         </div>
       </div>
     </div>
 
-    <!-- FINANCE PANEL -->
+    <!-- FINANCE -->
     <div class="panel" id="panel-finance">
       <div class="card">
         <div class="card-hdr">
-          <h4>Finance Management</h4>
-          <button class="btn btn-blue" id="recordPaymentBtn">+ Record Payment</button>
+          <h4>Payment Records</h4>
+          <button class="btn btn-primary" id="btnRecordPayment">+ Record Payment</button>
         </div>
-        <div style="padding:24px">
-          <div id="paymentsList" class="empty">Loading…</div>
+        <div style="padding:18px 22px">
+          <div class="filter-bar">
+            <select id="filterPaymentStatus"><option value="">All Statuses</option><option value="completed">Completed</option><option value="pending">Pending</option><option value="partial">Partial</option></select>
+          </div>
+          <div class="table-wrap" id="paymentsList"><div class="empty">Loading…</div></div>
         </div>
       </div>
     </div>
 
-    <!-- ATTENDANCE PANEL -->
+    <!-- ATTENDANCE -->
     <div class="panel" id="panel-attendance">
       <div class="card">
         <div class="card-hdr">
-          <h4>Attendance Management</h4>
-          <button class="btn btn-blue" id="recordAttendanceBtn">+ Record Attendance</button>
+          <h4>Attendance Records</h4>
+          <button class="btn btn-primary" id="btnRecordAttendance">+ Record Attendance</button>
         </div>
-        <div style="padding:24px">
-          <div id="attendanceList" class="empty">Loading…</div>
+        <div style="padding:18px 22px">
+          <div class="filter-bar">
+            <input type="date" id="filterAttDate">
+            <select id="filterAttGrade"><option value="">All Grades</option></select>
+          </div>
+          <div class="table-wrap" id="attendanceList"><div class="empty">Loading…</div></div>
         </div>
       </div>
     </div>
 
-    <!-- CURRICULUM PANEL -->
-    <div class="panel" id="panel-curriculum">
+    <!-- ASSESSMENTS -->
+    <div class="panel" id="panel-assessments">
       <div class="card">
         <div class="card-hdr">
-          <h4>CBC Curriculum Management</h4>
-          <button class="btn btn-blue" id="recordAssessmentBtn">+ Record Assessment</button>
+          <h4>CBC Assessments</h4>
+          <button class="btn btn-primary" id="btnAddAssessment">+ Record Assessment</button>
         </div>
-        <div style="padding:24px">
-          <div id="assessmentsList" class="empty">Loading…</div>
+        <div style="padding:18px 22px">
+          <div class="table-wrap" id="assessmentsList"><div class="empty">Loading…</div></div>
         </div>
       </div>
     </div>
 
-    <!-- STAFF PANEL -->
+    <!-- STAFF -->
     <div class="panel" id="panel-staff">
       <div class="card">
         <div class="card-hdr">
-          <h4>Staff Users Management</h4>
-          <button class="btn btn-blue" id="addStaffBtn">+ Add Staff User</button>
+          <h4>Staff User Accounts</h4>
+          <button class="btn btn-primary" id="btnAddStaff">+ Add Staff User</button>
         </div>
-        <div style="padding:24px">
-          <div id="staffList" class="empty">Loading…</div>
+        <div style="padding:18px 22px">
+          <div class="table-wrap" id="staffList"><div class="empty">Loading…</div></div>
         </div>
       </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════ MODALS ═══════════════ -->
+
+<!-- ADD STUDENT -->
+<div class="modal-bg" id="modal-student">
+  <div class="modal">
+    <h3>Add New Student <button class="modal-close" data-close="modal-student">×</button></h3>
+    <div class="fg-row">
+      <div class="fg"><label>First Name *</label><input id="s-fname" type="text" required maxlength="80"></div>
+      <div class="fg"><label>Last Name *</label><input id="s-lname" type="text" required maxlength="80"></div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Admission No *</label><input id="s-adm" type="text" required maxlength="30"></div>
+      <div class="fg"><label>Gender *</label>
+        <select id="s-gender" required><option value="">Select</option><option>Male</option><option>Female</option></select>
+      </div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Date of Birth *</label><input id="s-dob" type="date" required></div>
+      <div class="fg"><label>Grade *</label>
+        <select id="s-grade" required><option value="">Select Grade</option></select>
+      </div>
+    </div>
+    <div class="fg"><label>Special Needs</label><textarea id="s-special" maxlength="500"></textarea></div>
+    <div id="s-alert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" data-close="modal-student">Cancel</button>
+      <button class="btn btn-primary" id="btnSubmitStudent">Add Student</button>
     </div>
   </div>
 </div>
 
-<!-- MODALS -->
-
-<!-- ADD STUDENT MODAL -->
-<div class="modal-bg" id="modal-student">
-  <div class="modal">
-    <h3>Add New Student <button class="modal-close" onclick="closeModal('modal-student')">×</button></h3>
-    <form id="form-student">
-      <div class="fg-row">
-        <div class="fg"><label>First Name *</label><input type="text" id="s-fname" required></div>
-        <div class="fg"><label>Last Name *</label><input type="text" id="s-lname" required></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Admission Number *</label><input type="text" id="s-adm" required></div>
-        <div class="fg"><label>Gender *</label><select id="s-gender" required><option>Select Gender</option><option>Male</option><option>Female</option></select></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Date of Birth *</label><input type="date" id="s-dob" required></div>
-        <div class="fg"><label>Grade *</label><select id="s-grade" required><option>Select Grade</option></select></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Stream</label><select id="s-stream"><option>Select Stream</option></select></div>
-        <div class="fg"><label>Status</label><select id="s-status"><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
-      </div>
-      <div class="fg"><label>Special Needs Information</label><textarea id="s-special" placeholder="Any special needs or requirements..."></textarea></div>
-      <div class="ma"><button type="button" class="btn btn-ghost" onclick="closeModal('modal-student')">Cancel</button><button type="submit" class="btn btn-blue">Add Student</button></div>
-      <div id="s-alert"></div>
-    </form>
-  </div>
-</div>
-
-<!-- ADD TEACHER MODAL -->
+<!-- ADD TEACHER -->
 <div class="modal-bg" id="modal-teacher">
   <div class="modal">
-    <h3>Add New Teacher <button class="modal-close" onclick="closeModal('modal-teacher')">×</button></h3>
-    <form id="form-teacher">
-      <div class="fg-row">
-        <div class="fg"><label>First Name *</label><input type="text" id="t-fname" required></div>
-        <div class="fg"><label>Last Name *</label><input type="text" id="t-lname" required></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>National ID *</label><input type="text" id="t-nid" required></div>
-        <div class="fg"><label>TSC Number</label><input type="text" id="t-tsc"></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Email *</label><input type="email" id="t-email" required></div>
-        <div class="fg"><label>Phone Number *</label><input type="tel" id="t-phone" required></div>
-      </div>
-      <div class="fg"><label>Subject(s) Taught *</label><input type="text" id="t-subjects" placeholder="e.g., Mathematics, Science" required></div>
-      <div class="fg-row">
-        <div class="fg"><label>Grade/Class Assigned</label><select id="t-grade"><option>Select Grade</option></select></div>
-        <div class="fg"><label>Employment Date *</label><input type="date" id="t-empdate" required></div>
-      </div>
-      <div class="fg"><label>Status</label><select id="t-status"><option value="Active">Active</option><option value="Inactive">Inactive</option><option value="On Leave">On Leave</option></select></div>
-      <div class="ma"><button type="button" class="btn btn-ghost" onclick="closeModal('modal-teacher')">Cancel</button><button type="submit" class="btn btn-blue">Add Teacher</button></div>
-      <div id="t-alert"></div>
-    </form>
+    <h3>Add New Teacher <button class="modal-close" data-close="modal-teacher">×</button></h3>
+    <div class="fg-row">
+      <div class="fg"><label>First Name *</label><input id="t-fname" type="text" required maxlength="80"></div>
+      <div class="fg"><label>Last Name *</label><input id="t-lname" type="text" required maxlength="80"></div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Email</label><input id="t-email" type="email" maxlength="150"></div>
+      <div class="fg"><label>Phone *</label><input id="t-phone" type="tel" required maxlength="20"></div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>TSC Number</label><input id="t-tsc" type="text" maxlength="20"></div>
+      <div class="fg"><label>Department</label><input id="t-dept" type="text" maxlength="80"></div>
+    </div>
+    <div class="fg"><label>Subjects (comma-separated)</label><input id="t-subj" type="text" maxlength="300"></div>
+    <div id="t-alert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" data-close="modal-teacher">Cancel</button>
+      <button class="btn btn-primary" id="btnSubmitTeacher">Add Teacher</button>
+    </div>
   </div>
 </div>
 
-<!-- ADD PARENT MODAL -->
+<!-- ADD PARENT -->
 <div class="modal-bg" id="modal-parent">
   <div class="modal">
-    <h3>Add New Parent/Guardian <button class="modal-close" onclick="closeModal('modal-parent')">×</button></h3>
-    <form id="form-parent">
-      <div class="fg-row">
-        <div class="fg"><label>First Name *</label><input type="text" id="p-fname" required></div>
-        <div class="fg"><label>Last Name *</label><input type="text" id="p-lname" required></div>
-      </div>
-      <div class="fg"><label>Relationship to Student *</label><select id="p-rel" required><option>Select Relationship</option><option>Father</option><option>Mother</option><option>Guardian</option><option>Uncle</option><option>Aunt</option></select></div>
-      <div class="fg-row">
-        <div class="fg"><label>National ID/Passport *</label><input type="text" id="p-nid" required></div>
-        <div class="fg"><label>Occupation</label><input type="text" id="p-occ"></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Phone Number *</label><input type="tel" id="p-phone" required></div>
-        <div class="fg"><label>Alternative Phone</label><input type="tel" id="p-phone2"></div>
-      </div>
-      <div class="fg"><label>Email Address</label><input type="email" id="p-email"></div>
-      <div class="fg"><label>Physical Address</label><textarea id="p-addr" placeholder="Street, City, Postal Code..."></textarea></div>
-      <div class="fg"><label>Emergency Contact</label><input type="tel" id="p-emerg"></div>
-      <div class="ma"><button type="button" class="btn btn-ghost" onclick="closeModal('modal-parent')">Cancel</button><button type="submit" class="btn btn-blue">Add Parent</button></div>
-      <div id="p-alert"></div>
-    </form>
+    <h3>Add Parent/Guardian <button class="modal-close" data-close="modal-parent">×</button></h3>
+    <div class="fg-row">
+      <div class="fg"><label>First Name *</label><input id="p-fname" type="text" required maxlength="80"></div>
+      <div class="fg"><label>Last Name *</label><input id="p-lname" type="text" required maxlength="80"></div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Email *</label><input id="p-email" type="email" required maxlength="150"></div>
+      <div class="fg"><label>Phone *</label><input id="p-phone" type="tel" required maxlength="20"></div>
+    </div>
+    <div class="fg"><label>Temporary Password *</label><input id="p-pass" type="password" required minlength="8" maxlength="72"></div>
+    <div id="p-alert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" data-close="modal-parent">Cancel</button>
+      <button class="btn btn-primary" id="btnSubmitParent">Create Parent Account</button>
+    </div>
   </div>
 </div>
 
-<!-- RECORD PAYMENT MODAL -->
+<!-- RECORD PAYMENT -->
 <div class="modal-bg" id="modal-payment">
   <div class="modal">
-    <h3>Record Payment <button class="modal-close" onclick="closeModal('modal-payment')">×</button></h3>
-    <form id="form-payment">
-      <div class="fg-row">
-        <div class="fg"><label>Student *</label><select id="py-student" required><option>Select Student</option></select></div>
-        <div class="fg"><label>Payment Category *</label><select id="py-category" required><option>Select Category</option></select></div>
+    <h3>Record Payment <button class="modal-close" data-close="modal-payment">×</button></h3>
+    <div class="fg"><label>Student *</label>
+      <select id="py-student" required><option value="">Select Student</option></select>
+    </div>
+    <div class="fg"><label>Payment Category *</label>
+      <select id="py-category" required><option value="">Select Category</option></select>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Amount (KES) *</label><input id="py-amount" type="number" min="0" step="0.01" required></div>
+      <div class="fg"><label>Method *</label>
+        <select id="py-method" required>
+          <option value="">Select</option>
+          <option>Cash</option><option>M-Pesa</option><option>Bank Transfer</option><option>Card</option>
+        </select>
       </div>
-      <div class="fg-row">
-        <div class="fg"><label>Amount Paid (KES) *</label><input type="number" id="py-amount" min="0" step="0.01" required></div>
-        <div class="fg"><label>Payment Method *</label><select id="py-method" required><option>Select Method</option><option>Cash</option><option>Bank Transfer</option><option>M-Pesa</option><option>Card</option></select></div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Date *</label><input id="py-date" type="date" required></div>
+      <div class="fg"><label>Term *</label>
+        <select id="py-term" required><option value="">Select</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
       </div>
-      <div class="fg"><label>Transaction Reference</label><input type="text" id="py-ref" placeholder="e.g., ABC123456789"></div>
-      <div class="fg-row">
-        <div class="fg"><label>Payment Date *</label><input type="date" id="py-date" required></div>
-        <div class="fg"><label>Academic Year *</label><select id="py-year" required><option>Select Year</option></select></div>
-      </div>
-      <div class="fg"><label>Term *</label><select id="py-term" required><option>Select Term</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select></div>
-      <div class="fg"><label>Remarks</label><textarea id="py-remarks" placeholder="Additional notes..."></textarea></div>
-      <div class="ma"><button type="button" class="btn btn-ghost" onclick="closeModal('modal-payment')">Cancel</button><button type="submit" class="btn btn-blue">Record Payment</button></div>
-      <div id="py-alert"></div>
-    </form>
+    </div>
+    <div class="fg"><label>Transaction Reference</label><input id="py-ref" type="text" maxlength="100"></div>
+    <div class="fg"><label>Remarks</label><textarea id="py-remarks" maxlength="500"></textarea></div>
+    <div id="py-alert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" data-close="modal-payment">Cancel</button>
+      <button class="btn btn-primary" id="btnSubmitPayment">Record Payment</button>
+    </div>
   </div>
 </div>
 
-<!-- RECORD ATTENDANCE MODAL -->
+<!-- RECORD ATTENDANCE -->
 <div class="modal-bg" id="modal-attendance">
   <div class="modal">
-    <h3>Record Attendance <button class="modal-close" onclick="closeModal('modal-attendance')">×</button></h3>
-    <form id="form-attendance">
-      <div class="fg-row">
-        <div class="fg"><label>Date *</label><input type="date" id="a-date" required></div>
-        <div class="fg"><label>Grade/Class *</label><select id="a-grade" required><option>Select Grade</option></select></div>
+    <h3>Record Attendance <button class="modal-close" data-close="modal-attendance">×</button></h3>
+    <div class="fg-row">
+      <div class="fg"><label>Date *</label><input id="a-date" type="date" required></div>
+      <div class="fg"><label>Grade/Class *</label>
+        <select id="a-grade" required><option value="">Select Grade</option></select>
       </div>
-      <div class="fg"><label>Students</label><div id="a-students" style="max-height:300px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:10px;padding:12px"></div></div>
-      <div class="ma"><button type="button" class="btn btn-ghost" onclick="closeModal('modal-attendance')">Cancel</button><button type="submit" class="btn btn-blue">Save Attendance</button></div>
-      <div id="a-alert"></div>
-    </form>
+    </div>
+    <button class="btn btn-ghost" type="button" id="btnLoadAttStudents" style="margin-bottom:12px;width:100%">Load Students for Grade</button>
+    <div id="a-students" style="max-height:280px;overflow-y:auto;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px;font-size:13px"></div>
+    <div id="a-alert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" data-close="modal-attendance">Cancel</button>
+      <button class="btn btn-primary" id="btnSubmitAttendance">Save Attendance</button>
+    </div>
   </div>
 </div>
 
-<!-- RECORD ASSESSMENT MODAL -->
+<!-- ADD ASSESSMENT -->
 <div class="modal-bg" id="modal-assessment">
   <div class="modal">
-    <h3>Record CBC Assessment <button class="modal-close" onclick="closeModal('modal-assessment')">×</button></h3>
-    <form id="form-assessment">
-      <div class="fg-row">
-        <div class="fg"><label>Student *</label><select id="as-student" required><option>Select Student</option></select></div>
-        <div class="fg"><label>Grade *</label><select id="as-grade" required><option>Select Grade</option></select></div>
+    <h3>Record CBC Assessment <button class="modal-close" data-close="modal-assessment">×</button></h3>
+    <div class="fg-row">
+      <div class="fg"><label>Student *</label>
+        <select id="as-student" required><option value="">Select Student</option></select>
       </div>
-      <div class="fg-row">
-        <div class="fg"><label>Learning Area *</label><select id="as-area" required><option>Select Learning Area</option></select></div>
-        <div class="fg"><label>Strand *</label><select id="as-strand" required><option>Select Strand</option></select></div>
+      <div class="fg"><label>Term *</label>
+        <select id="as-term" required><option value="">Select</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
       </div>
-      <div class="fg-row">
-        <div class="fg"><label>Assessment Type *</label><select id="as-type" required><option>Select Type</option><option>Test</option><option>Assignment</option><option>Project</option><option>Observation</option></select></div>
-        <div class="fg"><label>Score (0-100) *</label><input type="number" id="as-score" min="0" max="100" required></div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Assessment Type *</label>
+        <select id="as-type" required>
+          <option value="">Select</option>
+          <option>Test</option><option>Assignment</option><option>Project</option><option>Observation</option><option>Portfolio</option>
+        </select>
       </div>
-      <div class="fg-row">
-        <div class="fg"><label>Assessment Date *</label><input type="date" id="as-date" required></div>
-        <div class="fg"><label>Term *</label><select id="as-term" required><option>Select Term</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select></div>
-      </div>
-      <div class="fg"><label>Teacher Remarks</label><textarea id="as-remarks" placeholder="Comments on student performance..."></textarea></div>
-      <div class="ma"><button type="button" class="btn btn-ghost" onclick="closeModal('modal-assessment')">Cancel</button><button type="submit" class="btn btn-blue">Record Assessment</button></div>
-      <div id="as-alert"></div>
-    </form>
+      <div class="fg"><label>Score (0–100) *</label><input id="as-score" type="number" min="0" max="100" required></div>
+    </div>
+    <div class="fg"><label>Date *</label><input id="as-date" type="date" required></div>
+    <div class="fg"><label>Teacher Remarks</label><textarea id="as-remarks" maxlength="600"></textarea></div>
+    <div id="as-alert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" data-close="modal-assessment">Cancel</button>
+      <button class="btn btn-primary" id="btnSubmitAssessment">Record Assessment</button>
+    </div>
   </div>
 </div>
 
-<!-- ADD STAFF MODAL -->
+<!-- ADD STAFF -->
 <div class="modal-bg" id="modal-staff">
   <div class="modal">
-    <h3>Add Staff User <button class="modal-close" onclick="closeModal('modal-staff')">×</button></h3>
-    <form id="form-staff">
-      <div class="fg-row">
-        <div class="fg"><label>Full Name *</label><input type="text" id="st-name" required></div>
-        <div class="fg"><label>Email *</label><input type="email" id="st-email" required></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Role *</label><select id="st-role" required><option>Select Role</option><option value="SCHOOL_ADMIN">School Admin</option><option value="FINANCE">Finance Officer</option><option value="TEACHER">Teacher</option></select></div>
-        <div class="fg"><label>Phone Number</label><input type="tel" id="st-phone"></div>
-      </div>
-      <div class="fg"><label>Temporary Password *</label><input type="password" id="st-pass" required></div>
-      <div class="ma"><button type="button" class="btn btn-ghost" onclick="closeModal('modal-staff')">Cancel</button><button type="submit" class="btn btn-blue">Add Staff User</button></div>
-      <div id="st-alert"></div>
-    </form>
+    <h3>Add Staff User <button class="modal-close" data-close="modal-staff">×</button></h3>
+    <div class="fg-row">
+      <div class="fg"><label>Full Name *</label><input id="st-name" type="text" required maxlength="150"></div>
+      <div class="fg"><label>Phone</label><input id="st-phone" type="tel" maxlength="20"></div>
+    </div>
+    <div class="fg"><label>Email *</label><input id="st-email" type="email" required maxlength="150"></div>
+    <div class="fg"><label>Role *</label>
+      <select id="st-role" required>
+        <option value="">Select Role</option>
+        <option value="TEACHER">Teacher</option>
+        <option value="FINANCE">Finance Officer</option>
+        <option value="SCHOOL_ADMIN">School Admin</option>
+      </select>
+    </div>
+    <div class="fg"><label>Temporary Password *</label><input id="st-pass" type="password" required minlength="8" maxlength="72"></div>
+    <small style="color:#64748b;font-size:12px">Staff must change password on first login.</small>
+    <div id="st-alert"></div>
+    <div class="ma">
+      <button class="btn btn-ghost" data-close="modal-staff">Cancel</button>
+      <button class="btn btn-primary" id="btnSubmitStaff">Create Staff Account</button>
+    </div>
   </div>
 </div>
 
 <script type="module">
-import { guardPage, logout, students, teachers, parents, finance, attendance, assessments, auth } from "/js/api.js";
+// ── Imports ───────────────────────────────────────────────────────
+import {
+    guardPage, logout, getToken, clearSession,
+    apiFetch, esc,
+    auth, students, teachers, parents, users,
+    finance, attendance, assessments
+} from "/js/api.js";
 
+// ── Guard: only SCHOOL_ADMIN ──────────────────────────────────────
 let me = guardPage(["SCHOOL_ADMIN"]);
-if (!me) { window.location.href = "/login.html"; }
+if (!me) { window.location.href = "/login.html"; throw new Error("Unauthorized"); }
 
+// ── Verify token is still valid with the server ───────────────────
 (async () => {
-    const res = await auth.verify();
-    if (!res || !res.success) { logout(); }
-    else { me = res.user; localStorage.setItem("user", JSON.stringify(me)); init(); }
+    const res = await auth.verify().catch(() => null);
+    if (!res?.success) { clearSession(); window.location.href = "/login.html"; return; }
+    me = res.user;
+    init();
 })();
 
-function init() {
-    document.getElementById("adminName").textContent = me.name;
-    document.getElementById("schoolName").textContent = me.school_name;
+// ── State ─────────────────────────────────────────────────────────
+let allGrades = [];
+let allStudents = [];
+let allCategories = [];
+
+// ── Init ──────────────────────────────────────────────────────────
+async function init() {
+    // Populate sidebar + topbar
+    document.getElementById("adminName").textContent = esc(me.name);
+    document.getElementById("userInitials").textContent = me.name?.charAt(0)?.toUpperCase() || "A";
+    document.getElementById("schoolName").textContent = esc(me.school_name);
     document.getElementById("schoolCode").textContent = me.school_code;
+    document.getElementById("topbarInfo").textContent = me.school_name + " · " + me.email;
+
     setupNavigation();
-    setupButtons();
+    setupModals();
+    setupLogout();
+
+    // Load shared data needed across panels
+    await Promise.all([loadGrades(), loadStudentCache(), loadPaymentCategories()]);
+
     loadDashboard();
 }
 
+// ── Navigation ───────────────────────────────────────────────────
 function setupNavigation() {
-    document.querySelectorAll(".nav-item").forEach(el => {
+    const navItems = document.querySelectorAll(".nav-item");
+    navItems.forEach(el => {
         el.addEventListener("click", () => {
-            document.querySelectorAll(".nav-item").forEach(x => x.classList.remove("active"));
+            navItems.forEach(x => x.classList.remove("active"));
             document.querySelectorAll(".panel").forEach(x => x.classList.remove("active"));
             el.classList.add("active");
-            const panel = el.dataset.p;
-            document.getElementById("panel-"+panel).classList.add("active");
-            document.getElementById("pageTitle").textContent = el.textContent;
-            if (panel === "students") loadStudents();
-            if (panel === "teachers") loadTeachers();
-            if (panel === "parents") loadParents();
-            if (panel === "finance") loadPayments();
-            if (panel === "attendance") loadAttendance();
-            if (panel === "curriculum") loadAssessments();
-            if (panel === "staff") loadStaff();
+            const panel = el.dataset.panel;
+            document.getElementById("panel-" + panel)?.classList.add("active");
+            document.getElementById("pageTitle").textContent = el.textContent.trim();
+            panelLoaders[panel]?.();
         });
     });
-    document.getElementById("logoutBtn").addEventListener("click", () => logout());
 }
 
-function setupButtons() {
-    document.getElementById("addStudentBtn").addEventListener("click", () => openModal("modal-student"));
-    document.getElementById("addTeacherBtn").addEventListener("click", () => openModal("modal-teacher"));
-    document.getElementById("addParentBtn").addEventListener("click", () => openModal("modal-parent"));
-    document.getElementById("recordPaymentBtn").addEventListener("click", () => openModal("modal-payment"));
-    document.getElementById("recordAttendanceBtn").addEventListener("click", () => openModal("modal-attendance"));
-    document.getElementById("recordAssessmentBtn").addEventListener("click", () => openModal("modal-assessment"));
-    document.getElementById("addStaffBtn").addEventListener("click", () => openModal("modal-staff"));
+const panelLoaders = {
+    overview:    loadDashboard,
+    students:    loadStudents,
+    teachers:    loadTeachers,
+    parents:     loadParents,
+    finance:     loadPayments,
+    attendance:  loadAttendance,
+    assessments: loadAssessments,
+    staff:       loadStaff,
+};
 
-    document.getElementById("form-student").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const data = {
-            full_name: document.getElementById("s-fname").value + " " + document.getElementById("s-lname").value,
-            admission_no: document.getElementById("s-adm").value,
-            gender: document.getElementById("s-gender").value,
-            date_of_birth: document.getElementById("s-dob").value,
-            grade_id: document.getElementById("s-grade").value,
-            stream_id: document.getElementById("s-stream").value || null,
-            special_needs: document.getElementById("s-special").value,
-            is_active: document.getElementById("s-status").value === "Active"
-        };
-        const res = await students.create(data);
-        const alert = document.getElementById("s-alert");
-        if (res?.success) {
-            alert.innerHTML = '<div class="alert as">✓ Student added successfully</div>';
-            setTimeout(() => { closeModal("modal-student"); loadStudents(); }, 1000);
-        } else {
-            alert.innerHTML = `<div class="alert ae">✗ ${res?.message || "Error adding student"}</div>`;
-        }
-    });
-
-    document.getElementById("form-teacher").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const data = {
-            full_name: document.getElementById("t-fname").value + " " + document.getElementById("t-lname").value,
-            national_id: document.getElementById("t-nid").value,
-            tsc_number: document.getElementById("t-tsc").value,
-            email: document.getElementById("t-email").value,
-            phone: document.getElementById("t-phone").value,
-            subjects_taught: document.getElementById("t-subjects").value,
-            grade_id: document.getElementById("t-grade").value || null,
-            employment_date: document.getElementById("t-empdate").value,
-            status: document.getElementById("t-status").value
-        };
-        const res = await teachers.create(data);
-        const alert = document.getElementById("t-alert");
-        if (res?.success) {
-            alert.innerHTML = '<div class="alert as">✓ Teacher added successfully</div>';
-            setTimeout(() => { closeModal("modal-teacher"); loadTeachers(); }, 1000);
-        } else {
-            alert.innerHTML = `<div class="alert ae">✗ ${res?.message || "Error adding teacher"}</div>`;
-        }
-    });
-
-    document.getElementById("form-parent").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const data = {
-            full_name: document.getElementById("p-fname").value + " " + document.getElementById("p-lname").value,
-            relationship: document.getElementById("p-rel").value,
-            national_id: document.getElementById("p-nid").value,
-            occupation: document.getElementById("p-occ").value,
-            phone_number: document.getElementById("p-phone").value,
-            phone_number_alt: document.getElementById("p-phone2").value,
-            email_address: document.getElementById("p-email").value,
-            physical_address: document.getElementById("p-addr").value,
-            emergency_contact: document.getElementById("p-emerg").value
-        };
-        const res = await parents.create(data);
-        const alert = document.getElementById("p-alert");
-        if (res?.success) {
-            alert.innerHTML = '<div class="alert as">✓ Parent added successfully</div>';
-            setTimeout(() => { closeModal("modal-parent"); loadParents(); }, 1000);
-        } else {
-            alert.innerHTML = `<div class="alert ae">✗ ${res?.message || "Error adding parent"}</div>`;
-        }
-    });
-
-    document.getElementById("form-payment").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const data = {
-            student_id: document.getElementById("py-student").value,
-            payment_category_id: document.getElementById("py-category").value,
-            amount_paid: parseFloat(document.getElementById("py-amount").value),
-            payment_method: document.getElementById("py-method").value,
-            transaction_reference: document.getElementById("py-ref").value,
-            payment_date: document.getElementById("py-date").value,
-            year: document.getElementById("py-year").value,
-            term: document.getElementById("py-term").value,
-            remarks: document.getElementById("py-remarks").value
-        };
-        const res = await finance.recordPayment(data);
-        const alert = document.getElementById("py-alert");
-        if (res?.success) {
-            alert.innerHTML = '<div class="alert as">✓ Payment recorded successfully</div>';
-            setTimeout(() => { closeModal("modal-payment"); loadPayments(); }, 1000);
-        } else {
-            alert.innerHTML = `<div class="alert ae">✗ ${res?.message || "Error recording payment"}</div>`;
-        }
-    });
-
-    document.getElementById("form-assessment").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const data = {
-            student_id: document.getElementById("as-student").value,
-            grade_id: document.getElementById("as-grade").value,
-            learning_area_id: document.getElementById("as-area").value,
-            strand_id: document.getElementById("as-strand").value,
-            assessment_type: document.getElementById("as-type").value,
-            score: parseInt(document.getElementById("as-score").value),
-            assessment_date: document.getElementById("as-date").value,
-            term: document.getElementById("as-term").value,
-            teacher_remarks: document.getElementById("as-remarks").value
-        };
-        const res = await assessments.create(data);
-        const alert = document.getElementById("as-alert");
-        if (res?.success) {
-            alert.innerHTML = '<div class="alert as">✓ Assessment recorded successfully</div>';
-            setTimeout(() => { closeModal("modal-assessment"); loadAssessments(); }, 1000);
-        } else {
-            alert.innerHTML = `<div class="alert ae">✗ ${res?.message || "Error recording assessment"}</div>`;
-        }
+// ── Logout ───────────────────────────────────────────────────────
+function setupLogout() {
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+        const btn = document.getElementById("logoutBtn");
+        btn.textContent = "Signing out…";
+        btn.disabled = true;
+        await logout();  // clears session + redirects
     });
 }
 
+// ── Shared data loaders ──────────────────────────────────────────
+async function loadGrades() {
+    const res = await apiFetch("/cbc/grades").catch(() => null);
+    allGrades = res?.data || [];
+    // Populate all grade dropdowns
+    ["s-grade", "filterStudentGrade", "a-grade", "filterAttGrade"].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const hasAll = id.startsWith("filter");
+        const placeholder = hasAll ? '<option value="">All Grades</option>' : '<option value="">Select Grade</option>';
+        el.innerHTML = placeholder + allGrades.map(g =>
+            `<option value="${esc(String(g.id))}">${esc(g.grade_level)} – ${esc(g.stage)}</option>`
+        ).join("");
+    });
+}
+
+async function loadStudentCache() {
+    const res = await students.list({}).catch(() => null);
+    allStudents = res?.data || [];
+    // Populate student selects in modals
+    ["py-student", "as-student"].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = '<option value="">Select Student</option>' +
+            allStudents.map(s =>
+                `<option value="${esc(String(s.id))}">${esc(s.full_name)} (${esc(s.admission_no)})</option>`
+            ).join("");
+    });
+}
+
+async function loadPaymentCategories() {
+    const res = await apiFetch("/finance/payment-categories").catch(() => null);
+    allCategories = res?.data || [];
+    const el = document.getElementById("py-category");
+    if (!el) return;
+    el.innerHTML = '<option value="">Select Category</option>' +
+        allCategories.map(c =>
+            `<option value="${esc(String(c.id))}">${esc(c.name)}</option>`
+        ).join("");
+}
+
+// ── Dashboard ────────────────────────────────────────────────────
 async function loadDashboard() {
-    const [studRes, teachRes, parRes, finRes] = await Promise.all([
+    const [studRes, teachRes, parRes, finRes, auditRes] = await Promise.all([
         students.list({}),
         teachers.list({}),
         parents.list({}),
-        finance.summary({})
+        finance.summary({}),
+        auth.auditLog(),
     ]);
-    document.getElementById("totalStudents").textContent = studRes?.data?.length || 0;
-    document.getElementById("totalTeachers").textContent = teachRes?.data?.length || 0;
-    document.getElementById("totalParents").textContent = parRes?.data?.length || 0;
-    document.getElementById("outstandingFees").textContent = "KES " + (finRes?.data?.total_outstanding || 0).toLocaleString();
+
+    document.getElementById("st-students").textContent = studRes?.data?.length ?? "–";
+    document.getElementById("st-teachers").textContent = teachRes?.data?.length ?? "–";
+    document.getElementById("st-parents").textContent  = parRes?.data?.length ?? "–";
+    document.getElementById("st-revenue").textContent  =
+        "KES " + ((finRes?.data?.total_revenue || 0)).toLocaleString("en-KE", { minimumFractionDigits: 0 });
+    document.getElementById("st-pending").textContent  =
+        "KES " + ((finRes?.data?.total_pending || 0)).toLocaleString("en-KE", { minimumFractionDigits: 0 });
+
+    const auditEl = document.getElementById("auditLog");
+    const logs = auditRes?.data?.slice(0, 15) || [];
+    if (!logs.length) { auditEl.innerHTML = '<div class="empty">No recent activity</div>'; return; }
+    auditEl.innerHTML = `<table>
+        <thead><tr><th>Action</th><th>User</th><th>Time</th><th>Result</th></tr></thead>
+        <tbody>${logs.map(l => `
+            <tr>
+                <td><strong>${esc(l.action)}</strong> on ${esc(l.resource)}</td>
+                <td>${esc(l.user_name || "System")}</td>
+                <td>${new Date(l.created_at).toLocaleString("en-KE")}</td>
+                <td><span class="badge ${l.outcome === "SUCCESS" ? "bg" : "br"}">${esc(l.outcome || "–")}</span></td>
+            </tr>`).join("")}
+        </tbody></table>`;
 }
 
+// ── Students ─────────────────────────────────────────────────────
 async function loadStudents() {
+    const listEl = document.getElementById("studentsList");
+    listEl.innerHTML = '<div class="empty">Loading…</div>';
     const res = await students.list({});
-    const list = document.getElementById("studentsList");
-    if (!res?.data?.length) { list.innerHTML = '<div class="empty">No students found</div>'; return; }
-    list.innerHTML = `<table><thead><tr><th>Name</th><th>Admission No</th><th>Grade</th><th>Status</th><th>Actions</th></tr></thead><tbody>` +
-        res.data.map(s => `<tr><td>${s.full_name}</td><td>${s.admission_no}</td><td>${s.grade_level || "–"}</td><td><span class="badge ${s.is_active ? 'bg' : 'br'}">${s.is_active ? 'Active' : 'Inactive'}</span></td><td><div class="action-btns"><button class="btn btn-sm btn-ghost">Edit</button><button class="btn btn-sm btn-red">Delete</button></div></td></tr>`).join("") + `</tbody></table>`;
+    allStudents = res?.data || [];
+    // refresh modals too
+    ["py-student","as-student"].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = '<option value="">Select Student</option>' +
+            allStudents.map(s => `<option value="${esc(String(s.id))}">${esc(s.full_name)} (${esc(s.admission_no)})</option>`).join("");
+    });
+    renderStudentsTable(allStudents);
 }
 
+function renderStudentsTable(data) {
+    const listEl = document.getElementById("studentsList");
+    if (!data.length) { listEl.innerHTML = '<div class="empty">No students found</div>'; return; }
+    listEl.innerHTML = `<table>
+        <thead><tr><th>Name</th><th>Admission No</th><th>Grade</th><th>DOB</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>${data.map(s => `
+            <tr>
+                <td>${esc(s.full_name)}</td>
+                <td><code>${esc(s.admission_no)}</code></td>
+                <td>${esc(s.grade_level || "–")}</td>
+                <td>${s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString("en-KE") : "–"}</td>
+                <td><span class="badge ${s.is_active ? "bg" : "br"}">${s.is_active ? "Active" : "Inactive"}</span></td>
+                <td><div class="action-btns">
+                    <button class="btn btn-sm btn-warn" data-action="toggle-student" data-id="${esc(String(s.id))}" data-active="${s.is_active}">${s.is_active ? "Deactivate" : "Activate"}</button>
+                </div></td>
+            </tr>`).join("")}
+        </tbody></table>`;
+
+    listEl.querySelectorAll("[data-action='toggle-student']").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            const id = btn.dataset.id;
+            const active = btn.dataset.active === "true";
+            await students.update(id, { is_active: !active });
+            loadStudents();
+        });
+    });
+}
+
+document.getElementById("filterStudents").addEventListener("input", filterStudents);
+document.getElementById("filterStudentGrade").addEventListener("change", filterStudents);
+function filterStudents() {
+    const q = document.getElementById("filterStudents").value.toLowerCase();
+    const gid = document.getElementById("filterStudentGrade").value;
+    const filtered = allStudents.filter(s => {
+        const nameMatch = (s.full_name || "").toLowerCase().includes(q) || (s.admission_no || "").toLowerCase().includes(q);
+        const gradeMatch = !gid || String(s.grade_id) === gid;
+        return nameMatch && gradeMatch;
+    });
+    renderStudentsTable(filtered);
+}
+
+// ── Teachers ─────────────────────────────────────────────────────
 async function loadTeachers() {
+    const listEl = document.getElementById("teachersList");
+    listEl.innerHTML = '<div class="empty">Loading…</div>';
     const res = await teachers.list({});
-    const list = document.getElementById("teachersList");
-    if (!res?.data?.length) { list.innerHTML = '<div class="empty">No teachers found</div>'; return; }
-    list.innerHTML = `<table><thead><tr><th>Name</th><th>Email</th><th>Subjects</th><th>Status</th><th>Actions</th></tr></thead><tbody>` +
-        res.data.map(t => `<tr><td>${t.full_name}</td><td>${t.email}</td><td>${t.subjects_taught || "–"}</td><td><span class="badge ${t.status === 'Active' ? 'bg' : 'br'}">${t.status}</span></td><td><div class="action-btns"><button class="btn btn-sm btn-ghost">Edit</button><button class="btn btn-sm btn-red">Delete</button></div></td></tr>`).join("") + `</tbody></table>`;
+    const data = res?.data || [];
+    if (!data.length) { listEl.innerHTML = '<div class="empty">No teachers found</div>'; return; }
+    listEl.innerHTML = `<table>
+        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>TSC No</th><th>Department</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>${data.map(t => `
+            <tr>
+                <td>${esc(t.full_name)}</td>
+                <td>${esc(t.email || "–")}</td>
+                <td>${esc(t.phone || "–")}</td>
+                <td><code>${esc(t.tsc_no || "–")}</code></td>
+                <td>${esc(t.department || "–")}</td>
+                <td><span class="badge ${t.is_active ? "bg" : "br"}">${t.is_active ? "Active" : "Inactive"}</span></td>
+                <td><div class="action-btns">
+                    <button class="btn btn-sm btn-warn" data-action="toggle-teacher" data-id="${esc(String(t.id))}" data-active="${t.is_active}">${t.is_active ? "Deactivate" : "Activate"}</button>
+                </div></td>
+            </tr>`).join("")}
+        </tbody></table>`;
+
+    listEl.querySelectorAll("[data-action='toggle-teacher']").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            const id = btn.dataset.id;
+            const active = btn.dataset.active === "true";
+            await teachers.update(id, { is_active: !active });
+            loadTeachers();
+        });
+    });
 }
 
+// ── Parents ──────────────────────────────────────────────────────
 async function loadParents() {
+    const listEl = document.getElementById("parentsList");
+    listEl.innerHTML = '<div class="empty">Loading…</div>';
     const res = await parents.list({});
-    const list = document.getElementById("parentsList");
-    if (!res?.data?.length) { list.innerHTML = '<div class="empty">No parents found</div>'; return; }
-    list.innerHTML = `<table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Relationship</th><th>Actions</th></tr></thead><tbody>` +
-        res.data.map(p => `<tr><td>${p.full_name}</td><td>${p.phone_number}</td><td>${p.email_address || "–"}</td><td>${p.relationship}</td><td><div class="action-btns"><button class="btn btn-sm btn-ghost">Edit</button><button class="btn btn-sm btn-red">Delete</button></div></td></tr>`).join("") + `</tbody></table>`;
+    const data = res?.data || [];
+    if (!data.length) { listEl.innerHTML = '<div class="empty">No parents registered</div>'; return; }
+    listEl.innerHTML = `<table>
+        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Children</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>${data.map(p => {
+            const kids = Array.isArray(p.children) ? p.children.filter(c => c?.id) : [];
+            return `<tr>
+                <td>${esc(p.name)}</td>
+                <td>${esc(p.email || "–")}</td>
+                <td>${esc(p.phone || "–")}</td>
+                <td>${kids.length ? kids.map(k => `<span class="badge bb">${esc(k.name)}</span>`).join(" ") : "None linked"}</td>
+                <td><span class="badge ${p.is_active ? "bg" : "br"}">${p.is_active ? "Active" : "Inactive"}</span></td>
+                <td><div class="action-btns">
+                    <button class="btn btn-sm btn-warn" data-action="toggle-parent" data-id="${esc(String(p.id))}" data-active="${p.is_active}">${p.is_active ? "Deactivate" : "Activate"}</button>
+                </div></td>
+            </tr>`;
+        }).join("")}
+        </tbody></table>`;
+
+    listEl.querySelectorAll("[data-action='toggle-parent']").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            await parents.update(btn.dataset.id, { is_active: btn.dataset.active !== "true" });
+            loadParents();
+        });
+    });
 }
 
+// ── Finance ──────────────────────────────────────────────────────
 async function loadPayments() {
-    const res = await finance.payments({});
-    const list = document.getElementById("paymentsList");
-    if (!res?.data?.length) { list.innerHTML = '<div class="empty">No payments found</div>'; return; }
-    list.innerHTML = `<table><thead><tr><th>Student</th><th>Amount</th><th>Category</th><th>Date</th><th>Status</th></tr></thead><tbody>` +
-        res.data.map(p => `<tr><td>${p.student_name || "–"}</td><td>KES ${p.amount_paid}</td><td>${p.category_name || "–"}</td><td>${new Date(p.payment_date).toLocaleDateString()}</td><td><span class="badge bg">${p.payment_status}</span></td></tr>`).join("") + `</tbody></table>`;
+    const listEl = document.getElementById("paymentsList");
+    listEl.innerHTML = '<div class="empty">Loading…</div>';
+    const status = document.getElementById("filterPaymentStatus").value;
+    const res = await finance.payments(status ? { payment_status: status } : {});
+    const data = res?.data || [];
+    if (!data.length) { listEl.innerHTML = '<div class="empty">No payment records found</div>'; return; }
+    listEl.innerHTML = `<table>
+        <thead><tr><th>Student</th><th>Category</th><th>Amount</th><th>Method</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody>${data.map(p => `
+            <tr>
+                <td>${esc(p.student_name || "–")}</td>
+                <td>${esc(p.category_name || "–")}</td>
+                <td><strong>KES ${Number(p.amount_paid || 0).toLocaleString("en-KE")}</strong></td>
+                <td>${esc(p.payment_method || "–")}</td>
+                <td>${p.payment_date ? new Date(p.payment_date).toLocaleDateString("en-KE") : "–"}</td>
+                <td><span class="badge ${p.payment_status === "completed" ? "bg" : p.payment_status === "pending" ? "by" : "bb"}">${esc(p.payment_status || "–")}</span></td>
+            </tr>`).join("")}
+        </tbody></table>`;
 }
+document.getElementById("filterPaymentStatus").addEventListener("change", loadPayments);
 
+// ── Attendance ───────────────────────────────────────────────────
 async function loadAttendance() {
-    const res = await attendance.list({});
-    const list = document.getElementById("attendanceList");
-    if (!res?.data?.length) { list.innerHTML = '<div class="empty">No attendance records found</div>'; return; }
-    list.innerHTML = `<table><thead><tr><th>Student</th><th>Date</th><th>Status</th><th>Remarks</th></tr></thead><tbody>` +
-        res.data.map(a => `<tr><td>${a.student_name || "–"}</td><td>${new Date(a.date).toLocaleDateString()}</td><td><span class="badge ${a.status === 'present' ? 'bg' : 'br'}">${a.status}</span></td><td>${a.remarks || "–"}</td></tr>`).join("") + `</tbody></table>`;
+    const listEl = document.getElementById("attendanceList");
+    listEl.innerHTML = '<div class="empty">Loading…</div>';
+    const date  = document.getElementById("filterAttDate").value;
+    const grade = document.getElementById("filterAttGrade").value;
+    const params = {};
+    if (date)  params.date = date;
+    // We filter by grade client-side since API uses student_id
+    const res = await attendance.list(params);
+    let data = res?.data || [];
+    if (grade) data = data.filter(a => String(a.grade_id) === grade || String(a.grade_level) === grade);
+    if (!data.length) { listEl.innerHTML = '<div class="empty">No attendance records found</div>'; return; }
+    listEl.innerHTML = `<table>
+        <thead><tr><th>Student</th><th>Admission No</th><th>Date</th><th>Status</th><th>Remarks</th></tr></thead>
+        <tbody>${data.map(a => `
+            <tr>
+                <td>${esc(a.full_name || "–")}</td>
+                <td><code>${esc(a.admission_no || "–")}</code></td>
+                <td>${a.date ? new Date(a.date).toLocaleDateString("en-KE") : "–"}</td>
+                <td><span class="badge ${a.status === "present" ? "bg" : a.status === "late" ? "by" : a.status === "excused" ? "bb" : "br"}">${esc(a.status)}</span></td>
+                <td>${esc(a.remarks || "–")}</td>
+            </tr>`).join("")}
+        </tbody></table>`;
 }
+document.getElementById("filterAttDate").addEventListener("change", loadAttendance);
+document.getElementById("filterAttGrade").addEventListener("change", loadAttendance);
 
+// ── Assessments ──────────────────────────────────────────────────
 async function loadAssessments() {
+    const listEl = document.getElementById("assessmentsList");
+    listEl.innerHTML = '<div class="empty">Loading…</div>';
     const res = await assessments.list({});
-    const list = document.getElementById("assessmentsList");
-    if (!res?.data?.length) { list.innerHTML = '<div class="empty">No assessments found</div>'; return; }
-    list.innerHTML = `<table><thead><tr><th>Student</th><th>Subject</th><th>Score</th><th>Grade</th><th>Date</th></tr></thead><tbody>` +
-        res.data.map(a => `<tr><td>${a.student_name || "–"}</td><td>${a.learning_area || "–"}</td><td>${a.score}</td><td><span class="badge bb">${a.grade || "–"}</span></td><td>${new Date(a.assessment_date).toLocaleDateString()}</td></tr>`).join("") + `</tbody></table>`;
+    const data = res?.data || [];
+    if (!data.length) { listEl.innerHTML = '<div class="empty">No assessments found</div>'; return; }
+    listEl.innerHTML = `<table>
+        <thead><tr><th>Student</th><th>Learning Area</th><th>Type</th><th>Score</th><th>Term</th><th>Date</th></tr></thead>
+        <tbody>${data.map(a => `
+            <tr>
+                <td>${esc(a.student_name || "–")}</td>
+                <td>${esc(a.learning_area_name || "–")}</td>
+                <td>${esc(a.assessment_type || "–")}</td>
+                <td><strong>${esc(String(a.score ?? "–"))}</strong>/100</td>
+                <td><span class="badge bb">Term ${esc(String(a.term || "–"))}</span></td>
+                <td>${a.assessment_date ? new Date(a.assessment_date).toLocaleDateString("en-KE") : "–"}</td>
+            </tr>`).join("")}
+        </tbody></table>`;
 }
 
+// ── Staff ────────────────────────────────────────────────────────
 async function loadStaff() {
-    const res = await students.list({});
-    const list = document.getElementById("staffList");
-    list.innerHTML = '<div class="empty">Staff management coming soon</div>';
+    const listEl = document.getElementById("staffList");
+    listEl.innerHTML = '<div class="empty">Loading…</div>';
+    const res = await users.list({});
+    const data = (res?.data || []).filter(u => u.id !== me.id); // exclude self
+    if (!data.length) { listEl.innerHTML = '<div class="empty">No staff accounts found</div>'; return; }
+    const roleClass = { SCHOOL_ADMIN: "bb", TEACHER: "bg", FINANCE: "by", STUDENT: "bpurple", PARENT: "br" };
+    listEl.innerHTML = `<table>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Phone</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>${data.map(u => `
+            <tr>
+                <td>${esc(u.name)}</td>
+                <td>${esc(u.email)}</td>
+                <td><span class="badge ${roleClass[u.role] || "bb"}">${esc(u.role)}</span></td>
+                <td>${esc(u.phone || "–")}</td>
+                <td>${u.last_login ? new Date(u.last_login).toLocaleDateString("en-KE") : "Never"}</td>
+                <td><span class="badge ${u.is_active ? "bg" : "br"}">${u.is_active ? "Active" : "Inactive"}</span></td>
+                <td><div class="action-btns">
+                    <button class="btn btn-sm btn-warn" data-action="toggle-user" data-id="${esc(String(u.id))}" data-active="${u.is_active}">${u.is_active ? "Deactivate" : "Activate"}</button>
+                    <button class="btn btn-sm btn-ghost" data-action="reset-pw" data-id="${esc(String(u.id))}" data-name="${esc(u.name)}">Reset PW</button>
+                </div></td>
+            </tr>`).join("")}
+        </tbody></table>`;
+
+    listEl.querySelectorAll("[data-action='toggle-user']").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            const active = btn.dataset.active === "true";
+            await users.update(btn.dataset.id, { is_active: !active });
+            loadStaff();
+        });
+    });
+
+    listEl.querySelectorAll("[data-action='reset-pw']").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            const pw = prompt(`Reset password for ${btn.dataset.name}. Enter new temporary password (min 8 chars):`);
+            if (!pw || pw.length < 8) { alert("Password must be at least 8 characters."); return; }
+            const res = await users.resetPassword(btn.dataset.id, pw);
+            alert(res?.message || (res?.success ? "Password reset." : "Error resetting password."));
+        });
+    });
 }
 
-window.openModal = (id) => { document.getElementById(id).classList.add("open"); };
-window.closeModal = (id) => { document.getElementById(id).classList.remove("open"); };
+// ══════════════════ MODAL SETUP ══════════════════════════════════
+function setupModals() {
+    // Close buttons (data-close attribute)
+    document.querySelectorAll("[data-close]").forEach(btn => {
+        btn.addEventListener("click", () => closeModal(btn.dataset.close));
+    });
+    // Click outside modal to close
+    document.querySelectorAll(".modal-bg").forEach(bg => {
+        bg.addEventListener("click", e => { if (e.target === bg) closeModal(bg.id); });
+    });
+
+    // Open buttons
+    document.getElementById("btnAddStudent").addEventListener("click",      () => openModal("modal-student"));
+    document.getElementById("btnAddTeacher").addEventListener("click",      () => openModal("modal-teacher"));
+    document.getElementById("btnAddParent").addEventListener("click",       () => openModal("modal-parent"));
+    document.getElementById("btnRecordPayment").addEventListener("click",   () => { populateStudentDropdown(); openModal("modal-payment"); });
+    document.getElementById("btnRecordAttendance").addEventListener("click",() => openModal("modal-attendance"));
+    document.getElementById("btnAddAssessment").addEventListener("click",   () => { populateStudentDropdown(); openModal("modal-assessment"); });
+    document.getElementById("btnAddStaff").addEventListener("click",        () => openModal("modal-staff"));
+
+    // Attendance: load students by grade
+    document.getElementById("btnLoadAttStudents").addEventListener("click", async () => {
+        const gradeId = document.getElementById("a-grade").value;
+        if (!gradeId) { alert("Select a grade first."); return; }
+        const res = await students.list({ grade_id: gradeId });
+        const data = res?.data || [];
+        const container = document.getElementById("a-students");
+        if (!data.length) { container.innerHTML = '<p style="color:#94a3b8;padding:8px">No students in this grade</p>'; return; }
+        container.innerHTML = data.map(s => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9">
+                <span>${esc(s.full_name)} <code style="font-size:11px;color:#94a3b8">${esc(s.admission_no)}</code></span>
+                <select data-student-id="${esc(String(s.id))}" style="font-size:12px;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;background:#fff">
+                    <option value="present">Present</option>
+                    <option value="absent">Absent</option>
+                    <option value="late">Late</option>
+                    <option value="excused">Excused</option>
+                </select>
+            </div>`).join("");
+    });
+
+    // ── Form submissions ──────────────────────────────────────────
+
+    // ADD STUDENT
+    document.getElementById("btnSubmitStudent").addEventListener("click", async () => {
+        const fname = document.getElementById("s-fname").value.trim();
+        const lname = document.getElementById("s-lname").value.trim();
+        const adm   = document.getElementById("s-adm").value.trim();
+        const gender= document.getElementById("s-gender").value;
+        const dob   = document.getElementById("s-dob").value;
+        const grade = document.getElementById("s-grade").value;
+        const alertEl = document.getElementById("s-alert");
+
+        if (!fname || !lname || !adm || !gender || !dob || !grade) {
+            return showAlert(alertEl, "All required fields must be filled.", "err");
+        }
+        const btn = document.getElementById("btnSubmitStudent");
+        setLoading(btn, true);
+        const res = await students.create({
+            full_name: fname + " " + lname,
+            admission_no: adm,
+            gender,
+            date_of_birth: dob,
+            grade_id: parseInt(grade),
+            special_needs: document.getElementById("s-special").value.trim() || null,
+            is_active: true,
+        });
+        setLoading(btn, false);
+        if (res?.success) {
+            showAlert(alertEl, "✓ Student added successfully.", "ok");
+            setTimeout(() => { closeModal("modal-student"); loadStudents(); resetForm("modal-student"); }, 1200);
+        } else {
+            showAlert(alertEl, res?.message || "Error adding student.", "err");
+        }
+    });
+
+    // ADD TEACHER
+    document.getElementById("btnSubmitTeacher").addEventListener("click", async () => {
+        const fname = document.getElementById("t-fname").value.trim();
+        const lname = document.getElementById("t-lname").value.trim();
+        const phone = document.getElementById("t-phone").value.trim();
+        const alertEl = document.getElementById("t-alert");
+        if (!fname || !lname || !phone) return showAlert(alertEl, "Name and phone are required.", "err");
+
+        const btn = document.getElementById("btnSubmitTeacher");
+        setLoading(btn, true);
+        const res = await teachers.create({
+            full_name: fname + " " + lname,
+            email:     document.getElementById("t-email").value.trim() || null,
+            phone,
+            tsc_no:    document.getElementById("t-tsc").value.trim() || null,
+            department:document.getElementById("t-dept").value.trim() || null,
+            subjects:  document.getElementById("t-subj").value.split(",").map(s=>s.trim()).filter(Boolean),
+        });
+        setLoading(btn, false);
+        if (res?.success) {
+            showAlert(alertEl, "✓ Teacher added.", "ok");
+            setTimeout(() => { closeModal("modal-teacher"); loadTeachers(); resetForm("modal-teacher"); }, 1200);
+        } else {
+            showAlert(alertEl, res?.message || "Error adding teacher.", "err");
+        }
+    });
+
+    // ADD PARENT
+    document.getElementById("btnSubmitParent").addEventListener("click", async () => {
+        const fname = document.getElementById("p-fname").value.trim();
+        const lname = document.getElementById("p-lname").value.trim();
+        const email = document.getElementById("p-email").value.trim();
+        const phone = document.getElementById("p-phone").value.trim();
+        const pass  = document.getElementById("p-pass").value;
+        const alertEl = document.getElementById("p-alert");
+        if (!fname || !lname || !email || !phone || !pass)
+            return showAlert(alertEl, "All fields are required.", "err");
+        if (pass.length < 8)
+            return showAlert(alertEl, "Password must be at least 8 characters.", "err");
+
+        const btn = document.getElementById("btnSubmitParent");
+        setLoading(btn, true);
+        const res = await parents.create({ name: fname + " " + lname, email, phone, password: pass });
+        setLoading(btn, false);
+        if (res?.success) {
+            showAlert(alertEl, "✓ Parent account created.", "ok");
+            setTimeout(() => { closeModal("modal-parent"); loadParents(); resetForm("modal-parent"); }, 1200);
+        } else {
+            showAlert(alertEl, res?.message || "Error creating parent.", "err");
+        }
+    });
+
+    // RECORD PAYMENT
+    document.getElementById("btnSubmitPayment").addEventListener("click", async () => {
+        const student  = document.getElementById("py-student").value;
+        const category = document.getElementById("py-category").value;
+        const amount   = document.getElementById("py-amount").value;
+        const method   = document.getElementById("py-method").value;
+        const date     = document.getElementById("py-date").value;
+        const term     = document.getElementById("py-term").value;
+        const alertEl  = document.getElementById("py-alert");
+        if (!student || !category || !amount || !method || !date || !term)
+            return showAlert(alertEl, "Please fill all required fields.", "err");
+
+        const btn = document.getElementById("btnSubmitPayment");
+        setLoading(btn, true);
+        const res = await finance.recordPayment({
+            student_id:          student,
+            payment_category_id: category,
+            amount_paid:         parseFloat(amount),
+            payment_method:      method,
+            payment_date:        date,
+            term:                parseInt(term),
+            transaction_reference: document.getElementById("py-ref").value.trim() || null,
+            remarks:             document.getElementById("py-remarks").value.trim() || null,
+        });
+        setLoading(btn, false);
+        if (res?.success) {
+            showAlert(alertEl, "✓ Payment recorded.", "ok");
+            setTimeout(() => { closeModal("modal-payment"); loadPayments(); resetForm("modal-payment"); }, 1200);
+        } else {
+            showAlert(alertEl, res?.message || "Error recording payment.", "err");
+        }
+    });
+
+    // RECORD ATTENDANCE (bulk)
+    document.getElementById("btnSubmitAttendance").addEventListener("click", async () => {
+        const date = document.getElementById("a-date").value;
+        const alertEl = document.getElementById("a-alert");
+        if (!date) return showAlert(alertEl, "Select a date.", "err");
+
+        const selects = document.querySelectorAll("#a-students select[data-student-id]");
+        if (!selects.length) return showAlert(alertEl, "Load students first.", "err");
+
+        const records = Array.from(selects).map(sel => ({
+            student_id: sel.dataset.studentId,
+            date,
+            status: sel.value,
+        }));
+
+        const btn = document.getElementById("btnSubmitAttendance");
+        setLoading(btn, true);
+        const res = await attendance.record(records);
+        setLoading(btn, false);
+        if (res?.success) {
+            showAlert(alertEl, `✓ ${res.data?.length ?? records.length} records saved.`, "ok");
+            setTimeout(() => { closeModal("modal-attendance"); loadAttendance(); }, 1200);
+        } else {
+            showAlert(alertEl, res?.message || "Error saving attendance.", "err");
+        }
+    });
+
+    // ADD ASSESSMENT
+    document.getElementById("btnSubmitAssessment").addEventListener("click", async () => {
+        const student = document.getElementById("as-student").value;
+        const type    = document.getElementById("as-type").value;
+        const score   = document.getElementById("as-score").value;
+        const date    = document.getElementById("as-date").value;
+        const term    = document.getElementById("as-term").value;
+        const alertEl = document.getElementById("as-alert");
+        if (!student || !type || score === "" || !date || !term)
+            return showAlert(alertEl, "Please fill all required fields.", "err");
+
+        const btn = document.getElementById("btnSubmitAssessment");
+        setLoading(btn, true);
+        const res = await assessments.create({
+            student_id:      student,
+            assessment_type: type,
+            score:           parseInt(score),
+            assessment_date: date,
+            term:            parseInt(term),
+            teacher_remarks: document.getElementById("as-remarks").value.trim() || null,
+        });
+        setLoading(btn, false);
+        if (res?.success) {
+            showAlert(alertEl, "✓ Assessment recorded.", "ok");
+            setTimeout(() => { closeModal("modal-assessment"); loadAssessments(); resetForm("modal-assessment"); }, 1200);
+        } else {
+            showAlert(alertEl, res?.message || "Error recording assessment.", "err");
+        }
+    });
+
+    // ADD STAFF
+    document.getElementById("btnSubmitStaff").addEventListener("click", async () => {
+        const name  = document.getElementById("st-name").value.trim();
+        const email = document.getElementById("st-email").value.trim();
+        const role  = document.getElementById("st-role").value;
+        const pass  = document.getElementById("st-pass").value;
+        const phone = document.getElementById("st-phone").value.trim();
+        const alertEl = document.getElementById("st-alert");
+        if (!name || !email || !role || !pass)
+            return showAlert(alertEl, "Name, email, role, and password are required.", "err");
+        if (pass.length < 8)
+            return showAlert(alertEl, "Password must be at least 8 characters.", "err");
+
+        const btn = document.getElementById("btnSubmitStaff");
+        setLoading(btn, true);
+        const res = await users.create({ name, email, role, password: pass, phone: phone || null });
+        setLoading(btn, false);
+        if (res?.success) {
+            showAlert(alertEl, "✓ Staff account created. They must change password on first login.", "ok");
+            setTimeout(() => { closeModal("modal-staff"); loadStaff(); resetForm("modal-staff"); }, 1400);
+        } else {
+            showAlert(alertEl, res?.message || "Error creating staff account.", "err");
+        }
+    });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id)?.classList.add("open"); }
+function closeModal(id) { document.getElementById(id)?.classList.remove("open"); }
+
+function resetForm(modalId) {
+    document.querySelectorAll(`#${modalId} input, #${modalId} textarea`).forEach(el => el.value = "");
+    document.querySelectorAll(`#${modalId} select`).forEach(el => el.selectedIndex = 0);
+    document.querySelectorAll(`#${modalId} [id$="-alert"]`).forEach(el => el.innerHTML = "");
+}
+
+function showAlert(el, msg, type) {
+    el.innerHTML = `<div class="alert alert-${type === "ok" ? "ok" : "err"}">${esc(msg)}</div>`;
+}
+
+function setLoading(btn, on) {
+    if (on) btn.classList.add("btn-loading");
+    else btn.classList.remove("btn-loading");
+    btn.disabled = on;
+}
+
+function populateStudentDropdown() {
+    ["py-student","as-student"].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = '<option value="">Select Student</option>' +
+            allStudents.map(s => `<option value="${esc(String(s.id))}">${esc(s.full_name)} (${esc(s.admission_no)})</option>`).join("");
+    });
+}
 </script>
 </body>
 </html>

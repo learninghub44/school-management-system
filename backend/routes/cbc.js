@@ -129,4 +129,33 @@ router.post("/categories", authMiddleware, roleMiddleware(["SUPER_ADMIN", "SCHOO
     } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
+// GET /api/cbc/grades — public reference table (auth required, all roles)
+router.get("/grades", authMiddleware, async (req, res) => {
+    try {
+        const { rows } = await db.query(
+            "SELECT id, grade_level, stage, sort_order FROM grades ORDER BY sort_order, grade_level"
+        );
+        return res.json({ success: true, data: rows });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// GET /api/cbc/streams — streams for a given school
+router.get("/school-streams", authMiddleware, async (req, res) => {
+    try {
+        const schoolId = req.user.role === "SUPER_ADMIN"
+            ? (req.query.school_id || null)
+            : req.user.school_id;
+        if (!schoolId) return res.json({ success: true, data: [] });
+        const { rows } = await db.query(
+            "SELECT * FROM streams WHERE school_id=$1 ORDER BY name",
+            [schoolId]
+        );
+        return res.json({ success: true, data: rows });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;

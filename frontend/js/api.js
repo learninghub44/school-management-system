@@ -195,6 +195,18 @@ export const assessments = {
 };
 
 // ================================================================
+// Parents
+// ================================================================
+export const parents = {
+    list:        (p)      => apiFetch("/parents",                          { params: p }),
+    get:         (id)     => apiFetch(`/parents/${id}`),
+    create:      (data)   => apiFetch("/parents",                          { method: "POST",  body: data }),
+    update:      (id, d)  => apiFetch(`/parents/${id}`,                    { method: "PUT",   body: d }),
+    deactivate:  (id)     => apiFetch(`/parents/${id}`,                    { method: "DELETE" }),
+    linkStudent: (id, sid)=> apiFetch(`/parents/${id}/link-student`,       { method: "POST",  body: { student_id: sid } }),
+};
+
+// ================================================================
 // CBC Curriculum
 // ================================================================
 export const curriculum = {

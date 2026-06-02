@@ -31,14 +31,22 @@ router.get("/", authMiddleware, async (req, res) => {
             params.push(kids.rows.map(r => r.student_id));
             where.push(`a.student_id = ANY($${params.length})`);
         } else {
-            const schoolId = role === "SUPER_ADMIN" ? (req.query.school_id||null) : school_id;
+            // V-03: Non-SUPER_ADMIN always gets their own school — no bypass possible
+            const schoolId = role === "SUPER_ADMIN" ? (req.query.school_id || null) : school_id;
+            if (!schoolId && role !== "SUPER_ADMIN")
+                return res.status(403).json({ success: false, message: "School isolation error." });
             if (schoolId) { params.push(schoolId); where.push(`a.school_id=$${params.length}`); }
-            if (req.query.date) { params.push(req.query.date); where.push(`a.date=$${params.length}`); }
+            if (req.query.date) {
+                // Validate date format to prevent injection
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(req.query.date))
+                    return res.status(400).json({ success: false, message: "Invalid date format." });
+                params.push(req.query.date); where.push(`a.date=$${params.length}`);
+            }
             if (req.query.student_id) { params.push(req.query.student_id); where.push(`a.student_id=$${params.length}`); }
         }
 
         if (where.length) q += " WHERE " + where.join(" AND ");
-        q += " ORDER BY a.date DESC, s.full_name";
+        q += " ORDER BY a.date DESC, s.full_name LIMIT 500";
         const { rows } = await db.query(q, params);
         return res.json({ success: true, data: rows, count: rows.length });
     } catch (err) {

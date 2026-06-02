@@ -127,6 +127,7 @@ app.use("/api/schools",     require("./routes/schools"));
 app.use("/api/users",       require("./routes/users"));
 app.use("/api/students",    require("./routes/students"));
 app.use("/api/teachers",    require("./routes/teachers"));
+app.use("/api/parents",     require("./routes/parents"));
 app.use("/api/finance",     require("./routes/finance"));
 app.use("/api/attendance",  require("./routes/attendance"));
 app.use("/api/assessments", require("./routes/assessments"));
