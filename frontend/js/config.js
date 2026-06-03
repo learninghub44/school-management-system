@@ -1,40 +1,32 @@
 /**
- * ZETU School Management System — Frontend Configuration
- * Pure browser-safe JavaScript. No process.env (Node.js only).
- * Set window.API_BASE_URL before this script to override the API URL.
- * On Cloudflare Pages / Netlify: inject via _headers or a deploy script.
+ * CBC School ERP — Frontend Configuration
+ * Loaded as a plain <script> BEFORE any ES module.
+ * Sets window.API_BASE so api.js picks it up immediately.
  */
-
 (function () {
   const hostname = window.location.hostname;
   const isLocal  = hostname === "localhost" || hostname === "127.0.0.1";
 
-  // ── API URL resolution (priority order) ───────────────────────────
-  // 1. Hard-injected at deploy time:  window.API_BASE_URL = "https://..."
-  // 2. Local dev fallback
-  // 3. Production fallback (update this to your actual Render URL)
-  const API_BASE_URL =
+  // ── API base URL ────────────────────────────────────────────────
+  // Priority: 1) injected at deploy  2) local dev  3) production Render URL
+  window.API_BASE =
     window.API_BASE_URL ||
     (isLocal
-      ? "http://localhost:5000/api"
+      ? "http://localhost:3000/api"
       : "https://cbc-school-erp-api.onrender.com/api");
 
-  window.CONFIG = {
-    API: {
-      BASE_URL: API_BASE_URL,
-    },
-    AUTH: {
-      TOKEN_KEY: "zetu_auth_token",
-      USER_KEY:  "zetu_user",
-    },
-    APP: {
-      NAME:        "ZETU School Management System",
-      VERSION:     "1.0.0",
-      ENVIRONMENT: isLocal ? "development" : "production",
-    },
+  // ── Storage keys (single source of truth) ───────────────────────
+  window.STORAGE_KEYS = {
+    TOKEN: "cbc_token",
+    USER:  "cbc_user",
   };
 
-  if (isLocal) {
-    console.log("✅ ZETU Config loaded:", window.CONFIG.API.BASE_URL);
-  }
+  // ── Legacy compat (keep window.CONFIG for anything that references it) ──
+  window.CONFIG = {
+    API: { BASE_URL: window.API_BASE },
+    AUTH: { TOKEN_KEY: window.STORAGE_KEYS.TOKEN, USER_KEY: window.STORAGE_KEYS.USER },
+    APP:  { NAME: "CBC School ERP", VERSION: "4.0.0", ENVIRONMENT: isLocal ? "development" : "production" },
+  };
+
+  if (isLocal) console.log("✅ CBC ERP config:", window.API_BASE);
 })();
