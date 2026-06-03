@@ -1,336 +1,71 @@
-/**
- * /api/reports
- * Comprehensive reporting and analytics endpoints
- * All data is school-isolated and role-based
- */
-const express = require("express");
-const db = require("../config/db");
-const authMiddleware = require("../middleware/authMiddleware");
-const router = express.Router();
+const express=require("express"),{body,validationResult}=require("express-validator"),db=require("../config/db"),auth=require("../middleware/authMiddleware"),role=require("../middleware/roleMiddleware"),{audit}=require("../middleware/auditLog"),router=express.Router();
+const READ=["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD","TEACHER"];
 
-// ─── GET /api/reports/dashboard ─────────────────────────────────────────
-router.get("/dashboard", authMiddleware, async (req, res) => {
-    try {
-        const { role, school_id, id: userId } = req.user;
-        if (!["SCHOOL_ADMIN", "FINANCE", "SUPER_ADMIN"].includes(role))
-            return res.status(403).json({ success: false, message: "Access denied." });
-
-        const schoolId = role === "SUPER_ADMIN" ? (req.query.school_id || school_id) : school_id;
-        if (!schoolId && role !== "SUPER_ADMIN")
-            return res.status(403).json({ success: false, message: "School isolation error." });
-
-        // Get dashboard metrics
-        const [studRes, teachRes, parRes, payRes, attRes] = await Promise.all([
-            db.query("SELECT COUNT(*) as count FROM students WHERE school_id=$1 AND is_active=TRUE", [schoolId]),
-            db.query("SELECT COUNT(*) as count FROM teachers WHERE school_id=$1 AND status='Active'", [schoolId]),
-            db.query("SELECT COUNT(*) as count FROM users WHERE school_id=$1 AND role='PARENT'", [schoolId]),
-            db.query("SELECT COALESCE(SUM(amount_paid), 0) as total_paid, COALESCE(SUM(amount_due - amount_paid), 0) as outstanding FROM payments_v2 WHERE school_id=$1", [schoolId]),
-            db.query("SELECT status, COUNT(*) as count FROM attendance WHERE school_id=$1 AND date >= NOW() - INTERVAL '30 days' GROUP BY status", [schoolId])
-        ]);
-
-        const dashboard = {
-            students: parseInt(studRes.rows[0]?.count || 0),
-            teachers: parseInt(teachRes.rows[0]?.count || 0),
-            parents: parseInt(parRes.rows[0]?.count || 0),
-            finance: {
-                total_paid: parseFloat(payRes.rows[0]?.total_paid || 0),
-                outstanding: parseFloat(payRes.rows[0]?.outstanding || 0),
-            },
-            attendance: {}
-        };
-
-        attRes.rows.forEach(r => {
-            dashboard.attendance[r.status] = parseInt(r.count);
-        });
-
-        return res.json({ success: true, data: dashboard });
-    } catch (err) {
-        return res.status(500).json({ success: false, message: err.message });
-    }
+router.get("/cards",auth,role(READ),async(req,res)=>{
+  try{const sid=req.user.role==="SUPER_ADMIN"?(req.query.school_id||null):req.user.school_id;
+  const p=[];let w="WHERE 1=1";
+  if(sid){p.push(sid);w+=` AND rc.school_id=$${p.length}`;}
+  if(req.query.student_id){p.push(req.query.student_id);w+=` AND rc.student_id=$${p.length}`;}
+  if(req.query.term){p.push(req.query.term);w+=` AND rc.term=$${p.length}`;}
+  if(req.query.academic_year){p.push(req.query.academic_year);w+=` AND rc.academic_year=$${p.length}`;}
+  if(req.query.class_id){p.push(req.query.class_id);w+=` AND rc.class_id=$${p.length}`;}
+  const{rows}=await db.query(`SELECT rc.*,CONCAT(s.first_name,' ',s.last_name) AS student_name,s.admission_number,s.gender,CONCAT(c.grade,COALESCE(' '||c.stream,'')) AS class_label,u.name AS generated_by_name FROM report_cards rc JOIN students s ON s.id=rc.student_id JOIN classes c ON c.id=rc.class_id LEFT JOIN users u ON u.id=rc.generated_by ${w} ORDER BY rc.academic_year DESC,rc.term DESC`,p);
+  return res.json({success:true,data:rows});}catch(e){return res.status(500).json({success:false,message:"Server error."});}
 });
-
-// ─── GET /api/reports/fee-collection ────────────────────────────────────
-router.get("/fee-collection", authMiddleware, async (req, res) => {
-    try {
-        const { role, school_id } = req.user;
-        if (!["SCHOOL_ADMIN", "FINANCE", "SUPER_ADMIN"].includes(role))
-            return res.status(403).json({ success: false, message: "Access denied." });
-
-        const schoolId = role === "SUPER_ADMIN" ? (req.query.school_id || school_id) : school_id;
-        if (!schoolId && role !== "SUPER_ADMIN")
-            return res.status(403).json({ success: false, message: "School isolation error." });
-
-        const { rows } = await db.query(`
-            SELECT 
-                pc.name as category,
-                COUNT(p.id) as payment_count,
-                COALESCE(SUM(p.amount_paid), 0) as total_collected,
-                COALESCE(SUM(p.amount_due - p.amount_paid), 0) as outstanding,
-                ROUND(100.0 * SUM(p.amount_paid) / NULLIF(SUM(p.amount_due), 0), 2) as collection_rate
-            FROM payments_v2 p
-            LEFT JOIN payment_categories pc ON pc.id = p.payment_category_id
-            WHERE p.school_id = $1
-            GROUP BY pc.id, pc.name
-            ORDER BY total_collected DESC
-        `, [schoolId]);
-
-        return res.json({ success: true, data: rows });
-    } catch (err) {
-        return res.status(500).json({ success: false, message: err.message });
-    }
+router.post("/cards",auth,role(READ),[body("student_id").notEmpty(),body("class_id").notEmpty().isInt(),body("term").isInt({min:1,max:3}),body("academic_year").matches(/^\d{4}$/)],async(req,res)=>{
+  const errs=validationResult(req);if(!errs.isEmpty())return res.status(400).json({success:false,errors:errs.array()});
+  try{const sid=req.user.role==="SUPER_ADMIN"?req.body.school_id:req.user.school_id;
+  const{rows:st}=await db.query("SELECT school_id FROM students WHERE id=$1",[req.body.student_id]);
+  if(!st.length||(req.user.role!=="SUPER_ADMIN"&&st[0].school_id!==sid))return res.status(403).json({success:false,message:"Access denied."});
+  const{student_id,class_id,term,academic_year,class_teacher_remark,principal_remark}=req.body;
+  const{rows}=await db.query(`INSERT INTO report_cards(school_id,student_id,class_id,term,academic_year,class_teacher_remark,principal_remark,generated_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(school_id,student_id,term,academic_year) DO UPDATE SET class_teacher_remark=EXCLUDED.class_teacher_remark,principal_remark=EXCLUDED.principal_remark,generated_by=EXCLUDED.generated_by,generated_date=NOW() RETURNING *`,
+    [sid,student_id,class_id,term,academic_year,class_teacher_remark||null,principal_remark||null,req.user.id]);
+  await audit(req,"GENERATE_REPORT_CARD","report_cards",rows[0].id,null,{student_id,term,academic_year});
+  return res.status(201).json({success:true,data:rows[0]});}catch(e){return res.status(500).json({success:false,message:"Server error."});}
 });
-
-// ─── GET /api/reports/daily-collection ──────────────────────────────────
-router.get("/daily-collection", authMiddleware, async (req, res) => {
-    try {
-        const { role, school_id } = req.user;
-        if (!["SCHOOL_ADMIN", "FINANCE", "SUPER_ADMIN"].includes(role))
-            return res.status(403).json({ success: false, message: "Access denied." });
-
-        const schoolId = role === "SUPER_ADMIN" ? (req.query.school_id || school_id) : school_id;
-        const days = parseInt(req.query.days || "30");
-
-        if (!schoolId && role !== "SUPER_ADMIN")
-            return res.status(403).json({ success: false, message: "School isolation error." });
-
-        const { rows } = await db.query(`
-            SELECT 
-                DATE(payment_date) as date,
-                COUNT(*) as transaction_count,
-                COALESCE(SUM(amount_paid), 0) as daily_total,
-                payment_method,
-                COUNT(DISTINCT student_id) as unique_students
-            FROM payments_v2
-            WHERE school_id = $1 AND payment_date >= NOW() - INTERVAL '${days} days'
-            GROUP BY DATE(payment_date), payment_method
-            ORDER BY date DESC
-        `, [schoolId]);
-
-        return res.json({ success: true, data: rows });
-    } catch (err) {
-        return res.status(500).json({ success: false, message: err.message });
-    }
+router.post("/cards/:id/publish",auth,role(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL"]),async(req,res)=>{
+  try{const{rows:ex}=await db.query("SELECT * FROM report_cards WHERE id=$1",[req.params.id]);
+  if(!ex.length)return res.status(404).json({success:false,message:"Not found."});
+  if(req.user.role!=="SUPER_ADMIN"&&ex[0].school_id!==req.user.school_id)return res.status(403).json({success:false,message:"Access denied."});
+  await db.query("UPDATE report_cards SET is_published=TRUE WHERE id=$1",[req.params.id]);
+  await audit(req,"PUBLISH_REPORT_CARD","report_cards",req.params.id);
+  return res.json({success:true,message:"Published."});}catch(e){return res.status(500).json({success:false,message:"Server error."});}
 });
-
-// ─── GET /api/reports/outstanding-balances ──────────────────────────────
-router.get("/outstanding-balances", authMiddleware, async (req, res) => {
-    try {
-        const { role, school_id } = req.user;
-        if (!["SCHOOL_ADMIN", "FINANCE", "SUPER_ADMIN"].includes(role))
-            return res.status(403).json({ success: false, message: "Access denied." });
-
-        const schoolId = role === "SUPER_ADMIN" ? (req.query.school_id || school_id) : school_id;
-        if (!schoolId && role !== "SUPER_ADMIN")
-            return res.status(403).json({ success: false, message: "School isolation error." });
-
-        const { rows } = await db.query(`
-            SELECT 
-                s.id,
-                s.full_name as student_name,
-                s.admission_no,
-                g.grade_level,
-                COALESCE(SUM(p.amount_due - p.amount_paid), 0) as balance,
-                COUNT(DISTINCT p.id) as payment_records
-            FROM students s
-            LEFT JOIN grades g ON g.id = s.grade_id
-            LEFT JOIN payments_v2 p ON p.student_id = s.id AND p.school_id = $1
-            WHERE s.school_id = $1 AND s.is_active = TRUE
-            GROUP BY s.id, s.full_name, s.admission_no, g.grade_level
-            HAVING COALESCE(SUM(p.amount_due - p.amount_paid), 0) > 0
-            ORDER BY balance DESC
-        `, [schoolId]);
-
-        return res.json({ success: true, data: rows });
-    } catch (err) {
-        return res.status(500).json({ success: false, message: err.message });
-    }
+router.get("/dashboard",auth,role(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","BURSAR","HOD"]),async(req,res)=>{
+  try{const sid=req.user.role==="SUPER_ADMIN"?(req.query.school_id||null):req.user.school_id;
+  if(!sid)return res.status(400).json({success:false,message:"school_id required."});
+  const year=req.query.academic_year||new Date().getFullYear().toString();
+  const[s,t,c,a,as,f]=await Promise.all([
+    db.query("SELECT COUNT(*) AS total,COUNT(*) FILTER(WHERE gender='Male') AS male,COUNT(*) FILTER(WHERE gender='Female') AS female FROM students WHERE school_id=$1 AND is_active=TRUE",[sid]),
+    db.query("SELECT COUNT(*) AS total FROM teachers WHERE school_id=$1 AND is_active=TRUE",[sid]),
+    db.query("SELECT COUNT(*) AS total FROM classes WHERE school_id=$1 AND academic_year=$2",[sid,year]),
+    db.query("SELECT COUNT(*) FILTER(WHERE status='Present') AS present,COUNT(*) FILTER(WHERE status='Absent') AS absent,COUNT(*) AS total FROM attendance WHERE school_id=$1 AND date>=CURRENT_DATE-7",[sid]),
+    db.query("SELECT achievement_level,COUNT(*) AS count FROM assessments WHERE school_id=$1 AND academic_year=$2 GROUP BY achievement_level",[sid,year]),
+    db.query("SELECT COALESCE(SUM(amount_paid),0) AS collected,COALESCE(SUM(balance),0) AS balance FROM payments WHERE school_id=$1 AND academic_year=$2",[sid,year]),
+  ]);
+  return res.json({success:true,data:{students:s.rows[0],teachers:t.rows[0],classes:c.rows[0],attendance_week:a.rows[0],assessments_by_level:as.rows,finance:f.rows[0]}});}catch(e){return res.status(500).json({success:false,message:"Server error."});}
 });
-
-// ─── GET /api/reports/attendance-summary ────────────────────────────────
-router.get("/attendance-summary", authMiddleware, async (req, res) => {
-    try {
-        const { role, school_id } = req.user;
-        if (!["SCHOOL_ADMIN", "TEACHER", "SUPER_ADMIN"].includes(role))
-            return res.status(403).json({ success: false, message: "Access denied." });
-
-        const schoolId = role === "SUPER_ADMIN" ? (req.query.school_id || school_id) : school_id;
-        const days = parseInt(req.query.days || "30");
-
-        if (!schoolId && role !== "SUPER_ADMIN")
-            return res.status(403).json({ success: false, message: "School isolation error." });
-
-        const { rows } = await db.query(`
-            SELECT 
-                s.id,
-                s.full_name,
-                s.admission_no,
-                g.grade_level,
-                COUNT(CASE WHEN a.status = 'present' THEN 1 END) as present,
-                COUNT(CASE WHEN a.status = 'absent' THEN 1 END) as absent,
-                COUNT(CASE WHEN a.status = 'late' THEN 1 END) as late,
-                COUNT(CASE WHEN a.status = 'excused' THEN 1 END) as excused,
-                ROUND(100.0 * COUNT(CASE WHEN a.status = 'present' THEN 1 END) / NULLIF(COUNT(*), 0), 2) as attendance_rate
-            FROM students s
-            LEFT JOIN grades g ON g.id = s.grade_id
-            LEFT JOIN attendance a ON a.student_id = s.id AND a.date >= NOW() - INTERVAL '${days} days'
-            WHERE s.school_id = $1 AND s.is_active = TRUE
-            GROUP BY s.id, s.full_name, s.admission_no, g.grade_level
-            ORDER BY attendance_rate ASC
-        `, [schoolId]);
-
-        return res.json({ success: true, data: rows });
-    } catch (err) {
-        return res.status(500).json({ success: false, message: err.message });
-    }
+router.get("/timetable",auth,async(req,res)=>{
+  try{const sid=req.user.role==="SUPER_ADMIN"?(req.query.school_id||null):req.user.school_id;
+  const p=[];let w="WHERE 1=1";
+  if(sid){p.push(sid);w+=` AND tt.school_id=$${p.length}`;}
+  if(req.query.class_id){p.push(req.query.class_id);w+=` AND tt.class_id=$${p.length}`;}
+  if(req.query.teacher_id){p.push(req.query.teacher_id);w+=` AND tt.teacher_id=$${p.length}`;}
+  const{rows}=await db.query(`SELECT tt.*,la.name AS subject_name,CONCAT(t.first_name,' ',t.last_name) AS teacher_name,CONCAT(c.grade,COALESCE(' '||c.stream,'')) AS class_label FROM timetable tt JOIN learning_areas la ON la.id=tt.learning_area_id LEFT JOIN teachers t ON t.id=tt.teacher_id JOIN classes c ON c.id=tt.class_id ${w} ORDER BY CASE day WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3 WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 END,tt.start_time`,p);
+  return res.json({success:true,data:rows});}catch(e){return res.status(500).json({success:false,message:"Server error."});}
 });
-
-// ─── GET /api/reports/cbc-performance ────────────────────────────────────
-router.get("/cbc-performance", authMiddleware, async (req, res) => {
-    try {
-        const { role, school_id } = req.user;
-        if (!["SCHOOL_ADMIN", "TEACHER", "SUPER_ADMIN"].includes(role))
-            return res.status(403).json({ success: false, message: "Access denied." });
-
-        const schoolId = role === "SUPER_ADMIN" ? (req.query.school_id || school_id) : school_id;
-        if (!schoolId && role !== "SUPER_ADMIN")
-            return res.status(403).json({ success: false, message: "School isolation error." });
-
-        const { rows } = await db.query(`
-            SELECT 
-                la.name as learning_area,
-                ROUND(AVG(a.score), 2) as avg_score,
-                MAX(a.score) as max_score,
-                MIN(a.score) as min_score,
-                COUNT(DISTINCT a.student_id) as students_assessed,
-                COUNT(a.id) as total_assessments,
-                ROUND(100.0 * COUNT(CASE WHEN a.score >= 70 THEN 1 END) / NULLIF(COUNT(*), 0), 2) as pass_rate
-            FROM assessments a
-            LEFT JOIN learning_areas la ON la.id = a.learning_area_id
-            WHERE a.school_id = $1
-            GROUP BY la.id, la.name
-            ORDER BY avg_score DESC
-        `, [schoolId]);
-
-        return res.json({ success: true, data: rows });
-    } catch (err) {
-        return res.status(500).json({ success: false, message: err.message });
-    }
+router.post("/timetable",auth,role(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL"]),[body("class_id").notEmpty().isInt(),body("learning_area_id").notEmpty().isInt(),body("day").isIn(["Monday","Tuesday","Wednesday","Thursday","Friday"]),body("start_time").matches(/^\d{2}:\d{2}$/),body("end_time").matches(/^\d{2}:\d{2}$/),body("academic_year").matches(/^\d{4}$/)],async(req,res)=>{
+  const errs=validationResult(req);if(!errs.isEmpty())return res.status(400).json({success:false,errors:errs.array()});
+  try{const sid=req.user.role==="SUPER_ADMIN"?req.body.school_id:req.user.school_id;
+  const{class_id,learning_area_id,teacher_id,day,start_time,end_time,academic_year}=req.body;
+  const{rows}=await db.query("INSERT INTO timetable(school_id,class_id,learning_area_id,teacher_id,day,start_time,end_time,academic_year) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *",[sid,class_id,learning_area_id,teacher_id||null,day,start_time,end_time,academic_year]);
+  return res.status(201).json({success:true,data:rows[0]});}catch(e){if(e.code==="23505")return res.status(409).json({success:false,message:"Slot already exists."});return res.status(500).json({success:false,message:"Server error."});}
 });
-
-// ─── GET /api/reports/student-statement/:student_id ──────────────────────
-router.get("/student-statement/:student_id", authMiddleware, async (req, res) => {
-    try {
-        const { role, school_id, id: userId } = req.user;
-        const studentId = req.params.student_id;
-
-        // Verify access
-        if (role === "STUDENT") {
-            const me = await db.query("SELECT id FROM students WHERE user_id=$1", [userId]);
-            if (!me.rows.length || me.rows[0].id !== parseInt(studentId))
-                return res.status(403).json({ success: false, message: "Access denied." });
-        } else if (role === "PARENT") {
-            const link = await db.query("SELECT id FROM parent_students WHERE parent_id=$1 AND student_id=$2", [userId, studentId]);
-            if (!link.rows.length) return res.status(403).json({ success: false, message: "Not your child." });
-        } else if (!["SCHOOL_ADMIN", "FINANCE", "SUPER_ADMIN"].includes(role)) {
-            return res.status(403).json({ success: false, message: "Access denied." });
-        }
-
-        const { rows: studentData } = await db.query(`
-            SELECT s.*, g.grade_level, st.name as stream_name, sc.name as school_name
-            FROM students s
-            LEFT JOIN grades g ON g.id = s.grade_id
-            LEFT JOIN streams st ON st.id = s.stream_id
-            LEFT JOIN schools sc ON sc.id = s.school_id
-            WHERE s.id = $1
-        `, [studentId]);
-
-        if (!studentData.length)
-            return res.status(404).json({ success: false, message: "Student not found." });
-
-        const { rows: payments } = await db.query(`
-            SELECT p.*, pc.name as category_name
-            FROM payments_v2 p
-            LEFT JOIN payment_categories pc ON pc.id = p.payment_category_id
-            WHERE p.student_id = $1
-            ORDER BY p.payment_date DESC
-        `, [studentId]);
-
-        return res.json({
-            success: true,
-            data: {
-                student: studentData[0],
-                payments: payments,
-                summary: {
-                    total_paid: payments.reduce((sum, p) => sum + parseFloat(p.amount_paid || 0), 0),
-                    total_due: payments.reduce((sum, p) => sum + parseFloat(p.amount_due || 0), 0),
-                    balance: payments.reduce((sum, p) => sum + (parseFloat(p.amount_due || 0) - parseFloat(p.amount_paid || 0)), 0),
-                }
-            }
-        });
-    } catch (err) {
-        return res.status(500).json({ success: false, message: err.message });
-    }
+router.delete("/timetable/:id",auth,role(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL"]),async(req,res)=>{
+  try{const{rows}=await db.query("SELECT school_id FROM timetable WHERE id=$1",[req.params.id]);
+  if(!rows.length)return res.status(404).json({success:false,message:"Not found."});
+  if(req.user.role!=="SUPER_ADMIN"&&rows[0].school_id!==req.user.school_id)return res.status(403).json({success:false,message:"Access denied."});
+  await db.query("DELETE FROM timetable WHERE id=$1",[req.params.id]);
+  return res.json({success:true,message:"Slot deleted."});}catch(e){return res.status(500).json({success:false,message:"Server error."});}
 });
-
-// ─── GET /api/reports/export/:report_type ───────────────────────────────
-router.get("/export/:report_type", authMiddleware, async (req, res) => {
-    try {
-        const { role, school_id } = req.user;
-        if (!["SCHOOL_ADMIN", "FINANCE", "SUPER_ADMIN"].includes(role))
-            return res.status(403).json({ success: false, message: "Access denied." });
-
-        const schoolId = role === "SUPER_ADMIN" ? (req.query.school_id || school_id) : school_id;
-        const reportType = req.params.report_type;
-
-        if (!schoolId && role !== "SUPER_ADMIN")
-            return res.status(403).json({ success: false, message: "School isolation error." });
-
-        // Prepare CSV data based on report type
-        let csvData = "";
-        let filename = "";
-
-        if (reportType === "fee-collection") {
-            const { rows } = await db.query(`
-                SELECT 
-                    pc.name, COUNT(*), COALESCE(SUM(amount_paid), 0), 
-                    COALESCE(SUM(amount_due - amount_paid), 0)
-                FROM payments_v2 p
-                LEFT JOIN payment_categories pc ON pc.id = p.payment_category_id
-                WHERE p.school_id = $1
-                GROUP BY pc.id, pc.name
-            `, [schoolId]);
-
-            csvData = "Category,Payments,Collected,Outstanding\n";
-            rows.forEach(r => {
-                csvData += `"${r.name}",${r.count},${r.coalesce},${r.coalesce_1}\n`;
-            });
-            filename = "fee-collection-report.csv";
-        } else if (reportType === "outstanding-balances") {
-            const { rows } = await db.query(`
-                SELECT s.full_name, s.admission_no, g.grade_level,
-                    COALESCE(SUM(p.amount_due - p.amount_paid), 0) as balance
-                FROM students s
-                LEFT JOIN grades g ON g.id = s.grade_id
-                LEFT JOIN payments_v2 p ON p.student_id = s.id
-                WHERE s.school_id = $1 AND s.is_active = TRUE
-                GROUP BY s.id, s.full_name, s.admission_no, g.grade_level
-                HAVING COALESCE(SUM(p.amount_due - p.amount_paid), 0) > 0
-                ORDER BY balance DESC
-            `, [schoolId]);
-
-            csvData = "Student Name,Admission No,Grade,Outstanding Balance\n";
-            rows.forEach(r => {
-                csvData += `"${r.full_name}","${r.admission_no}","${r.grade_level}",${r.balance}\n`;
-            });
-            filename = "outstanding-balances-report.csv";
-        }
-
-        res.setHeader("Content-Type", "text/csv");
-        res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-        return res.send(csvData);
-    } catch (err) {
-        return res.status(500).json({ success: false, message: err.message });
-    }
-});
-
-module.exports = router;
+module.exports=router;

@@ -1,161 +1,100 @@
 /**
- * CBC School ERP — Hardened Server
- * Security fixes applied: V-01 through V-19
+ * CBC School ERP — Express Server v4.0
  */
+require("dotenv").config();
 const express     = require("express");
 const cors        = require("cors");
 const helmet      = require("helmet");
-const morgan      = require("morgan");
 const rateLimit   = require("express-rate-limit");
-const slowDown    = require("express-slow-down");
-const cookieParser= require("cookie-parser");
-const { sanitizeBody } = require("./middleware/sanitize");
-require("dotenv").config();
-
-// ── V-01: Enforce strong JWT_SECRET at startup ────────────────────
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 64) {
-    console.error("❌ FATAL: JWT_SECRET must be at least 64 characters.");
-    console.error("   Generate: node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\"");
-    process.exit(1);
-}
+const morgan      = require("morgan");
+const path        = require("path");
 
 const app = express();
 
-// ── V-17: Security headers via helmet ────────────────────────────
+// ── Security headers ──────────────────────────────────────────────
 app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc:  ["'self'"],
-            scriptSrc:   ["'self'"],
-            styleSrc:    ["'self'", "https://fonts.googleapis.com", "'unsafe-inline'"],
-            fontSrc:     ["'self'", "https://fonts.gstatic.com"],
-            imgSrc:      ["'self'", "data:", "https:"],
-            connectSrc:  ["'self'"],
-            frameSrc:    ["'none'"],
-            objectSrc:   ["'none'"],
-            upgradeInsecureRequests: process.env.NODE_ENV === "production" ? [] : null,
-        },
-    },
-    hsts: {
-        maxAge: 31536000,
-        includeSubDomains: true,
-        preload: true,
-    },
-    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc:  ["'self'","'unsafe-inline'","https://fonts.googleapis.com"],
+      styleSrc:   ["'self'","'unsafe-inline'","https://fonts.googleapis.com","https://fonts.gstatic.com"],
+      fontSrc:    ["'self'","https://fonts.gstatic.com"],
+      imgSrc:     ["'self'","data:","https:"],
+      connectSrc: ["'self'"],
+    }
+  },
+  crossOriginEmbedderPolicy: false,
 }));
 
-// ── V-10: Strict CORS — explicit origins only ─────────────────────
-// Support comma-separated list or single origin
-let allowedOrigins = (process.env.CORS_ORIGIN || "")
-    .split(",").map(s => s.trim()).filter(Boolean);
-
-// V-10: Only use explicitly configured origins
-// Do NOT add hardcoded fallback domains
-
-if (!allowedOrigins.length) {
-    console.warn("⚠️  CORS_ORIGIN not set — all origins blocked in production.");
-}
-
+// ── CORS ──────────────────────────────────────────────────────────
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000,http://localhost:5500").split(",");
 app.use(cors({
-    origin: (origin, cb) => {
-        // Allow non-browser requests (Render health checks, curl, Postman)
-        if (!origin) return cb(null, true);
-        if (allowedOrigins.includes(origin)) return cb(null, true);
-        return cb(new Error(`CORS: Origin ${origin} not allowed.`));
-    },
-    credentials: true,
-    methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
-    allowedHeaders: ["Content-Type","Authorization"],
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization"],
 }));
 
-app.use(express.json({ limit: "2mb" }));
-app.use(express.urlencoded({ extended: true, limit: "2mb" }));
-app.use(cookieParser());
-
-// ── Structured request logging ─────────────────────────────────────
-app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
-
-// ── V-09: Sanitize all request body input ─────────────────────────
-app.use(sanitizeBody);
-
-// ── V-02: General rate limit ──────────────────────────────────────
-app.use(rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 300,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { success: false, message: "Too many requests. Slow down." },
-}));
-
-// ── V-02 + V-18: Progressive slow-down on login attempts ──────────
-app.use("/api/auth/login", slowDown({
-    windowMs: 15 * 60 * 1000,
-    delayAfter: 3,              // start slowing after 3 attempts
-    delayMs: (hits) => Math.min(hits * 500, 10000), // ramp up to 10s delay
-}));
-
-// ── V-02: Hard rate limit on login ────────────────────────────────
+// ── Rate limiting ─────────────────────────────────────────────────
 app.use("/api/auth/login", rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10,                    // max 10 attempts per 15 min per IP
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { success: false, message: "Too many login attempts. Try again in 15 minutes." },
+  windowMs: 15 * 60 * 1000, max: 10,
+  message: { success: false, message: "Too many login attempts. Try again in 15 minutes." },
+  standardHeaders: true, legacyHeaders: false,
+}));
+app.use("/api/", rateLimit({
+  windowMs: 1 * 60 * 1000, max: 300,
+  message: { success: false, message: "Rate limit exceeded." },
+  standardHeaders: true, legacyHeaders: false,
 }));
 
-// ── Tighter limit on password change ──────────────────────────────
-app.use("/api/auth/change-password", rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 5,
-    message: { success: false, message: "Too many password change attempts." },
+// ── Body parsing ──────────────────────────────────────────────────
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: false, limit: "2mb" }));
+
+// ── Logging ───────────────────────────────────────────────────────
+if (process.env.NODE_ENV !== "test") app.use(morgan("combined"));
+
+// ── Serve frontend ────────────────────────────────────────────────
+app.use(express.static(path.join(__dirname, "../frontend"), {
+  maxAge: process.env.NODE_ENV === "production" ? "1d" : 0,
 }));
 
-// ── V-02: Strict rate limit on data writes (prevent DB flooding) ──
-const writeLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000, // 1 minute
-    max: 30,                 // 30 writes per minute per IP
-    message: { success: false, message: "Too many data modifications. Please wait a moment." },
-});
-app.post("/api/*",   writeLimiter);
-app.put("/api/*",    writeLimiter);
-app.patch("/api/*",  writeLimiter);
-app.delete("/api/*", writeLimiter);
-
-// ─── Routes ────────────────────────────────────────────────────────
+// ── API routes ────────────────────────────────────────────────────
 app.use("/api/auth",        require("./routes/auth"));
 app.use("/api/schools",     require("./routes/schools"));
 app.use("/api/users",       require("./routes/users"));
-app.use("/api/students",    require("./routes/students"));
+app.use("/api/departments", require("./routes/departments"));
 app.use("/api/teachers",    require("./routes/teachers"));
-app.use("/api/parents",     require("./routes/parents"));
-app.use("/api/finance",     require("./routes/finance"));
+app.use("/api/classes",     require("./routes/classes"));
+app.use("/api/students",    require("./routes/students"));
+app.use("/api/assignments", require("./routes/assignments"));
 app.use("/api/attendance",  require("./routes/attendance"));
 app.use("/api/assessments", require("./routes/assessments"));
-app.use("/api/cbc",         require("./routes/cbc"));
+app.use("/api/finance",     require("./routes/finance"));
 app.use("/api/reports",     require("./routes/reports"));
 
-app.get("/", (req, res) => res.json({ name: "ZETU School Management System API", version: "3.0.0", status: "running" }));
-app.get("/api/health", (req, res) => res.json({ success: true, timestamp: new Date().toISOString() }));
+// ── Health check ──────────────────────────────────────────────────
+app.get("/api/health", (req, res) => res.json({
+  status: "ok", version: "4.0.0", timestamp: new Date().toISOString()
+}));
 
-// ─── 404 ───────────────────────────────────────────────────────────
-app.use((req, res) => res.status(404).json({ success: false, message: "Not found." }));
-
-// ─── V-11: Global error handler — no stack traces in production ───
-app.use((err, req, res, next) => {
-    if (err.message?.startsWith("CORS:")) {
-        return res.status(403).json({ success: false, message: "Forbidden." });
-    }
-    // Log full error server-side only
-    console.error(`[ERROR] ${req.method} ${req.path}:`, err.message, err.stack);
-    
-    // Don't expose stack traces in production
-    const isDev = process.env.NODE_ENV !== "production";
-    return res.status(500).json({
-        success: false,
-        message: "An unexpected error occurred.",
-        ...(isDev && { error: err.message })
-    });
+// ── SPA fallback ──────────────────────────────────────────────────
+app.get("*", (req, res) => {
+  if (req.path.startsWith("/api")) return res.status(404).json({ success: false, message: "Endpoint not found." });
+  res.sendFile(path.join(__dirname, "../frontend/login.html"));
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅  ZETU School Management System API on port ${PORT}`));
+// ── Global error handler ──────────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err.message);
+  if (err.message === "Not allowed by CORS") return res.status(403).json({ success: false, message: "CORS error." });
+  res.status(500).json({ success: false, message: "Internal server error." });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 CBC School ERP v4.0 running on port ${PORT}`));
+
+module.exports = app;

@@ -1,272 +1,214 @@
 /**
- * /api/auth — Security hardened
- * Fixes: V-01, V-02, V-06, V-07, V-11, V-18, V-19
+ * /api/auth
+ * Login, logout, verify, change password, audit log
+ * Roles: SUPER_ADMIN, PRINCIPAL, DEPUTY_PRINCIPAL, HOD, TEACHER, BURSAR
  */
 const express   = require("express");
-const { body, validationResult } = require("express-validator");
 const bcrypt    = require("bcryptjs");
 const jwt       = require("jsonwebtoken");
-const crypto    = require("crypto");
+const { body, validationResult } = require("express-validator");
 const db        = require("../config/db");
 const authMiddleware = require("../middleware/authMiddleware");
 const { audit } = require("../middleware/auditLog");
-require("dotenv").config();
 
 const router = express.Router();
+const JWT_SECRET  = process.env.JWT_SECRET;
+const JWT_EXPIRES = process.env.JWT_EXPIRES || "10h";
 
-// ── V-01: Token factory with JTI for revocation ───────────────────
-function makeToken(user) {
-    return jwt.sign(
-        {
-            jti:       crypto.randomBytes(16).toString("hex"), // V-06: unique token ID
-            id:        user.id,
-            email:     user.email,
-            role:      user.role,
-            school_id: user.school_id || null,
-            name:      user.name,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRE || "8h" } // Shorter window than 7d
-    );
-}
-
-// ── V-11: Generic error — never reveal whether email exists ───────
-const AUTH_FAIL = "Invalid credentials.";
-
-// ─── POST /api/auth/login ─────────────────────────────────────────
-// V-02, V-18: rate limiting applied in server.js (express-rate-limit + slow-down)
+// ── POST /api/auth/login ──────────────────────────────────────────
 router.post("/login",
-    [
-        body("email").isEmail().normalizeEmail().withMessage("Valid email required"),
-        body("password").notEmpty().withMessage("Password required"),
-    ],
-    async (req, res) => {
-        const errs = validationResult(req);
-        if (!errs.isEmpty()) return res.status(400).json({ success: false, message: "Invalid input." });
+  [
+    body("username").trim().notEmpty(),
+    body("password").notEmpty(),
+  ],
+  async (req, res) => {
+    const errs = validationResult(req);
+    if (!errs.isEmpty()) return res.status(400).json({ success: false, message: "Username and password required." });
 
-        const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress;
+    const { username, password, school_code } = req.body;
+    const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress;
 
-        try {
-            const { email, password, school_code } = req.body;
+    try {
+      // Find user — SUPER_ADMIN has no school_code
+      let userQuery, userParams;
+      if (school_code) {
+        userQuery = `SELECT u.*, s.name AS school_name, s.school_code, s.academic_year,
+                            s.current_term, s.logo_url, s.is_active AS school_active
+                     FROM users u
+                     JOIN schools s ON s.id = u.school_id
+                     WHERE (u.username = $1 OR u.email = $1) AND s.school_code = $2`;
+        userParams = [username, school_code.toUpperCase()];
+      } else {
+        userQuery = `SELECT u.*, NULL AS school_name, NULL AS school_code,
+                            NULL AS academic_year, NULL AS current_term,
+                            NULL AS logo_url, TRUE AS school_active
+                     FROM users u
+                     WHERE (u.username = $1 OR u.email = $1) AND u.role = 'SUPER_ADMIN'`;
+        userParams = [username];
+      }
 
-            const { rows } = await db.query(
-                `SELECT u.*,
-                        s.name        AS school_name,
-                        s.school_code AS school_code,
-                        s.is_active   AS school_active
-                 FROM users u
-                 LEFT JOIN schools s ON s.id = u.school_id
-                 WHERE u.email = $1`,
-                [email.toLowerCase().trim()]
-            );
+      const { rows } = await db.query(userQuery, userParams);
+      const user = rows[0];
 
-            // V-11: Same response whether user missing or password wrong
-            if (!rows.length) {
-                await audit({ headers: req.headers, socket: req.socket, user: null }, "FAILED_LOGIN", "auth", null, null, { email, ip }, "FAILURE", "Email not found");
-                return res.status(401).json({ success: false, message: AUTH_FAIL });
-            }
+      // Generic error — don't reveal whether user exists
+      if (!user) {
+        await audit({ user: null, headers: req.headers, socket: req.socket }, "LOGIN_FAIL", "users", null, null, { username }, "FAIL", "User not found");
+        return res.status(401).json({ success: false, message: "Invalid credentials." });
+      }
 
-            const user = rows[0];
+      // School active check
+      if (!user.school_active) return res.status(403).json({ success: false, message: "School account is deactivated." });
 
-            // V-18: Account lockout check
-            if (user.locked_until && new Date(user.locked_until) > new Date()) {
-                const mins = Math.ceil((new Date(user.locked_until) - new Date()) / 60000);
-                await audit({ headers: req.headers, socket: req.socket, user }, "FAILED_LOGIN", "auth", user.id, null, { reason: "locked" }, "FAILURE", "Account locked");
-                return res.status(429).json({ success: false, message: `Account locked. Try again in ${mins} minute(s).` });
-            }
+      // Account locked?
+      if (user.locked_until && new Date(user.locked_until) > new Date()) {
+        const mins = Math.ceil((new Date(user.locked_until) - new Date()) / 60000);
+        return res.status(423).json({ success: false, message: `Account locked. Try again in ${mins} minute(s).` });
+      }
 
-            // School code validation (non-SUPER_ADMIN)
-            if (user.role !== "SUPER_ADMIN") {
-                if (!school_code || user.school_code?.toUpperCase() !== school_code.toUpperCase().trim()) {
-                    await incrementFailedLogins(user.id);
-                    await audit({ headers: req.headers, socket: req.socket, user }, "FAILED_LOGIN", "auth", user.id, null, { reason: "bad_school_code" }, "FAILURE");
-                    return res.status(401).json({ success: false, message: AUTH_FAIL });
-                }
-                if (user.school_active === false) {
-                    return res.status(403).json({ success: false, message: "School account has been deactivated." });
-                }
-            }
+      // Account inactive?
+      if (!user.is_active) return res.status(403).json({ success: false, message: "Account is deactivated." });
 
-            if (!user.is_active) {
-                return res.status(403).json({ success: false, message: "Account deactivated. Contact admin." });
-            }
+      // Password check
+      const valid = await bcrypt.compare(password, user.password_hash);
+      if (!valid) {
+        const attempts = (user.failed_login_attempts || 0) + 1;
+        const lockUntil = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
+        await db.query(
+          "UPDATE users SET failed_login_attempts=$1, locked_until=$2 WHERE id=$3",
+          [attempts, lockUntil, user.id]
+        );
+        await audit({ user: null, headers: req.headers, socket: req.socket }, "LOGIN_FAIL", "users", user.id, null, { attempts }, "FAIL", "Bad password");
+        return res.status(401).json({ success: false, message: "Invalid credentials." });
+      }
 
-            const valid = await bcrypt.compare(password, user.password_hash);
-            if (!valid) {
-                await incrementFailedLogins(user.id);
-                await audit({ headers: req.headers, socket: req.socket, user }, "FAILED_LOGIN", "auth", user.id, null, { reason: "bad_password", ip }, "FAILURE");
-                return res.status(401).json({ success: false, message: AUTH_FAIL });
-            }
+      // Reset failed attempts + update last_login
+      await db.query(
+        "UPDATE users SET failed_login_attempts=0, locked_until=NULL, last_login=NOW() WHERE id=$1",
+        [user.id]
+      );
 
-            // Successful login — reset lockout counters
-            await db.query(
-                "UPDATE users SET failed_login_attempts=0, locked_until=NULL, last_login=NOW() WHERE id=$1",
-                [user.id]
-            );
+      // Issue JWT with jti for blocklist support
+      const jti = require("crypto").randomBytes(16).toString("hex");
+      const payload = {
+        jti,
+        id:            user.id,
+        school_id:     user.school_id,
+        school_name:   user.school_name,
+        school_code:   user.school_code,
+        academic_year: user.academic_year,
+        current_term:  user.current_term,
+        logo_url:      user.logo_url,
+        name:          user.name,
+        email:         user.email,
+        username:      user.username,
+        role:          user.role,
+        must_change_password: user.must_change_password,
+      };
 
-            const token = makeToken(user);
+      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 
-            // V-05: Set httpOnly, Secure cookie
-            // Cross-domain (Cloudflare -> Render) requires SameSite: "None" + Secure: true
-            res.cookie("token", token, {
-                httpOnly: true,
-                secure:   true, 
-                sameSite: "None",
-                maxAge:   8 * 60 * 60 * 1000, // 8 hours
-            });
+      await audit({ user: payload, headers: req.headers, socket: req.socket }, "LOGIN", "users", user.id, null, { role: user.role }, "SUCCESS");
 
-            await audit({ headers: req.headers, socket: req.socket, user }, "LOGIN", "auth", user.id, null, { role: user.role, school: user.school_name }, "SUCCESS");
+      return res.json({
+        success: true,
+        token,
+        user: payload,
+        must_change_password: user.must_change_password,
+      });
 
-            return res.json({
-                success: true,
-                message: "Login successful",
-                token,   // Returned in body for Bearer auth + localStorage
-                user: {
-                    id:                  user.id,
-                    email:               user.email,
-                    name:                user.name,
-                    role:                user.role,
-                    phone:               user.phone,
-                    school_id:           user.school_id,
-                    school_name:         user.school_name,
-                    school_code:         user.school_code,
-                    must_change_password: user.must_change_password,
-                },
-            });
-        } catch (err) {
-            console.error("Login error:", err.message);
-            return res.status(500).json({ success: false, message: "Server error." });
-        }
+    } catch (err) {
+      console.error("Login error:", err.message);
+      return res.status(500).json({ success: false, message: "Server error." });
     }
+  }
 );
 
-// ── Account lockout helper (V-18) ─────────────────────────────────
-async function incrementFailedLogins(userId) {
-    try {
-        const MAX_ATTEMPTS    = 5;
-        const LOCKOUT_MINUTES = 15;
-        const { rows } = await db.query(
-            `UPDATE users
-             SET failed_login_attempts = failed_login_attempts + 1,
-                 locked_until = CASE
-                   WHEN failed_login_attempts + 1 >= $1
-                   THEN NOW() + ($2 || ' minutes')::INTERVAL
-                   ELSE NULL END
-             WHERE id = $3
-             RETURNING failed_login_attempts`,
-            [MAX_ATTEMPTS, LOCKOUT_MINUTES, userId]
-        );
-        return rows[0]?.failed_login_attempts;
-    } catch (_) {}
-}
-
-// ─── POST /api/auth/logout — V-06 token revocation ───────────────
+// ── POST /api/auth/logout ─────────────────────────────────────────
 router.post("/logout", authMiddleware, async (req, res) => {
-    try {
-        if (req.token?.jti && req.token?.exp) {
-            await db.query(
-                "INSERT INTO token_blocklist (jti, user_id, expires_at) VALUES ($1,$2,to_timestamp($3)) ON CONFLICT (jti) DO NOTHING",
-                [req.token.jti, req.user.id, req.token.exp]
-            );
-        }
-        res.clearCookie("token", { httpOnly: true, secure: true, sameSite: "None" });
-        await audit(req, "LOGOUT", "auth", req.user.id);
-        return res.json({ success: true, message: "Logged out." });
-    } catch (err) {
-        return res.status(500).json({ success: false, message: "Logout error." });
+  try {
+    // Add jti to blocklist
+    if (req.user?.jti) {
+      const exp = new Date(req.user.exp * 1000);
+      await db.query(
+        "INSERT INTO token_blocklist (jti, user_id, expires_at) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING",
+        [req.user.jti, req.user.id, exp]
+      );
     }
+    await audit(req, "LOGOUT", "users", req.user.id);
+    return res.json({ success: true, message: "Logged out." });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
 });
 
-// ─── GET /api/auth/me ─────────────────────────────────────────────
-router.get("/me", authMiddleware, async (req, res) => {
-    try {
-        const { rows } = await db.query(
-            `SELECT u.id, u.email, u.name, u.role, u.phone, u.school_id,
-                    u.is_active, u.must_change_password, u.last_login,
-                    s.name AS school_name, s.school_code, s.level AS school_level
-             FROM users u
-             LEFT JOIN schools s ON s.id = u.school_id
-             WHERE u.id = $1`,
-            [req.user.id]
-        );
-        if (!rows.length) return res.status(404).json({ success: false, message: "Not found." });
-        return res.json({ success: true, data: rows[0] });
-    } catch (err) {
-        return res.status(500).json({ success: false, message: "Server error." });
-    }
+// ── GET /api/auth/verify ──────────────────────────────────────────
+router.get("/verify", authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT u.id, u.name, u.email, u.username, u.role, u.is_active,
+              u.must_change_password, u.school_id,
+              s.name AS school_name, s.school_code, s.academic_year,
+              s.current_term, s.logo_url, s.is_active AS school_active
+       FROM users u
+       LEFT JOIN schools s ON s.id = u.school_id
+       WHERE u.id = $1`, [req.user.id]
+    );
+    const user = rows[0];
+    if (!user || !user.is_active) return res.status(401).json({ success: false, message: "Session invalid." });
+    if (user.school_id && !user.school_active) return res.status(403).json({ success: false, message: "School deactivated." });
+    return res.json({ success: true, user });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
 });
 
-// ─── GET /api/auth/verify ─────────────────────────────────────────
-router.get("/verify", authMiddleware, (req, res) =>
-    res.json({ success: true, user: req.user })
-);
-
-// ─── POST /api/auth/change-password — V-07 old password required ─
+// ── POST /api/auth/change-password ───────────────────────────────
 router.post("/change-password", authMiddleware,
-    [
-        body("current_password").notEmpty().withMessage("Current password required"),
-        body("new_password")
-            .isLength({ min: 8 }).withMessage("Min 8 characters")
-            .matches(/[A-Z]/).withMessage("Must include uppercase letter")
-            .matches(/[0-9]/).withMessage("Must include number")
-            .matches(/[^A-Za-z0-9]/).withMessage("Must include special character"),
-    ],
-    async (req, res) => {
-        const errs = validationResult(req);
-        if (!errs.isEmpty()) return res.status(400).json({ success: false, errors: errs.array() });
-        try {
-            const { current_password, new_password } = req.body;
+  [
+    body("current_password").notEmpty(),
+    body("new_password").isLength({ min: 8 }).withMessage("Min 8 characters")
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage("Must contain uppercase, lowercase, and number"),
+  ],
+  async (req, res) => {
+    const errs = validationResult(req);
+    if (!errs.isEmpty()) return res.status(400).json({ success: false, errors: errs.array() });
+    try {
+      const { rows } = await db.query("SELECT password_hash FROM users WHERE id=$1", [req.user.id]);
+      const valid = await bcrypt.compare(req.body.current_password, rows[0].password_hash);
+      if (!valid) return res.status(400).json({ success: false, message: "Current password is incorrect." });
 
-            // V-07: Verify current password before allowing change
-            const { rows } = await db.query("SELECT password_hash FROM users WHERE id=$1", [req.user.id]);
-            if (!rows.length) return res.status(404).json({ success: false, message: "User not found." });
-
-            const valid = await bcrypt.compare(current_password, rows[0].password_hash);
-            if (!valid) {
-                await audit(req, "FAILED_PASSWORD_CHANGE", "auth", req.user.id, null, null, "FAILURE", "Wrong current password");
-                return res.status(403).json({ success: false, message: "Current password is incorrect." });
-            }
-
-            const hash = await bcrypt.hash(new_password, 12);
-            await db.query(
-                "UPDATE users SET password_hash=$1, password_changed_at=NOW(), must_change_password=FALSE WHERE id=$2",
-                [hash, req.user.id]
-            );
-
-            // Revoke current token — force re-login with new password
-            if (req.token?.jti) {
-                await db.query(
-                    "INSERT INTO token_blocklist (jti, user_id, expires_at) VALUES ($1,$2,to_timestamp($3)) ON CONFLICT (jti) DO NOTHING",
-                    [req.token.jti, req.user.id, req.token.exp]
-                );
-            }
-            res.clearCookie("token", { httpOnly: true, secure: true, sameSite: "None" });
-            await audit(req, "PASSWORD_CHANGED", "auth", req.user.id);
-            return res.json({ success: true, message: "Password changed. Please log in again." });
-        } catch (err) {
-            return res.status(500).json({ success: false, message: "Server error." });
-        }
+      const hash = await bcrypt.hash(req.body.new_password, 12);
+      await db.query(
+        "UPDATE users SET password_hash=$1, must_change_password=FALSE, password_changed_at=NOW() WHERE id=$2",
+        [hash, req.user.id]
+      );
+      await audit(req, "CHANGE_PASSWORD", "users", req.user.id);
+      return res.json({ success: true, message: "Password changed successfully." });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: "Server error." });
     }
+  }
 );
 
-// ─── GET /api/auth/audit — admin views own school audit log ──────
-router.get("/audit", authMiddleware, async (req, res) => {
-    try {
-        const { role, school_id } = req.user;
-        if (!["SUPER_ADMIN","SCHOOL_ADMIN"].includes(role))
-            return res.status(403).json({ success: false, message: "Access denied." });
+// ── GET /api/auth/audit-log ───────────────────────────────────────
+router.get("/audit-log", authMiddleware, async (req, res) => {
+  try {
+    const { role, school_id } = req.user;
+    const allowed = ["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL"];
+    if (!allowed.includes(role)) return res.status(403).json({ success: false, message: "Access denied." });
 
-        let q = `SELECT al.*, u.name AS user_name
-                 FROM audit_logs al LEFT JOIN users u ON u.id=al.user_id`;
-        const params = [];
-        if (role === "SCHOOL_ADMIN") { params.push(school_id); q += " WHERE al.school_id=$1"; }
-        q += " ORDER BY al.created_at DESC LIMIT 200";
-
-        const { rows } = await db.query(q, params);
-        return res.json({ success: true, data: rows });
-    } catch (err) {
-        return res.status(500).json({ success: false, message: "Server error." });
-    }
+    const schoolFilter = role === "SUPER_ADMIN" ? "" : "WHERE al.school_id = $1";
+    const params = role === "SUPER_ADMIN" ? [] : [school_id];
+    const { rows } = await db.query(
+      `SELECT al.*, u.name AS user_name FROM audit_logs al
+       LEFT JOIN users u ON u.id = al.user_id
+       ${schoolFilter} ORDER BY al.created_at DESC LIMIT 100`,
+      params
+    );
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
 });
 
 module.exports = router;

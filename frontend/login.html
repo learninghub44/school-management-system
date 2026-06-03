@@ -1,254 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ZETU School Management System – Login</title>
-<script src="/js/config.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign In — CBC School ERP</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root {
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
-  --bg: #f8fafc;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --white: #ffffff;
-  --border: #e2e8f0;
-  --radius: 16px;
-  --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: var(--bg);
-  background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0, transparent 50%), 
-                    radial-gradient(at 50% 0%, rgba(124, 58, 237, 0.1) 0, transparent 50%);
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.login-container {
-  background: var(--white);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  width: 100%;
-  max-width: 440px;
-  padding: 48px;
-  border: 1px solid var(--border);
-}
-
-.brand { text-align: center; margin-bottom: 32px; }
-.logo-container {
-  width: 56px; height: 56px;
-  background: linear-gradient(135deg, var(--primary), #8b5cf6);
-  border-radius: 14px;
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 16px;
-  color: white; font-size: 28px;
-  box-shadow: 0 8px 16px -4px rgba(99, 102, 241, 0.4);
-}
-.brand h1 { font-size: 24px; font-weight: 700; color: var(--text-main); letter-spacing: -0.025em; }
-.brand p { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
-
-.tabs {
-  display: flex; background: #f1f5f9; border-radius: 12px;
-  padding: 4px; margin-bottom: 28px; gap: 4px;
-}
-.tab-btn {
-  flex: 1; padding: 10px; border: none; border-radius: 8px;
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  background: transparent; color: var(--text-muted);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.tab-btn.active { background: var(--white); color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-
-.field-group { display: none; }
-.field-group.active { display: block; animation: fadeIn 0.3s ease-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-
-.form-group { margin-bottom: 20px; }
-label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
-input {
-  width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px;
-  font-size: 15px; font-family: inherit; outline: none; transition: all 0.2s;
-  background: #fcfcfd;
-}
-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); background: white; }
-
-.btn {
-  width: 100%; padding: 14px; background: var(--primary); color: white;
-  border: none; border-radius: 10px; font-size: 15px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s; margin-top: 8px;
-  box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2);
-}
-.btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 12px -2px rgba(99, 102, 241, 0.3); }
-.btn:active { transform: translateY(0); }
-.btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
-
-.alert { padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-top: 20px; display: none; }
-.alert.show { display: block; animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
-.alert.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fee2e2; }
-.alert.success { background: #f0fdf4; color: #15803d; border: 1px solid #dcfce7; }
-
-@keyframes shake {
-  10%, 90% { transform: translate3d(-1px, 0, 0); }
-  20%, 80% { transform: translate3d(2px, 0, 0); }
-  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-  40%, 60% { transform: translate3d(4px, 0, 0); }
-}
-
-.roles-hint { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 24px; justify-content: center; }
-.role-chip { background: #f1f5f9; border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 500; color: #64748b; }
-
-.btn-loading { position: relative; color: transparent !important; pointer-events: none; }
-.btn-loading::after {
-  content: ""; position: absolute; width: 20px; height: 20px;
-  top: 50%; left: 50%; margin: -10px 0 0 -10px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white; border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.footer-text { text-align: center; margin-top: 32px; font-size: 13px; color: var(--text-muted); }
-.footer-text a { color: var(--primary); text-decoration: none; font-weight: 600; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4338ca 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:#fff;border-radius:24px;padding:44px 40px;width:100%;max-width:440px;box-shadow:0 25px 60px rgba(0,0,0,.3)}
+.logo{text-align:center;margin-bottom:32px}
+.logo-icon{width:56px;height:56px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:12px}
+.logo h1{font-size:24px;font-weight:800;color:#0f172a;letter-spacing:-0.5px}
+.logo p{font-size:13px;color:#64748b;margin-top:4px;font-weight:500}
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:11.5px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.fg input{width:100%;padding:12px 16px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px;color:#0f172a;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;background:#fff}
+.fg input:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+.fg input::placeholder{color:#cbd5e1}
+.role-note{background:#f8fafc;border-radius:10px;padding:10px 14px;font-size:12px;color:#64748b;margin-bottom:18px;border:1px solid #e2e8f0}
+.role-note span{font-weight:700;color:#4f46e5}
+.btn-submit{width:100%;padding:14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;position:relative}
+.btn-submit:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(79,70,229,.35)}
+.btn-submit:disabled{opacity:.7;cursor:not-allowed;transform:none}
+.btn-submit.loading{color:transparent}
+.btn-submit.loading::after{content:"";position:absolute;width:20px;height:20px;top:50%;left:50%;margin:-10px 0 0 -10px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.alert{padding:12px 16px;border-radius:10px;font-size:13.5px;margin-top:14px;font-weight:500;display:none}
+.alert.show{display:block}
+.alert-err{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+.alert-ok{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:#94a3b8;font-size:12px}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:#e2e8f0}
+.footer{text-align:center;margin-top:24px;font-size:12px;color:#94a3b8}
 </style>
 </head>
 <body>
-<div class="login-container">
-  <div class="brand">
-    <div class="logo-container">Z</div>
-    <h1>ZETU</h1>
-    <p>School Management System</p>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">🏫</div>
+    <h1>CBC School ERP</h1>
+    <p>Kenya Competency Based Curriculum</p>
   </div>
 
-  <div class="tabs">
-    <button class="tab-btn active" id="tab-school" onclick="switchTab('school')">School Access</button>
-    <button class="tab-btn" id="tab-super" onclick="switchTab('super')">Platform Admin</button>
+  <div class="fg">
+    <label>School Code</label>
+    <input id="school_code" type="text" placeholder="e.g. KPRI001" autocomplete="organization" maxlength="20" style="text-transform:uppercase">
+  </div>
+  <div class="role-note">Leave School Code blank if you are a <span>Super Admin</span></div>
+
+  <div class="fg">
+    <label>Username or Email</label>
+    <input id="username" type="text" placeholder="username or email" autocomplete="username">
+  </div>
+  <div class="fg">
+    <label>Password</label>
+    <input id="password" type="password" placeholder="••••••••" autocomplete="current-password">
   </div>
 
-  <div class="field-group active" id="fg-school">
-    <div class="roles-hint">
-      <span class="role-chip">Admin</span>
-      <span class="role-chip">Teacher</span>
-      <span class="role-chip">Finance</span>
-      <span class="role-chip">Student</span>
-      <span class="role-chip">Parent</span>
-    </div>
-    <div class="form-group">
-      <label>School Identifier</label>
-      <input id="schoolCode" placeholder="Enter school code" autocomplete="off" style="text-transform:uppercase">
-    </div>
-    <div class="form-group">
-      <label>Email Address</label>
-      <input id="emailSchool" type="email" placeholder="name@school.com" autocomplete="email">
-    </div>
-    <div class="form-group">
-      <label>Security Password</label>
-      <input id="passSchool" type="password" placeholder="••••••••" autocomplete="current-password">
-    </div>
-  </div>
-
-  <div class="field-group" id="fg-super">
-    <div class="form-group">
-      <label>Admin Email</label>
-      <input id="emailSuper" type="email" placeholder="admin@zetu.com" autocomplete="email">
-    </div>
-    <div class="form-group">
-      <label>Security Password</label>
-      <input id="passSuper" type="password" placeholder="••••••••" autocomplete="current-password">
-    </div>
-  </div>
-
-  <button class="btn" id="loginBtn">Secure Login</button>
-  <div class="alert" id="alert"></div>
-
-  <div class="footer-text">
-    Need help? <a href="#">Contact Support</a>
-  </div>
+  <button class="btn-submit" id="loginBtn">Sign In</button>
+  <div class="alert alert-err" id="errMsg"></div>
+  <div class="footer">CBC School ERP v4.0 · Powered by ZETU Business Solutions</div>
 </div>
 
 <script type="module">
-import { auth, logout, saveSession, getToken, getUser, clearSession } from "./js/api.js";
+import { auth, setSession, getUser } from "/js/api.js";
 
+// If already logged in, redirect
 const u = getUser();
-const t = getToken();
-if (u && t) {
-  auth.verify().then(res => {
-    if (res?.success) redirect(u.role);
-    else clearSession();
-  });
+if (u) {
+  const dest = { SUPER_ADMIN:"/super-admin.html", PRINCIPAL:"/school-admin.html",
+    DEPUTY_PRINCIPAL:"/school-admin.html", HOD:"/school-admin.html",
+    TEACHER:"/teacher.html", BURSAR:"/bursar.html" };
+  window.location.href = dest[u.role] || "/school-admin.html";
 }
 
-let mode = "school";
+const loginBtn = document.getElementById("loginBtn");
+const errMsg   = document.getElementById("errMsg");
 
-window.switchTab = (m) => {
-  mode = m;
-  document.getElementById("tab-school").classList.toggle("active", m === "school");
-  document.getElementById("tab-super").classList.toggle("active", m === "super");
-  document.getElementById("fg-school").classList.toggle("active", m === "school");
-  document.getElementById("fg-super").classList.toggle("active", m === "super");
-  document.getElementById("alert").classList.remove("show");
-};
+async function doLogin() {
+  const school_code = document.getElementById("school_code").value.trim().toUpperCase() || undefined;
+  const username    = document.getElementById("username").value.trim();
+  const password    = document.getElementById("password").value;
+  errMsg.className  = "alert";
 
-function showAlert(msg, type="error") {
-  const el = document.getElementById("alert");
-  el.textContent = msg;
-  el.className = `alert show ${type}`;
-}
-
-function redirect(role) {
-  const map = {
-    SUPER_ADMIN:  "super-admin.html",
-    SCHOOL_ADMIN: "school-admin.html",
-    TEACHER:      "teachers/teacherDashboard.html",
-    FINANCE:      "finance/financeDashboard.html",
-    STUDENT:      "students/studentPortal.html",
-    PARENT:       "parents/parentPortal.html",
-  };
-  window.location.href = map[role] || "dashboard.html";
-}
-
-document.getElementById("loginBtn").addEventListener("click", async () => {
-  const btn = document.getElementById("loginBtn");
-  let email, password, school_code;
-
-  if (mode === "super") {
-    email = document.getElementById("emailSuper").value.trim();
-    password = document.getElementById("passSuper").value;
-  } else {
-    email = document.getElementById("emailSchool").value.trim();
-    password = document.getElementById("passSchool").value;
-    school_code = document.getElementById("schoolCode").value.trim().toUpperCase();
-    if (!school_code) { showAlert("School identifier is required."); return; }
+  if (!username || !password) {
+    errMsg.textContent = "Username and password are required.";
+    errMsg.classList.add("show","alert-err"); return;
   }
 
-  if (!email || !password) { showAlert("Email and password are required."); return; }
+  loginBtn.disabled = true; loginBtn.classList.add("loading");
+  const res = await auth.login({ username, password, school_code });
+  loginBtn.disabled = false; loginBtn.classList.remove("loading");
 
-  btn.classList.add("btn-loading");
-  btn.disabled = true;
+  if (!res?.success) {
+    errMsg.textContent = res?.message || "Login failed.";
+    errMsg.classList.add("show","alert-err"); return;
+  }
 
-  const loginData = { email, password };
-  if (mode === "school") loginData.school_code = school_code;
+  setSession(res.token, res.user);
 
-  const res = await auth.login(email, password, school_code).catch(e => ({ success:false, message:e.message }));
-  
-  btn.classList.remove("btn-loading");
-  btn.disabled = false;
+  if (res.must_change_password) {
+    window.location.href = "/change-password.html"; return;
+  }
 
-  if (!res?.success) { showAlert(res?.message || "Authentication failed."); return; }
+  const dest = {
+    SUPER_ADMIN:       "/super-admin.html",
+    PRINCIPAL:         "/school-admin.html",
+    DEPUTY_PRINCIPAL:  "/school-admin.html",
+    HOD:               "/school-admin.html",
+    TEACHER:           "/teacher.html",
+    BURSAR:            "/bursar.html",
+  };
+  window.location.href = dest[res.user.role] || "/school-admin.html";
+}
 
-  saveSession(res.token, res.user);
-  showAlert(`Welcome back, ${res.user.name}!`, "success");
-  setTimeout(() => redirect(res.user.role), 800);
-});
-
-document.addEventListener("keypress", e => { if (e.key === "Enter") document.getElementById("loginBtn").click(); });
+loginBtn.addEventListener("click", doLogin);
+document.addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
 </script>
 </body>
 </html>
