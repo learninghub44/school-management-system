@@ -99,9 +99,13 @@ app.get("*", (req, res) => {
 
 // ── Global error handler ──────────────────────────────────────────
 app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err.message);
-  if (err.message === "Not allowed by CORS") return res.status(403).json({ success: false, message: "CORS error." });
-  res.status(500).json({ success: false, message: "Internal server error." });
+  console.error("🔥 FULL ERROR:", err);
+
+  res.status(500).json({
+    success: false,
+    message: err.message,
+    stack: err.stack
+  });
 });
 
 const PORT = process.env.PORT || 3000;
