@@ -27,15 +27,25 @@ app.use(helmet({
 }));
 
 // ── CORS ──────────────────────────────────────────────────────────
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000,http://localhost:5500").split(",");
+const allowedOrigins = (
+  process.env.CORS_ORIGIN ||
+  "http://localhost:3000,http://localhost:5500"
+)
+  .split(",")
+  .map(origin => origin.trim());
+
+console.log("Allowed Origins:", allowedOrigins);
+
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-    cb(new Error("Not allowed by CORS"));
+    if (!origin || allowedOrigins.includes(origin)) {
+      return cb(null, true);
+    }
+    return cb(new Error("Not allowed by CORS"));
   },
   credentials: true,
-  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
-  allowedHeaders: ["Content-Type","Authorization"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
 // ── Rate limiting ─────────────────────────────────────────────────
