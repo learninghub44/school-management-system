@@ -29,7 +29,7 @@ app.use(helmet({
 // ── CORS ──────────────────────────────────────────────────────────
 const allowedOrigins = (
   process.env.CORS_ORIGIN ||
-  "http://localhost:3000,http://localhost:5500,https://cbc-school-erp.pages.dev/"
+  "http://localhost:3000,http://localhost:5500"
 )
   .split(",")
   .map(origin => origin.trim());
