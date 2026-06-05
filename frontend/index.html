@@ -6,7 +6,7 @@
 <script src="/js/config.js"></script>
 <script>
 // Redirect to login or dashboard
-const user = JSON.parse(sessionStorage.getItem("user") || "null");
+const user = JSON.parse(sessionStorage.getItem("cbc_user") || "null");
 if (user) {
   const dest = {
     SUPER_ADMIN:      "/super-admin.html",
