@@ -42,7 +42,11 @@ export function guardPage(allowedRoles = []) {
 // ── Core fetch ────────────────────────────────────────────────────
 export async function apiFetch(path, { method = "GET", body = null, params = null } = {}) {
   const token = getToken();
-  const url   = new URL(BASE() + path, window.location.origin);
+  // Build URL: absolute BASE needs no origin base; relative BASE does
+  const fullPath = BASE() + path;
+  const url = (fullPath.startsWith("http://") || fullPath.startsWith("https://"))
+    ? new URL(fullPath)
+    : new URL(fullPath, window.location.origin);
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, v);
