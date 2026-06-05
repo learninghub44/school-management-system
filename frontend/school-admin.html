@@ -228,7 +228,12 @@ if (!me) throw new Error("Unauthorized");
 
 // Verify server-side
 const vRes = await apiFetch("/auth/verify");
-if (!vRes?.success) { clearSession(); location.href="/login.html"; throw new Error(); }
+if (!vRes?.success) {
+    clearSession();
+    // Use replace (not href=) to avoid adding to browser history
+    window.location.replace("/login.html");
+    throw new Error("Session invalid");
+  }
 me = vRes.user;
 
 // ── State ──────────────────────────────────────────────────────────

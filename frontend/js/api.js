@@ -32,9 +32,13 @@ export function esc(s) {
 export function guardPage(allowedRoles = []) {
   const user  = getUser();
   const token = getToken();
-  if (!user || !token) { window.location.href = "/login.html"; return null; }
+  if (!user || !token) {
+    clearSession();
+    window.location.replace("/login.html"); return null;
+  }
   if (allowedRoles.length && !allowedRoles.includes(user.role)) {
-    window.location.href = "/login.html"; return null;
+    clearSession();
+    window.location.replace("/login.html"); return null;
   }
   return user;
 }
@@ -54,6 +58,7 @@ export async function apiFetch(path, { method = "GET", body = null, params = nul
   }
   const opts = {
     method,
+    credentials: "include",  // send cookies for same-origin; needed with CORS credentials:true
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -64,7 +69,13 @@ export async function apiFetch(path, { method = "GET", body = null, params = nul
   try {
     const res  = await fetch(url.toString(), opts);
     const data = await res.json();
-    if (res.status === 401) { clearSession(); window.location.href = "/login.html"; return null; }
+    if (res.status === 401) {
+      clearSession();
+      if (!window.location.pathname.includes("login")) {
+        window.location.href = "/login.html";
+      }
+      return null;
+    }
     return data;
   } catch (e) {
     console.error("API fetch error:", e);

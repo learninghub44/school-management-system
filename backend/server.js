@@ -47,21 +47,31 @@ app.use(helmet({
 }));
 
 // ── CORS ─────────────────────────────────────────────────────────
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000,http://localhost:5500")
+// ALLOWED_ORIGINS env var: comma-separated list of allowed origins.
+// Always includes the Cloudflare Pages production domain by default.
+const allowedOrigins = (
+  process.env.ALLOWED_ORIGINS ||
+  "http://localhost:3000,http://localhost:5500,https://cbc-school-erp.pages.dev"
+)
   .split(",")
   .map(o => o.trim())
   .filter(Boolean);
 
+console.log("✅ CORS allowed origins:", allowedOrigins);
+
 app.use(cors({
   origin: (origin, cb) => {
-    // Allow same-origin (no Origin header) and whitelisted origins
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    // Allow same-origin requests (Postman, curl, health checks have no Origin)
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    console.warn("CORS blocked:", origin);
     cb(new Error(`CORS: ${origin} not allowed`));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  maxAge: 600, // preflight cache 10 min
+  exposedHeaders: ["Authorization"],
+  maxAge: 600,
 }));
 
 // ── Rate limiting ─────────────────────────────────────────────────
