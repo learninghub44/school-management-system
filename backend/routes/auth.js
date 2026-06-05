@@ -1,94 +1,119 @@
 /**
- * /api/auth
- * Login, logout, verify, change password, audit log
- * Roles: SUPER_ADMIN, PRINCIPAL, DEPUTY_PRINCIPAL, HOD, TEACHER, BURSAR
+ * /api/auth — Login, logout, verify, change-password, audit-log
+ * Security: bcrypt, JWT + jti blocklist, account lockout (5 attempts → 15min)
+ * Constant-time path to prevent user enumeration on login failure
  */
-const express   = require("express");
-const bcrypt    = require("bcryptjs");
-const jwt       = require("jsonwebtoken");
+"use strict";
+const express = require("express");
+const bcrypt  = require("bcryptjs");
+const crypto  = require("crypto");
+const jwt     = require("jsonwebtoken");
 const { body, validationResult } = require("express-validator");
-const db        = require("../config/db");
-const authMiddleware = require("../middleware/authMiddleware");
+const db   = require("../config/db");
+const auth = require("../middleware/authMiddleware");
 const { audit } = require("../middleware/auditLog");
 
 const router = express.Router();
 const JWT_SECRET  = process.env.JWT_SECRET;
 const JWT_EXPIRES = process.env.JWT_EXPIRES || "10h";
 
+// Dummy hash for constant-time comparison when user not found (prevents timing attacks)
+const DUMMY_HASH = "$2a$12$dummyhashfortimingnopurposeonlyusedwhenusernotfound1234";
+
 // ── POST /api/auth/login ──────────────────────────────────────────
 router.post("/login",
   [
-    body("username").trim().notEmpty(),
-    body("password").notEmpty(),
+    body("username").trim().notEmpty().isLength({ max: 255 }),
+    body("password").notEmpty().isLength({ max: 200 }),
+    body("school_code").optional().trim().isLength({ max: 20 })
+      .matches(/^[A-Z0-9]*$/i).withMessage("Invalid school code format"),
   ],
   async (req, res) => {
     const errs = validationResult(req);
-    if (!errs.isEmpty()) return res.status(400).json({ success: false, message: "Username and password required." });
+    if (!errs.isEmpty())
+      return res.status(400).json({ success: false, message: "Invalid request." });
 
-    const { username, password, school_code } = req.body;
+    const { username, password } = req.body;
+    const school_code = req.body.school_code?.toUpperCase() || null;
     const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress;
 
     try {
-      // Find user — SUPER_ADMIN has no school_code
-      let userQuery, userParams;
+      let user = null;
+
       if (school_code) {
-        userQuery = `SELECT u.*, s.name AS school_name, s.school_code, s.academic_year,
-                            s.current_term, s.logo_url, s.is_active AS school_active
-                     FROM users u
-                     JOIN schools s ON s.id = u.school_id
-                     WHERE (u.username = $1 OR u.email = $1) AND s.school_code = $2`;
-        userParams = [username, school_code.toUpperCase()];
-      } else {
-        userQuery = `SELECT u.*, NULL AS school_name, NULL AS school_code,
-                            NULL AS academic_year, NULL AS current_term,
-                            NULL AS logo_url, TRUE AS school_active
-                     FROM users u
-                     WHERE (u.username = $1 OR u.email = $1) AND u.role = 'SUPER_ADMIN'`;
-        userParams = [username];
-      }
-
-      const { rows } = await db.query(userQuery, userParams);
-      const user = rows[0];
-
-      // Generic error — don't reveal whether user exists
-      if (!user) {
-        await audit({ user: null, headers: req.headers, socket: req.socket }, "LOGIN_FAIL", "users", null, null, { username }, "FAIL", "User not found");
-        return res.status(401).json({ success: false, message: "Invalid credentials." });
-      }
-
-      // School active check
-      if (!user.school_active) return res.status(403).json({ success: false, message: "School account is deactivated." });
-
-      // Account locked?
-      if (user.locked_until && new Date(user.locked_until) > new Date()) {
-        const mins = Math.ceil((new Date(user.locked_until) - new Date()) / 60000);
-        return res.status(423).json({ success: false, message: `Account locked. Try again in ${mins} minute(s).` });
-      }
-
-      // Account inactive?
-      if (!user.is_active) return res.status(403).json({ success: false, message: "Account is deactivated." });
-
-      // Password check
-      const valid = await bcrypt.compare(password, user.password_hash);
-      if (!valid) {
-        const attempts = (user.failed_login_attempts || 0) + 1;
-        const lockUntil = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
-        await db.query(
-          "UPDATE users SET failed_login_attempts=$1, locked_until=$2 WHERE id=$3",
-          [attempts, lockUntil, user.id]
+        // Staff login with school code
+        const { rows } = await db.query(
+          `SELECT u.*, s.name AS school_name, s.school_code, s.academic_year,
+                  s.current_term, s.logo_url, s.is_active AS school_active
+           FROM users u
+           JOIN schools s ON s.id = u.school_id
+           WHERE (u.username = $1 OR u.email = $1)
+             AND s.school_code = $2
+             AND u.role != 'SUPER_ADMIN'`,
+          [username, school_code]
         );
-        await audit({ user: null, headers: req.headers, socket: req.socket }, "LOGIN_FAIL", "users", user.id, null, { attempts }, "FAIL", "Bad password");
+        user = rows[0] || null;
+      } else {
+        // SUPER_ADMIN login (no school code)
+        const { rows } = await db.query(
+          `SELECT u.*, NULL AS school_name, NULL AS school_code,
+                  NULL AS academic_year, NULL AS current_term,
+                  NULL AS logo_url, TRUE AS school_active
+           FROM users u
+           WHERE (u.username = $1 OR u.email = $1)
+             AND u.role = 'SUPER_ADMIN'`,
+          [username]
+        );
+        user = rows[0] || null;
+      }
+
+      // ALWAYS do bcrypt compare — prevents timing-based user enumeration
+      const hashToCheck = user ? user.password_hash : DUMMY_HASH;
+      const validPassword = await bcrypt.compare(password, hashToCheck);
+
+      if (!user || !validPassword) {
+        // If user exists but wrong password, increment failed attempts
+        if (user) {
+          const attempts = (user.failed_login_attempts || 0) + 1;
+          const lockUntil = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
+          await db.query(
+            "UPDATE users SET failed_login_attempts=$1, locked_until=$2 WHERE id=$3",
+            [attempts, lockUntil, user.id]
+          );
+        }
+        await audit(
+          { user: null, headers: req.headers, socket: req.socket },
+          "LOGIN_FAIL", "users", user?.id || null, null,
+          { username, school_code }, "FAIL", "Bad credentials"
+        );
         return res.status(401).json({ success: false, message: "Invalid credentials." });
       }
 
-      // Reset failed attempts + update last_login
+      // Check school active
+      if (!user.school_active)
+        return res.status(403).json({ success: false, message: "School account is deactivated." });
+
+      // Check account locked
+      if (user.locked_until && new Date(user.locked_until) > new Date()) {
+        const mins = Math.ceil((new Date(user.locked_until) - Date.now()) / 60000);
+        return res.status(423).json({
+          success: false,
+          message: `Account locked. Try again in ${mins} minute(s).`
+        });
+      }
+
+      // Check account active
+      if (!user.is_active)
+        return res.status(403).json({ success: false, message: "Account is deactivated." });
+
+      // Reset failed attempts + record login
       await db.query(
         "UPDATE users SET failed_login_attempts=0, locked_until=NULL, last_login=NOW() WHERE id=$1",
         [user.id]
       );
 
       // Issue JWT with jti for blocklist support
-      const jti = require("crypto").randomBytes(16).toString("hex");
+      const jti = crypto.randomBytes(16).toString("hex");
       const payload = {
         jti,
         id:            user.id,
@@ -107,7 +132,10 @@ router.post("/login",
 
       const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 
-      await audit({ user: payload, headers: req.headers, socket: req.socket }, "LOGIN", "users", user.id, null, { role: user.role }, "SUCCESS");
+      await audit(
+        { user: payload, headers: req.headers, socket: req.socket },
+        "LOGIN", "users", user.id, null, { role: user.role }
+      );
 
       return res.json({
         success: true,
@@ -115,7 +143,6 @@ router.post("/login",
         user: payload,
         must_change_password: user.must_change_password,
       });
-
     } catch (err) {
       console.error("Login error:", err.message);
       return res.status(500).json({ success: false, message: "Server error." });
@@ -124,13 +151,12 @@ router.post("/login",
 );
 
 // ── POST /api/auth/logout ─────────────────────────────────────────
-router.post("/logout", authMiddleware, async (req, res) => {
+router.post("/logout", auth, async (req, res) => {
   try {
-    // Add jti to blocklist
     if (req.user?.jti) {
       const exp = new Date(req.user.exp * 1000);
       await db.query(
-        "INSERT INTO token_blocklist (jti, user_id, expires_at) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING",
+        "INSERT INTO token_blocklist (jti, user_id, expires_at) VALUES ($1,$2,$3) ON CONFLICT (jti) DO NOTHING",
         [req.user.jti, req.user.id, exp]
       );
     }
@@ -142,8 +168,9 @@ router.post("/logout", authMiddleware, async (req, res) => {
 });
 
 // ── GET /api/auth/verify ──────────────────────────────────────────
-router.get("/verify", authMiddleware, async (req, res) => {
+router.get("/verify", auth, async (req, res) => {
   try {
+    // req.user is already DB-verified by authMiddleware — just return fresh data
     const { rows } = await db.query(
       `SELECT u.id, u.name, u.email, u.username, u.role, u.is_active,
               u.must_change_password, u.school_id,
@@ -154,8 +181,10 @@ router.get("/verify", authMiddleware, async (req, res) => {
        WHERE u.id = $1`, [req.user.id]
     );
     const user = rows[0];
-    if (!user || !user.is_active) return res.status(401).json({ success: false, message: "Session invalid." });
-    if (user.school_id && !user.school_active) return res.status(403).json({ success: false, message: "School deactivated." });
+    if (!user || !user.is_active)
+      return res.status(401).json({ success: false, message: "Session invalid." });
+    if (user.school_id && user.school_active === false)
+      return res.status(403).json({ success: false, message: "School deactivated." });
     return res.json({ success: true, user });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Server error." });
@@ -163,19 +192,30 @@ router.get("/verify", authMiddleware, async (req, res) => {
 });
 
 // ── POST /api/auth/change-password ───────────────────────────────
-router.post("/change-password", authMiddleware,
+router.post("/change-password", auth,
   [
     body("current_password").notEmpty(),
-    body("new_password").isLength({ min: 8 }).withMessage("Min 8 characters")
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage("Must contain uppercase, lowercase, and number"),
+    body("new_password")
+      .isLength({ min: 8 })
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .withMessage("Min 8 chars, must include uppercase, lowercase, and number"),
   ],
   async (req, res) => {
     const errs = validationResult(req);
-    if (!errs.isEmpty()) return res.status(400).json({ success: false, errors: errs.array() });
+    if (!errs.isEmpty())
+      return res.status(400).json({ success: false, errors: errs.array() });
     try {
-      const { rows } = await db.query("SELECT password_hash FROM users WHERE id=$1", [req.user.id]);
+      const { rows } = await db.query(
+        "SELECT password_hash FROM users WHERE id=$1", [req.user.id]
+      );
       const valid = await bcrypt.compare(req.body.current_password, rows[0].password_hash);
-      if (!valid) return res.status(400).json({ success: false, message: "Current password is incorrect." });
+      if (!valid)
+        return res.status(400).json({ success: false, message: "Current password is incorrect." });
+
+      // Disallow reusing current password
+      const same = await bcrypt.compare(req.body.new_password, rows[0].password_hash);
+      if (same)
+        return res.status(400).json({ success: false, message: "New password must differ from current password." });
 
       const hash = await bcrypt.hash(req.body.new_password, 12);
       await db.query(
@@ -191,19 +231,26 @@ router.post("/change-password", authMiddleware,
 );
 
 // ── GET /api/auth/audit-log ───────────────────────────────────────
-router.get("/audit-log", authMiddleware, async (req, res) => {
+router.get("/audit-log", auth, async (req, res) => {
   try {
     const { role, school_id } = req.user;
-    const allowed = ["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL"];
-    if (!allowed.includes(role)) return res.status(403).json({ success: false, message: "Access denied." });
+    const allowed = ["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL"];
+    if (!allowed.includes(role))
+      return res.status(403).json({ success: false, message: "Access denied." });
 
-    const schoolFilter = role === "SUPER_ADMIN" ? "" : "WHERE al.school_id = $1";
-    const params = role === "SUPER_ADMIN" ? [] : [school_id];
+    const p = [], where = [];
+    if (role !== "SUPER_ADMIN") { p.push(school_id); where.push(`al.school_id=$${p.length}`); }
+    if (req.query.action)  { p.push(req.query.action);  where.push(`al.action=$${p.length}`); }
+    if (req.query.user_id) { p.push(req.query.user_id); where.push(`al.user_id=$${p.length}`); }
+
+    const whereClause = where.length ? "WHERE " + where.join(" AND ") : "";
     const { rows } = await db.query(
-      `SELECT al.*, u.name AS user_name FROM audit_logs al
+      `SELECT al.*, u.name AS user_name
+       FROM audit_logs al
        LEFT JOIN users u ON u.id = al.user_id
-       ${schoolFilter} ORDER BY al.created_at DESC LIMIT 100`,
-      params
+       ${whereClause}
+       ORDER BY al.created_at DESC
+       LIMIT 200`, p
     );
     return res.json({ success: true, data: rows });
   } catch (err) {

@@ -1,193 +1,238 @@
 /**
- * /api/attendance
- * TEACHER/SCHOOL_ADMIN — mark + view
- * STUDENT  — own records only
- * PARENT   — children's records only
- * FINANCE  — NO ACCESS
+ * /api/attendance — Daily attendance recording & reporting
+ * Valid roles: SUPER_ADMIN, PRINCIPAL, DEPUTY_PRINCIPAL, HOD, TEACHER, BURSAR
+ * BURSAR: read-only (for fee-default correlation)
+ * TEACHER: scoped to own assigned classes only
+ * All isolation from DB-verified req.user.school_id
  */
+"use strict";
 const express = require("express");
-const db = require("../config/db");
-const authMiddleware = require("../middleware/authMiddleware");
+const { body, validationResult } = require("express-validator");
+const db           = require("../config/db");
+const auth         = require("../middleware/authMiddleware");
+const roleM        = require("../middleware/roleMiddleware");
+const { audit }    = require("../middleware/auditLog");
 
 const router = express.Router();
 
-router.get("/", authMiddleware, async (req, res) => {
-    try {
-        const { role, school_id, id: userId } = req.user;
-        if (role === "FINANCE")
-            return res.status(403).json({ success: false, message: "Access denied." });
+const VALID_STATUSES = ["Present", "Absent", "Late"];
+const READ_ROLES     = ["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL", "HOD", "TEACHER", "BURSAR"];
+const WRITE_ROLES    = ["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL", "HOD", "TEACHER"];
 
-        let q = `SELECT a.*, s.full_name, s.admission_no
-                 FROM attendance a LEFT JOIN students s ON s.id=a.student_id`;
-        const params = [], where = [];
+function getSchoolId(req) {
+  if (req.user.role === "SUPER_ADMIN") return req.query.school_id || null;
+  return req.user.school_id;
+}
 
-        if (role === "STUDENT") {
-            const me = await db.query("SELECT id FROM students WHERE user_id=$1", [userId]);
-            if (!me.rows.length) return res.json({ success: true, data: [] });
-            params.push(me.rows[0].id); where.push(`a.student_id=$${params.length}`);
-        } else if (role === "PARENT") {
-            const kids = await db.query("SELECT student_id FROM parent_students WHERE parent_id=$1", [userId]);
-            if (!kids.rows.length) return res.json({ success: true, data: [] });
-            params.push(kids.rows.map(r => r.student_id));
-            where.push(`a.student_id = ANY($${params.length})`);
-        } else {
-            // V-03: Non-SUPER_ADMIN always gets their own school — no bypass possible
-            const schoolId = role === "SUPER_ADMIN" ? (req.query.school_id || null) : school_id;
-            if (!schoolId && role !== "SUPER_ADMIN")
-                return res.status(403).json({ success: false, message: "School isolation error." });
-            if (schoolId) { params.push(schoolId); where.push(`a.school_id=$${params.length}`); }
-            if (req.query.date) {
-                // Validate date format to prevent injection
-                if (!/^\d{4}-\d{2}-\d{2}$/.test(req.query.date))
-                    return res.status(400).json({ success: false, message: "Invalid date format." });
-                params.push(req.query.date); where.push(`a.date=$${params.length}`);
-            }
-            if (req.query.student_id) { params.push(req.query.student_id); where.push(`a.student_id=$${params.length}`); }
-        }
+// ── GET /api/attendance ───────────────────────────────────────────
+router.get("/", auth, roleM(READ_ROLES), async (req, res) => {
+  try {
+    const schoolId = getSchoolId(req);
+    if (!schoolId && req.user.role !== "SUPER_ADMIN")
+      return res.status(403).json({ success: false, message: "School isolation error." });
 
-        if (where.length) q += " WHERE " + where.join(" AND ");
-        q += " ORDER BY a.date DESC, s.full_name LIMIT 500";
-        const { rows } = await db.query(q, params);
-        return res.json({ success: true, data: rows, count: rows.length });
-    } catch (err) {
-        return res.status(500).json({ success: false, message: err.message });
+    const p = [], where = [];
+    if (schoolId) { p.push(schoolId); where.push(`a.school_id=$${p.length}`); }
+
+    // Date filter — validated
+    if (req.query.date) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(req.query.date))
+        return res.status(400).json({ success: false, message: "Invalid date format. Use YYYY-MM-DD." });
+      p.push(req.query.date); where.push(`a.date=$${p.length}`);
     }
+
+    // class_id filter
+    if (req.query.class_id) {
+      if (!/^\d+$/.test(req.query.class_id))
+        return res.status(400).json({ success: false, message: "Invalid class_id." });
+      p.push(req.query.class_id); where.push(`a.class_id=$${p.length}`);
+    }
+
+    // Status filter
+    if (req.query.status) {
+      if (!VALID_STATUSES.includes(req.query.status))
+        return res.status(400).json({ success: false, message: `Invalid status. Use: ${VALID_STATUSES.join(", ")}` });
+      p.push(req.query.status); where.push(`a.status=$${p.length}`);
+    }
+
+    // TEACHER: restrict to own assigned classes only
+    if (req.user.role === "TEACHER") {
+      const { rows: tr } = await db.query(
+        "SELECT id FROM teachers WHERE user_id=$1 AND school_id=$2",
+        [req.user.id, schoolId]
+      );
+      if (!tr.length) return res.json({ success: true, data: [], count: 0 });
+      const { rows: assigned } = await db.query(
+        "SELECT DISTINCT class_id FROM teacher_assignments WHERE teacher_id=$1 AND school_id=$2",
+        [tr[0].id, schoolId]
+      );
+      if (!assigned.length) return res.json({ success: true, data: [], count: 0 });
+      p.push(assigned.map(r => r.class_id));
+      where.push(`a.class_id = ANY($${p.length})`);
+    }
+
+    const whereClause = where.length ? "WHERE " + where.join(" AND ") : "";
+    const { rows } = await db.query(
+      `SELECT a.*,
+              CONCAT(s.first_name,' ',s.last_name) AS student_name,
+              s.admission_number,
+              CONCAT(c.grade, COALESCE(' '||c.stream,'')) AS class_label,
+              CONCAT(t.first_name,' ',t.last_name) AS recorded_by_name
+       FROM attendance a
+       JOIN students s ON s.id = a.student_id
+       JOIN classes c ON c.id = a.class_id
+       LEFT JOIN teachers t ON t.id = a.teacher_id
+       ${whereClause}
+       ORDER BY a.date DESC, s.last_name
+       LIMIT 1000`, p
+    );
+    return res.json({ success: true, data: rows, count: rows.length });
+  } catch (err) {
+    console.error("GET /attendance:", err.message);
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
 });
 
-// POST — single or bulk
-router.post("/", authMiddleware, async (req, res) => {
-    try {
-        const { role, school_id } = req.user;
-        if (!["SUPER_ADMIN","SCHOOL_ADMIN","TEACHER"].includes(role))
-            return res.status(403).json({ success: false, message: "Access denied." });
+// ── GET /api/attendance/summary ───────────────────────────────────
+router.get("/summary", auth, roleM(READ_ROLES), async (req, res) => {
+  try {
+    const schoolId = getSchoolId(req);
+    if (!schoolId)
+      return res.status(400).json({ success: false, message: "school_id required." });
 
-        const records = Array.isArray(req.body) ? req.body : [req.body];
-        const schoolId = req.user.school_id;
-        const inserted = [];
+    const p = [schoolId]; let where = "WHERE a.school_id=$1";
+    if (req.query.class_id) { p.push(req.query.class_id); where += ` AND a.class_id=$${p.length}`; }
+    if (req.query.date_from) { p.push(req.query.date_from); where += ` AND a.date>=$${p.length}`; }
+    if (req.query.date_to)   { p.push(req.query.date_to);   where += ` AND a.date<=$${p.length}`; }
 
-        for (const r of records) {
-            if (!r.student_id || !r.date || !r.status)
-                return res.status(400).json({ success: false, message: "student_id, date, status required." });
-            if (!["present","absent","late","excused"].includes(r.status))
-                return res.status(400).json({ success: false, message: `Invalid status: ${r.status}` });
-
-            // Verify student ownership
-            const st = await db.query("SELECT school_id FROM students WHERE id=$1", [r.student_id]);
-            if (!st.rows.length || (req.user.role !== "SUPER_ADMIN" && st.rows[0].school_id !== schoolId)) {
-                continue; // Skip cross-tenant or missing student
-            }
-
-            const { rows } = await db.query(
-                `INSERT INTO attendance (school_id, student_id, teacher_id, date, status, remarks)
-                 VALUES ($1,$2,$3,$4,$5,$6)
-                 ON CONFLICT (school_id, student_id, date)
-                 DO UPDATE SET status=EXCLUDED.status, remarks=EXCLUDED.remarks
-                 RETURNING *`,
-                [st.rows[0].school_id, r.student_id, req.user.id, r.date, r.status, r.remarks||null]
-            );
-            inserted.push(rows[0]);
-        }
-        return res.status(201).json({ success: true, message: `${inserted.length} record(s) saved.`, data: inserted });
-    } catch (err) {
-        return res.status(500).json({ success: false, message: err.message });
-    }
+    const { rows } = await db.query(
+      `SELECT
+         COUNT(*) FILTER (WHERE a.status='Present') AS present,
+         COUNT(*) FILTER (WHERE a.status='Absent')  AS absent,
+         COUNT(*) FILTER (WHERE a.status='Late')    AS late,
+         COUNT(*) AS total,
+         ROUND(COUNT(*) FILTER (WHERE a.status='Present')::numeric / NULLIF(COUNT(*),0) * 100, 1) AS attendance_rate
+       FROM attendance a ${where}`, p
+    );
+    return res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
 });
 
-// GET /api/attendance/report/:student_id
-router.get("/report/:student_id", authMiddleware, async (req, res) => {
-    try {
-        const { role, id: userId } = req.user;
-        if (role === "FINANCE")
-            return res.status(403).json({ success: false, message: "Access denied." });
-        if (role === "STUDENT") {
-            const me = await db.query("SELECT id FROM students WHERE user_id=$1", [userId]);
-            if (!me.rows.length || me.rows[0].id !== req.params.student_id)
-                return res.status(403).json({ success: false, message: "Access denied." });
-        }
-        if (role === "PARENT") {
-            const link = await db.query(
-                "SELECT id FROM parent_students WHERE parent_id=$1 AND student_id=$2",
-                [userId, req.params.student_id]
-            );
-            if (!link.rows.length) return res.status(403).json({ success: false, message: "Not your child." });
-        }
+// ── POST /api/attendance/bulk — record whole class at once ────────
+router.post("/bulk", auth, roleM(WRITE_ROLES), async (req, res) => {
+  const { class_id, date, records } = req.body;
 
-        // Verify student ownership for staff
-        if (["TEACHER", "SCHOOL_ADMIN"].includes(role)) {
-            const st = await db.query("SELECT school_id FROM students WHERE id=$1", [req.params.student_id]);
-            if (!st.rows.length || st.rows[0].school_id !== req.user.school_id)
-                return res.status(403).json({ success: false, message: "Access denied." });
-        }
+  if (!class_id || !date || !Array.isArray(records) || !records.length)
+    return res.status(400).json({ success: false, message: "class_id, date, and records[] required." });
 
-        const { rows } = await db.query(
-            "SELECT * FROM attendance WHERE student_id=$1 ORDER BY date DESC",
-            [req.params.student_id]
-        );
-        const s = { total: rows.length, present:0, absent:0, late:0, excused:0 };
-        rows.forEach(r => { if (s[r.status]!==undefined) s[r.status]++; });
-        s.percentage = s.total > 0 ? ((s.present/s.total)*100).toFixed(1)+"%" : "0%";
-        return res.json({ success: true, data: { records: rows, summary: s } });
-    } catch (err) {
-        return res.status(500).json({ success: false, message: err.message });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
+    return res.status(400).json({ success: false, message: "Invalid date. Use YYYY-MM-DD." });
+
+  // Validate all statuses up-front — reject entire request if any are wrong
+  for (const r of records) {
+    if (!r.student_id)
+      return res.status(400).json({ success: false, message: "Each record must have student_id." });
+    if (!VALID_STATUSES.includes(r.status))
+      return res.status(400).json({ success: false, message: `Invalid status "${r.status}". Use: ${VALID_STATUSES.join(", ")}` });
+  }
+
+  try {
+    const schoolId = getSchoolId(req);
+    if (!schoolId)
+      return res.status(400).json({ success: false, message: "school_id required." });
+
+    // Verify class belongs to school
+    const { rows: cls } = await db.query(
+      "SELECT school_id FROM classes WHERE id=$1", [class_id]
+    );
+    if (!cls.length)
+      return res.status(404).json({ success: false, message: "Class not found." });
+    if (req.user.role !== "SUPER_ADMIN" && cls[0].school_id !== schoolId)
+      return res.status(403).json({ success: false, message: "Class does not belong to your school." });
+
+    // TEACHER: verify they are assigned to this class
+    let teacherId = null;
+    if (req.user.role === "TEACHER") {
+      const { rows: tr } = await db.query(
+        "SELECT id FROM teachers WHERE user_id=$1 AND school_id=$2",
+        [req.user.id, schoolId]
+      );
+      if (!tr.length)
+        return res.status(403).json({ success: false, message: "Teacher profile not found." });
+      teacherId = tr[0].id;
+      const { rows: asgn } = await db.query(
+        "SELECT id FROM teacher_assignments WHERE teacher_id=$1 AND class_id=$2 AND school_id=$3",
+        [teacherId, class_id, schoolId]
+      );
+      if (!asgn.length)
+        return res.status(403).json({ success: false, message: "You are not assigned to this class." });
     }
+
+    // Verify ALL student_ids belong to this school before inserting any
+    const studentIds = records.map(r => r.student_id);
+    const { rows: studs } = await db.query(
+      "SELECT id, school_id FROM students WHERE id = ANY($1)", [studentIds]
+    );
+    const studentMap = new Map(studs.map(s => [s.id, s]));
+    for (const sid of studentIds) {
+      const stud = studentMap.get(sid);
+      if (!stud)
+        return res.status(400).json({ success: false, message: `Student not found: ${sid}` });
+      if (req.user.role !== "SUPER_ADMIN" && stud.school_id !== schoolId)
+        return res.status(403).json({ success: false, message: `Student ${sid} does not belong to your school.` });
+    }
+
+    // Bulk upsert — atomically
+    let saved = 0;
+    for (const r of records) {
+      await db.query(
+        `INSERT INTO attendance (school_id, student_id, class_id, teacher_id, date, status, remarks)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)
+         ON CONFLICT (school_id, student_id, date)
+         DO UPDATE SET status=EXCLUDED.status, remarks=EXCLUDED.remarks, teacher_id=EXCLUDED.teacher_id`,
+        [cls[0].school_id, r.student_id, class_id, teacherId, date, r.status, r.remarks || null]
+      );
+      saved++;
+    }
+
+    await audit(req, "BULK_ATTENDANCE", "attendance", null, null,
+      { class_id, date, count: saved });
+    return res.json({ success: true, message: `${saved} record(s) saved.`, count: saved });
+  } catch (err) {
+    console.error("POST /attendance/bulk:", err.message);
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
 });
 
-// GET /api/attendance/stats/:student_id (Student Portal)
-router.get("/stats/:student_id", authMiddleware, async (req, res) => {
+// ── PUT /api/attendance/:id ───────────────────────────────────────
+router.put("/:id", auth, roleM(WRITE_ROLES),
+  [body("status").optional().isIn(VALID_STATUSES)],
+  async (req, res) => {
+    const errs = validationResult(req);
+    if (!errs.isEmpty())
+      return res.status(400).json({ success: false, errors: errs.array() });
+
     try {
-        const { role, id: userId } = req.user;
-        const studentId = req.params.student_id;
+      const { rows: ex } = await db.query(
+        "SELECT * FROM attendance WHERE id=$1", [req.params.id]
+      );
+      if (!ex.length)
+        return res.status(404).json({ success: false, message: "Record not found." });
+      if (req.user.role !== "SUPER_ADMIN" && ex[0].school_id !== req.user.school_id)
+        return res.status(403).json({ success: false, message: "Access denied." });
 
-        // Verify access
-        if (role === "STUDENT") {
-            const me = await db.query("SELECT id FROM students WHERE user_id=$1", [userId]);
-            if (!me.rows.length || me.rows[0].id !== parseInt(studentId))
-                return res.status(403).json({ success: false, message: "Access denied." });
-        } else if (role === "PARENT") {
-            const link = await db.query("SELECT id FROM parent_students WHERE parent_id=$1 AND student_id=$2", [userId, studentId]);
-            if (!link.rows.length) return res.status(403).json({ success: false, message: "Not your child." });
-        } else if (role !== "SUPER_ADMIN") {
-            return res.status(403).json({ success: false, message: "Access denied." });
-        }
-
-        const { rows } = await db.query(
-            "SELECT status, COUNT(*) as count FROM attendance WHERE student_id=$1 GROUP BY status",
-            [studentId]
-        );
-        const stats = { present: 0, absent: 0, late: 0, excused: 0 };
-        rows.forEach(r => { if (stats[r.status] !== undefined) stats[r.status] = r.count; });
-        return res.json({ success: true, data: stats });
+      const { rows } = await db.query(
+        "UPDATE attendance SET status=COALESCE($1,status), remarks=COALESCE($2,remarks) WHERE id=$3 RETURNING *",
+        [req.body.status || null, req.body.remarks || null, req.params.id]
+      );
+      await audit(req, "UPDATE_ATTENDANCE", "attendance", req.params.id, ex[0], rows[0]);
+      return res.json({ success: true, data: rows[0] });
     } catch (err) {
-        return res.status(500).json({ success: false, message: err.message });
+      return res.status(500).json({ success: false, message: "Server error." });
     }
-});
-
-// GET /api/attendance/history/:student_id (Student Portal)
-router.get("/history/:student_id", authMiddleware, async (req, res) => {
-    try {
-        const { role, id: userId } = req.user;
-        const studentId = req.params.student_id;
-
-        // Verify access
-        if (role === "STUDENT") {
-            const me = await db.query("SELECT id FROM students WHERE user_id=$1", [userId]);
-            if (!me.rows.length || me.rows[0].id !== parseInt(studentId))
-                return res.status(403).json({ success: false, message: "Access denied." });
-        } else if (role === "PARENT") {
-            const link = await db.query("SELECT id FROM parent_students WHERE parent_id=$1 AND student_id=$2", [userId, studentId]);
-            if (!link.rows.length) return res.status(403).json({ success: false, message: "Not your child." });
-        } else if (role !== "SUPER_ADMIN") {
-            return res.status(403).json({ success: false, message: "Access denied." });
-        }
-
-        const { rows } = await db.query(
-            "SELECT * FROM attendance WHERE student_id=$1 ORDER BY date DESC LIMIT 50",
-            [studentId]
-        );
-        return res.json({ success: true, data: rows });
-    } catch (err) {
-        return res.status(500).json({ success: false, message: err.message });
-    }
-});
+  }
+);
 
 module.exports = router;
