@@ -2,14 +2,15 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Handle CORS preflight FIRST before proxying
+    // Handle CORS preflight FIRST
     if (request.method === "OPTIONS" && url.pathname.startsWith("/api/")) {
       return new Response(null, {
         status: 204,
         headers: {
-          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Origin": "https://cbc-school-erp.pages.dev",
           "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type,Authorization",
+          "Access-Control-Allow-Credentials": "true",
           "Access-Control-Max-Age": "600",
         },
       });
@@ -21,23 +22,20 @@ export default {
 
       if (!backendUrl) {
         return new Response(
-          JSON.stringify({ success: false, message: "BACKEND_URL not configured in Cloudflare Pages env vars." }),
+          JSON.stringify({ success: false, message: "BACKEND_URL not configured." }),
           { status: 503, headers: { "Content-Type": "application/json" } }
         );
       }
 
       const targetUrl = backendUrl + url.pathname + url.search;
 
-      // Strip Origin to avoid Render's CORS check — worker handles CORS
       const proxyHeaders = new Headers(request.headers);
-proxyHeaders.delete("Origin");
-const authHeader = request.headers.get("Authorization");
-if (authHeader) proxyHeaders.set("Authorization", authHeader);
+      proxyHeaders.delete("Origin");
 
       const proxyRequest = new Request(targetUrl, {
-        method:  request.method,
+        method: request.method,
         headers: proxyHeaders,
-        body:    ["GET", "HEAD"].includes(request.method) ? null : request.body,
+        body: ["GET", "HEAD"].includes(request.method) ? null : request.body,
         redirect: "follow",
       });
 
@@ -45,11 +43,11 @@ if (authHeader) proxyHeaders.set("Authorization", authHeader);
         const response = await fetch(proxyRequest);
 
         const newHeaders = new Headers(response.headers);
-        newHeaders.set("Access-Control-Allow-Origin", "*");
+        newHeaders.set("Access-Control-Allow-Origin", "https://cbc-school-erp.pages.dev");
         newHeaders.set("Access-Control-Allow-Credentials", "true");
 
         return new Response(response.body, {
-          status:  response.status,
+          status: response.status,
           headers: newHeaders,
         });
       } catch (err) {
