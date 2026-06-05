@@ -1,0 +1,2 @@
+# SPA fallback — all non-asset paths serve login.html
+/* /login.html 200
