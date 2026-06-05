@@ -16,9 +16,9 @@ if (user) {
     TEACHER:          "/teacher.html",
     BURSAR:           "/bursar.html",
   };
-  window.location.href = dest[user.role] || "/login.html";
+  window.location.replace(dest[user.role] || "/login.html");
 } else {
-  window.location.href = "/login.html";
+  window.location.replace("/login.html");
 }
 </script>
 </head>
