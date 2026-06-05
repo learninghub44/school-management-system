@@ -30,7 +30,9 @@ export default {
 
       // Strip Origin to avoid Render's CORS check — worker handles CORS
       const proxyHeaders = new Headers(request.headers);
-      proxyHeaders.delete("Origin");
+proxyHeaders.delete("Origin");
+const authHeader = request.headers.get("Authorization");
+if (authHeader) proxyHeaders.set("Authorization", authHeader);
 
       const proxyRequest = new Request(targetUrl, {
         method:  request.method,
