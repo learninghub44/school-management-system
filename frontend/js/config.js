@@ -34,7 +34,7 @@
   }
   // Option 3: Same-origin (when served from same domain as backend)
   else {
-    window.API_BASE = "https://cbc-school-erp-api.onrender.com/api";
+    window.API_BASE = window.location.origin + "/api";
   }
 
   // Storage keys
