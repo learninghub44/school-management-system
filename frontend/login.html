@@ -64,19 +64,47 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
 </div>
 
 <script type="module">
-import { auth, setSession, getUser } from "/js/api.js";
+import { auth, setSession, getUser, clearSession } from "/js/api.js";
 
-// If already logged in, redirect
+// If already logged in, verify token is still valid before redirecting
+// This prevents ERR_TOO_MANY_REDIRECTS from stale/expired sessions
 const u = getUser();
 if (u) {
-  const dest = { SUPER_ADMIN:"/super-admin.html", PRINCIPAL:"/school-admin.html",
-    DEPUTY_PRINCIPAL:"/school-admin.html", HOD:"/school-admin.html",
-    TEACHER:"/teacher.html", BURSAR:"/bursar.html" };
-  window.location.href = dest[u.role] || "/school-admin.html";
+  (async () => {
+    try {
+      const res = await auth.verify();
+      if (res?.success) {
+        const dest = { SUPER_ADMIN:"/super-admin.html", PRINCIPAL:"/school-admin.html",
+          DEPUTY_PRINCIPAL:"/school-admin.html", HOD:"/school-admin.html",
+          TEACHER:"/teacher.html", BURSAR:"/bursar.html" };
+        window.location.href = dest[u.role] || "/school-admin.html";
+      } else {
+        // Token expired or invalid — clear it and stay on login
+        clearSession();
+      }
+    } catch (_) {
+      clearSession(); // Network error — stay on login, don't redirect
+    }
+  })();
 }
 
 const loginBtn = document.getElementById("loginBtn");
 const errMsg   = document.getElementById("errMsg");
+
+// ── Health check on load ─────────────────────────────────────────
+(async () => {
+  try {
+    const BASE = window.API_BASE || "https://cbc-school-erp-api.onrender.com/api";
+    const res = await fetch(BASE + "/health", { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    // Backend is live — hide any lingering warning
+  } catch (e) {
+    errMsg.className  = "alert alert-warning";
+    errMsg.textContent = "⚠️ Backend is starting up (Render free tier may take 30–60s). Retrying…";
+    // Auto-retry after 10s
+    setTimeout(() => { errMsg.textContent = ""; errMsg.className = "alert"; }, 10000);
+  }
+})();
 
 async function doLogin() {
   const school_code = document.getElementById("school_code").value.trim().toUpperCase() || undefined;
