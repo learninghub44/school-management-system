@@ -5,7 +5,7 @@
 <title>Teacher Portal — CBC ERP</title>
 <script src="/js/config.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style id="mainStyle"></style>
+
 </head>
 <body>
 <div id="app"></div>
@@ -61,15 +61,16 @@
 </div></div>
 
 <script type="module">
-import { guardPage, esc, apiFetch, attendance, assessments, classes, schools } from "/js/api.js";
-import { SHARED_CSS, buildSidebar, setupNav, openModal, closeModal, resetModal, showAlert, setLoading } from "/js/layout.js";
-document.getElementById("mainStyle").textContent = SHARED_CSS;
+import { guardPage, esc, apiFetch, attendance, assessments, classes, schools, verifySession } from "/js/api.js";
+import { SHARED_CSS, buildSidebar, setupNav, openModal, closeModal, resetModal, showAlert, setLoading, injectStyles } from "/js/layout.js";
+injectStyles();
 
 let me = guardPage(["TEACHER"]);
 if (!me) throw new Error();
-const vRes = await apiFetch("/auth/verify");
-if (!vRes?.success) { clearSession(); location.href="/login.html"; throw new Error(); }
-me = vRes.user;
+const vRes = await verifySession();
+if (vRes.reason === "auth") { clearSession(); location.href="/login.html"; return; }
+if (vRes.ok) me = vRes.user;
+// If network error: keep going with session data — don't force logout
 
 let myClasses=[], mySubjects=[], currentClassStudents=[];
 
