@@ -21,7 +21,8 @@ html{font-size:14px;scroll-behavior:smooth}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 input,select,textarea,button{font-family:var(--font);font-size:13px}
 a{color:var(--accent);text-decoration:none}
-::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:99px}
 ::-webkit-scrollbar-thumb:hover{background:var(--border2)}
 #app{display:flex;min-height:100vh}
@@ -52,7 +53,8 @@ a{color:var(--accent);text-decoration:none}
 #pageTitle{font-size:15px;font-weight:700;color:var(--text)}
 .topbar-right{font-size:12px;color:var(--text3)}
 .content{padding:24px 28px;flex:1}
-.panel{display:none;animation:fadeIn .25s ease}.panel.active{display:block}
+.panel{display:none;animation:fadeIn .25s ease}
+.panel.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;transition:var(--trans)}
@@ -64,6 +66,7 @@ a{color:var(--accent);text-decoration:none}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
 .card-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--bg3)}
 .card-hdr h4{font-size:13px;font-weight:700;color:var(--text);letter-spacing:.02em}
+.card-body{padding:0}
 .filter-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg3);flex-wrap:wrap}
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
@@ -86,24 +89,31 @@ code{font-family:var(--mono);font-size:11.5px;background:rgba(255,255,255,.06);b
 .by{background:rgba(234,179,8,.12);color:#facc15;border:1px solid rgba(234,179,8,.2)}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;border:1px solid transparent;font-size:12.5px;font-weight:600;cursor:pointer;transition:var(--trans);white-space:nowrap;line-height:1}
 .btn:active{transform:scale(.97)}
-.btn-primary{background:var(--accent);color:#000;border-color:var(--accent)}.btn-primary:hover{background:var(--accent2)}
+.btn-primary{background:var(--accent);color:#000;border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent2);border-color:var(--accent2)}
 .btn-primary:disabled{opacity:.5;cursor:not-allowed}
-.btn-ghost{background:transparent;color:var(--text2);border-color:var(--border2)}.btn-ghost:hover{background:var(--surface2);color:var(--text)}
-.btn-danger{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.25)}.btn-danger:hover{background:rgba(239,68,68,.22)}
-.btn-success{background:rgba(16,185,129,.12);color:#34d399;border-color:rgba(16,185,129,.25)}.btn-success:hover{background:rgba(16,185,129,.22)}
-.btn-warn{background:rgba(245,158,11,.12);color:var(--accent);border-color:rgba(245,158,11,.25)}.btn-warn:hover{background:rgba(245,158,11,.22)}
+.btn-ghost{background:transparent;color:var(--text2);border-color:var(--border2)}
+.btn-ghost:hover{background:var(--surface2);color:var(--text)}
+.btn-danger{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.25)}
+.btn-danger:hover{background:rgba(239,68,68,.22)}
+.btn-success{background:rgba(16,185,129,.12);color:#34d399;border-color:rgba(16,185,129,.25)}
+.btn-success:hover{background:rgba(16,185,129,.22)}
+.btn-warn{background:rgba(245,158,11,.12);color:var(--accent);border-color:rgba(245,158,11,.25)}
+.btn-warn:hover{background:rgba(245,158,11,.22)}
 .btn-sm{padding:5px 10px;font-size:11.5px;border-radius:5px}
+.action-btns{display:flex;gap:6px}
 .btn-loading{position:relative;color:transparent!important;pointer-events:none}
 .btn-loading::after{content:"";position:absolute;width:15px;height:15px;top:50%;left:50%;margin:-7.5px 0 0 -7.5px;border:2px solid rgba(0,0,0,.2);border-top-color:#000;border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-input[type="text"],input[type="email"],input[type="tel"],input[type="password"],input[type="number"],select,textarea{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:9px 12px;color:var(--text);font-size:13px;transition:var(--trans);outline:none;-webkit-appearance:none;appearance:none}
+input[type="text"],input[type="email"],input[type="tel"],input[type="password"],select,textarea{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:9px 12px;color:var(--text);font-size:13px;transition:var(--trans);outline:none;-webkit-appearance:none;-moz-appearance:none;appearance:none}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentDim)}
 input::placeholder{color:var(--text3)}
 select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
 select option{background:var(--bg2)}
 textarea{resize:vertical;min-height:72px}
 label{display:block;font-size:11.5px;font-weight:600;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px}
-.fg{margin-bottom:14px}.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg{margin-bottom:14px}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:520px){.fg-row{grid-template-columns:1fr}}
 .empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:13px}
 .alert{padding:10px 14px;border-radius:7px;font-size:12.5px;font-weight:500;margin-top:4px;margin-bottom:4px}
@@ -116,14 +126,12 @@ label{display:block;font-size:11.5px;font-weight:600;color:var(--text3);letter-s
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)}
 .modal-hdr h3{font-size:15px;font-weight:700;color:var(--text)}
 .modal-close{width:30px;height:30px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--trans);line-height:1;padding:0}
-.modal-close:hover{background:var(--surface);color:var(--text)}
+.modal-close:hover{background:var(--surface);color:var(--text);border-color:var(--border2)}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
-.action-btns{display:flex;gap:6px}
 </style>
 </head>
 <body>
-
-<!-- REGISTER SCHOOL MODAL -->
+<!-- MODALS -->
 <div class="modal-bg" id="modal-school">
 <div class="modal">
   <div class="modal-hdr">
@@ -136,10 +144,7 @@ label{display:block;font-size:11.5px;font-weight:600;color:var(--text3);letter-s
   </div>
   <div class="fg-row">
     <div class="fg"><label>Level *</label>
-      <select id="sc-level">
-        <option value="ECDE">ECDE</option><option value="Primary" selected>Primary</option>
-        <option value="Junior Secondary">Junior Secondary</option><option value="Senior Secondary">Senior Secondary</option><option value="Mixed">Mixed</option>
-      </select>
+      <select id="sc-level"><option value="ECDE">ECDE</option><option value="Primary" selected>Primary</option><option value="Junior Secondary">Junior Secondary</option><option value="Senior Secondary">Senior Secondary</option><option value="Mixed">Mixed</option></select>
     </div>
     <div class="fg"><label>Current Term</label>
       <select id="sc-term"><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
@@ -153,7 +158,7 @@ label{display:block;font-size:11.5px;font-weight:600;color:var(--text3);letter-s
     <div class="fg"><label>Phone</label><input id="sc-phone" type="tel" maxlength="20" placeholder="+254 7XX XXX XXX"></div>
     <div class="fg"><label>Email</label><input id="sc-email" type="email" maxlength="255" placeholder="school@example.ke"></div>
   </div>
-  <div class="fg"><label>Address</label><textarea id="sc-addr" maxlength="300" placeholder="Physical address"></textarea></div>
+  <div class="fg"><label>Address</label><textarea id="sc-addr" maxlength="300" placeholder="Physical address of the school"></textarea></div>
   <div class="fg"><label>Academic Year</label><input id="sc-year" maxlength="4" value="2025" style="font-family:var(--mono)"></div>
   <div id="sc-alert"></div>
   <div class="modal-actions">
@@ -163,31 +168,33 @@ label{display:block;font-size:11.5px;font-weight:600;color:var(--text3);letter-s
 </div>
 </div>
 
-<!-- CREATE USER MODAL -->
-<div class="modal-bg" id="modal-user">
+<div class="modal-bg" id="modal-admin">
 <div class="modal">
   <div class="modal-hdr">
     <h3>👤 Create School User</h3>
-    <button class="modal-close" data-close="modal-user">×</button>
+    <button class="modal-close" data-close="modal-admin">×</button>
   </div>
-  <div class="fg"><label>School *</label><select id="usr-school"><option value="">Select School</option></select></div>
+  <div class="fg"><label>School *</label><select id="adm-school"><option value="">Select School</option></select></div>
   <div class="fg-row">
-    <div class="fg"><label>Full Name *</label><input id="usr-name" maxlength="150" placeholder="John Kamau"></div>
-    <div class="fg"><label>Phone</label><input id="usr-phone" type="tel" maxlength="20" placeholder="+254 7XX XXX XXX"></div>
+    <div class="fg"><label>Full Name *</label><input id="adm-name" maxlength="150" placeholder="John Kamau"></div>
+    <div class="fg"><label>Phone</label><input id="adm-phone" type="tel" maxlength="20" placeholder="+254 7XX XXX XXX"></div>
   </div>
-  <div class="fg"><label>Username *</label><input id="usr-username" maxlength="50" placeholder="john.kamau" style="font-family:var(--mono)"></div>
-  <div class="fg"><label>Email *</label><input id="usr-email" type="email" maxlength="150" placeholder="john.kamau@school.ke"></div>
+  <div class="fg"><label>Username *</label><input id="adm-username" maxlength="50" placeholder="john.kamau" style="font-family:var(--mono)"></div>
+  <div class="fg"><label>Email *</label><input id="adm-email" type="email" maxlength="150" placeholder="john.kamau@school.ke"></div>
   <div class="fg"><label>Role *</label>
-    <select id="usr-role">
-      <option value="PRINCIPAL">Principal</option><option value="DEPUTY_PRINCIPAL">Deputy Principal</option>
-      <option value="BURSAR">Bursar</option><option value="HOD">HOD</option><option value="TEACHER">Teacher</option>
+    <select id="adm-role">
+      <option value="PRINCIPAL">Principal</option>
+      <option value="DEPUTY_PRINCIPAL">Deputy Principal</option>
+      <option value="BURSAR">Bursar</option>
+      <option value="HOD">HOD</option>
+      <option value="TEACHER">Teacher</option>
     </select>
   </div>
-  <div class="fg"><label>Temporary Password *</label><input id="usr-pass" type="password" minlength="8" maxlength="72" placeholder="Min 8 chars — A-Z a-z 0-9"></div>
-  <div id="usr-alert"></div>
+  <div class="fg"><label>Temporary Password *</label><input id="adm-pass" type="password" minlength="8" maxlength="72" placeholder="Min 8 chars — A-Z a-z 0-9"></div>
+  <div id="adm-alert"></div>
   <div class="modal-actions">
-    <button class="btn btn-ghost" data-close="modal-user">Cancel</button>
-    <button class="btn btn-primary" id="btnSubmitUser">Create User</button>
+    <button class="btn btn-ghost" data-close="modal-admin">Cancel</button>
+    <button class="btn btn-primary" id="btnSubmitAdmin">Create User</button>
   </div>
 </div>
 </div>
@@ -195,29 +202,23 @@ label{display:block;font-size:11.5px;font-weight:600;color:var(--text3);letter-s
 <div id="app"></div>
 
 <script type="module">
-// ── Imports ───────────────────────────────────────────────────────
-import {
-  guardPage, esc, apiFetch, clearSession,
-  schools, users, verifySession
-} from "/js/api.js";
+import { guardPage, esc, apiFetch, clearSession, schools, users, verifySession } from "/js/api.js";
 
-// ── Helpers ───────────────────────────────────────────────────────
 function openModal(id)  { document.getElementById(id)?.classList.add("open"); }
 function closeModal(id) { document.getElementById(id)?.classList.remove("open"); }
 function resetModal(id) {
   document.querySelectorAll(`#${id} input,#${id} textarea`).forEach(el => el.value = "");
   document.querySelectorAll(`#${id} select`).forEach(el => el.selectedIndex = 0);
-  document.querySelectorAll(`#${id} .alert`).forEach(el => el.remove());
 }
-function showAlert(elOrId, msg, type = "err") {
-  const el = typeof elOrId === "string" ? document.getElementById(elOrId) : elOrId;
+function showAlert(el, msg, type = "err") {
+  if (typeof el === "string") el = document.getElementById(el);
   if (!el) return;
   el.innerHTML = `<div class="alert alert-${type}">${esc(msg)}</div>`;
 }
-function setLoading(idOrEl, on) {
-  const btn = typeof idOrEl === "string" ? document.getElementById(idOrEl) : idOrEl;
+function setLoading(btn, on) {
+  if (typeof btn === "string") btn = document.getElementById(btn);
   if (!btn) return;
-  btn.classList.toggle("btn-loading", on);
+  on ? btn.classList.add("btn-loading") : btn.classList.remove("btn-loading");
   btn.disabled = on;
 }
 
@@ -225,7 +226,7 @@ function setLoading(idOrEl, on) {
 let me = guardPage(["SUPER_ADMIN"]);
 if (!me) throw new Error("Not authorized");
 
-// FIX: handle auth failure AND tenant mismatch; survive network errors
+// FIX: consistent verifySession pattern — handles auth + tenant failures
 const vRes = await verifySession();
 if (!vRes.ok && vRes.reason !== "network") {
   clearSession();
@@ -234,20 +235,18 @@ if (!vRes.ok && vRes.reason !== "network") {
 }
 if (vRes.ok) me = vRes.user;
 
-// ── State ─────────────────────────────────────────────────────────
+// ── App ───────────────────────────────────────────────────────────
 let allSchools = [];
 
-// ── Nav config ────────────────────────────────────────────────────
 const NAV = [
-  { panel: "overview", icon: "📊", label: "Dashboard"  },
-  { panel: "schools",  icon: "🏫", label: "Schools"    },
-  { panel: "users",    icon: "👤", label: "Users"      },
-  { panel: "audit",    icon: "🔎", label: "Audit Log"  },
+  { panel:"overview", icon:"📊", label:"Dashboard" },
+  { panel:"schools",  icon:"🏫", label:"Schools" },
+  { panel:"users",    icon:"👤", label:"School Users" },
+  { panel:"audit",    icon:"🔎", label:"Audit Log" },
 ];
 
-const initials = (me.name || "SA").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+const initials = (me.name || "SA").split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2);
 
-// ── Render shell ──────────────────────────────────────────────────
 document.getElementById("app").innerHTML = `
 <aside class="sidebar">
   <div class="sidebar-brand">
@@ -258,7 +257,7 @@ document.getElementById("app").innerHTML = `
   <div style="padding:8px 12px;margin-top:4px">
     <div class="nav-section">Navigation</div>
     ${NAV.map(n => `
-      <div class="nav-item${n.panel === "overview" ? " active" : ""}" data-panel="${esc(n.panel)}">
+      <div class="nav-item${n.panel==="overview"?" active":""}" data-panel="${esc(n.panel)}">
         <span class="nav-icon">${n.icon}</span>${esc(n.label)}
       </div>`).join("")}
   </div>
@@ -276,68 +275,62 @@ document.getElementById("app").innerHTML = `
 <div class="main">
   <header class="topbar">
     <div id="pageTitle">Dashboard</div>
-    <div class="topbar-right">Super Admin · ${esc(me.email || "")}</div>
+    <div class="topbar-right">Super Admin · ${esc(me.email)}</div>
   </header>
   <div class="content">
-
-    <!-- OVERVIEW -->
     <div class="panel active" id="panel-overview">
       <div class="stat-grid" id="statsGrid"><div class="empty">Loading…</div></div>
       <div class="card">
-        <div class="card-hdr"><h4>Schools Overview</h4></div>
-        <div class="table-wrap" id="dashSchoolsTbl"><div class="empty">Loading…</div></div>
+        <div class="card-hdr"><h4>All Schools</h4></div>
+        <div class="card-body"><div class="table-wrap" id="dashSchoolsTbl"><div class="empty">Loading…</div></div></div>
       </div>
     </div>
-
-    <!-- SCHOOLS -->
     <div class="panel" id="panel-schools">
       <div class="card">
         <div class="card-hdr">
           <h4>Registered Schools</h4>
           <button class="btn btn-primary" id="btnAddSchool">+ Register School</button>
         </div>
-        <div class="filter-bar">
-          <input type="text" id="filterSchool" placeholder="Search name or code…" style="flex:1;min-width:200px">
+        <div class="card-body">
+          <div class="filter-bar">
+            <input type="text" id="filterSchool" placeholder="Search school name or code…" style="flex:1;min-width:200px">
+          </div>
+          <div class="table-wrap" id="schoolsTbl"><div class="empty">Loading…</div></div>
         </div>
-        <div class="table-wrap" id="schoolsTbl"><div class="empty">Loading…</div></div>
       </div>
     </div>
-
-    <!-- USERS -->
     <div class="panel" id="panel-users">
       <div class="card">
         <div class="card-hdr">
           <h4>School Users</h4>
-          <button class="btn btn-primary" id="btnAddUser">+ Create User</button>
+          <button class="btn btn-primary" id="btnAddAdmin">+ Create User</button>
         </div>
-        <div class="filter-bar">
-          <select id="filterUserSchool" style="min-width:180px"><option value="">All Schools</option></select>
-          <select id="filterUserRole">
-            <option value="">All Roles</option>
-            <option value="PRINCIPAL">Principal</option>
-            <option value="DEPUTY_PRINCIPAL">Deputy Principal</option>
-            <option value="HOD">HOD</option>
-            <option value="TEACHER">Teacher</option>
-            <option value="BURSAR">Bursar</option>
-          </select>
+        <div class="card-body">
+          <div class="filter-bar">
+            <select id="filterUserSchool"><option value="">All Schools</option></select>
+            <select id="filterUserRole">
+              <option value="">All Roles</option>
+              <option value="PRINCIPAL">Principal</option>
+              <option value="DEPUTY_PRINCIPAL">Deputy Principal</option>
+              <option value="HOD">HOD</option>
+              <option value="TEACHER">Teacher</option>
+              <option value="BURSAR">Bursar</option>
+            </select>
+          </div>
+          <div class="table-wrap" id="usersTbl"><div class="empty">Loading…</div></div>
         </div>
-        <div class="table-wrap" id="usersTbl"><div class="empty">Loading…</div></div>
       </div>
     </div>
-
-    <!-- AUDIT LOG -->
     <div class="panel" id="panel-audit">
       <div class="card">
         <div class="card-hdr"><h4>Audit Log</h4></div>
-        <div class="table-wrap" id="auditTbl"><div class="empty">Loading…</div></div>
+        <div class="card-body"><div class="table-wrap" id="auditTbl"><div class="empty">Loading…</div></div></div>
       </div>
     </div>
-
   </div>
 </div>`;
 
-// ── Nav wiring ────────────────────────────────────────────────────
-const loaders = { overview: loadDashboard, schools: loadSchools, users: loadUsers, audit: loadAudit };
+const loaders = { overview:loadDashboard, schools:loadSchools, users:loadUsers, audit:loadAudit };
 
 document.querySelectorAll(".nav-item").forEach(el => {
   el.addEventListener("click", () => {
@@ -351,291 +344,196 @@ document.querySelectorAll(".nav-item").forEach(el => {
   });
 });
 
-// ── Logout ────────────────────────────────────────────────────────
 document.getElementById("logoutBtn")?.addEventListener("click", async () => {
   const b = document.getElementById("logoutBtn");
   b.disabled = true; b.textContent = "Signing out…";
-  try { await apiFetch("/auth/logout", { method: "POST" }); } catch (_) {}
+  try { await apiFetch("/auth/logout", { method:"POST" }); } catch(_) {}
   clearSession();
   window.location.replace("/login.html");
 });
 
-// ── Modal close wiring ────────────────────────────────────────────
-document.querySelectorAll("[data-close]").forEach(b =>
-  b.addEventListener("click", () => closeModal(b.dataset.close)));
-document.querySelectorAll(".modal-bg").forEach(bg =>
-  bg.addEventListener("click", e => { if (e.target === bg) closeModal(bg.id); }));
+document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => closeModal(b.dataset.close)));
+document.querySelectorAll(".modal-bg").forEach(bg => bg.addEventListener("click", e => { if (e.target===bg) closeModal(bg.id); }));
 
-// ── Fetch & cache all schools ─────────────────────────────────────
 async function fetchSchools() {
   const r = await schools.list();
   allSchools = r?.data || [];
-
-  // Populate school dropdowns
-  const opts = allSchools.map(s =>
-    `<option value="${esc(s.id)}">${esc(s.name)} (${esc(s.school_code)})</option>`).join("");
-  const filterEl = document.getElementById("filterUserSchool");
-  const usrEl    = document.getElementById("usr-school");
-  if (filterEl) filterEl.innerHTML = '<option value="">All Schools</option>' + opts;
-  if (usrEl)    usrEl.innerHTML    = '<option value="">Select School</option>' + opts;
+  ["adm-school","filterUserSchool"].forEach(id => {
+    const el = document.getElementById(id); if (!el) return;
+    const isFilter = id.startsWith("filter");
+    el.innerHTML = (isFilter ? '<option value="">All Schools</option>' : '<option value="">Select School</option>') +
+      allSchools.map(s => `<option value="${esc(s.id)}">${esc(s.name)} (${esc(s.school_code)})</option>`).join("");
+  });
 }
 await fetchSchools();
 
-// ── Dashboard ─────────────────────────────────────────────────────
 async function loadDashboard() {
-  const total  = allSchools.length;
-  const active = allSchools.filter(s => s.is_active).length;
-  const studs  = allSchools.reduce((sum, s) => sum + (s.student_count || 0), 0);
-  const staff  = allSchools.reduce((sum, s) => sum + (s.staff_count  || 0), 0);
-
+  const total    = allSchools.length;
+  const active   = allSchools.filter(s => s.is_active).length;
+  const studs    = allSchools.reduce((sum,s) => sum+(s.student_count||0), 0);
+  const staff    = allSchools.reduce((sum,s) => sum+(s.staff_count||0), 0);
   document.getElementById("statsGrid").innerHTML = `
-    <div class="stat-card">
-      <div class="val">${total}</div>
-      <div class="lbl">Total Schools</div>
-      <div class="sub">${active} active</div>
-    </div>
-    <div class="stat-card">
-      <div class="val">${studs}</div>
-      <div class="lbl">Total Students</div>
-    </div>
-    <div class="stat-card">
-      <div class="val">${staff}</div>
-      <div class="lbl">Total Staff</div>
-    </div>`;
-
-  renderSchoolsTable(allSchools.slice(0, 8), "dashSchoolsTbl", true);
+    <div class="stat-card"><div class="val">${total}</div><div class="lbl">Total Schools</div><div class="sub">${active} active</div></div>
+    <div class="stat-card"><div class="val">${studs}</div><div class="lbl">Total Students</div></div>
+    <div class="stat-card"><div class="val">${staff}</div><div class="lbl">Total Staff</div></div>`;
+  renderSchoolsTable(allSchools.slice(0,8), "dashSchoolsTbl", true);
 }
 
-// ── Schools table renderer ────────────────────────────────────────
-function renderSchoolsTable(data, tblId, compact = false) {
+function renderSchoolsTable(data, tblId, compact=false) {
   const tbl = document.getElementById(tblId);
-  if (!tbl) return;
-  if (!data.length) { tbl.innerHTML = '<div class="empty">No schools found</div>'; return; }
-
+  if (!data.length) { tbl.innerHTML='<div class="empty">No schools found</div>'; return; }
   tbl.innerHTML = `<table><thead><tr>
     <th>School</th><th>Code</th><th>Level</th><th>County</th>
     <th>Students</th><th>Staff</th><th>Term</th><th>Status</th>
     ${compact ? "" : "<th>Actions</th>"}
   </tr></thead><tbody>
-    ${data.map(s => `<tr>
-      <td>
-        <strong>${esc(s.name)}</strong>
-        ${s.email ? `<br><span style="font-size:11px;color:var(--text3)">${esc(s.email)}</span>` : ""}
-      </td>
+    ${data.map(s=>`<tr>
+      <td><strong>${esc(s.name)}</strong>${s.email?`<br><span style="font-size:11px;color:var(--text3)">${esc(s.email)}</span>`:""}</td>
       <td><code>${esc(s.school_code)}</code></td>
-      <td><span class="badge bgray">${esc(s.level || "Primary")}</span></td>
-      <td>${esc(s.county || "–")}</td>
-      <td>${s.student_count || 0}</td>
-      <td>${s.staff_count  || 0}</td>
-      <td>T${s.current_term || 1} / ${esc(String(s.academic_year || "–"))}</td>
-      <td><span class="badge ${s.is_active ? "bg" : "br"}">${s.is_active ? "Active" : "Inactive"}</span></td>
-      ${compact ? "" : `
-        <td><div class="action-btns">
-          <button class="btn btn-sm ${s.is_active ? "btn-danger" : "btn-success"}"
-            data-act="toggle-school" data-id="${esc(String(s.id))}" data-active="${s.is_active}">
-            ${s.is_active ? "Deactivate" : "Activate"}
+      <td><span class="badge bgray">${esc(s.level||"Primary")}</span></td>
+      <td>${esc(s.county||"–")}</td>
+      <td>${s.student_count||0}</td>
+      <td>${s.staff_count||0}</td>
+      <td>T${s.current_term||1} / ${esc(s.academic_year||"–")}</td>
+      <td><span class="badge ${s.is_active?"bg":"br"}">${s.is_active?"Active":"Inactive"}</span></td>
+      ${compact?"":
+        `<td><div class="action-btns">
+          <button class="btn btn-sm ${s.is_active?"btn-danger":"btn-success"}"
+            data-act="toggle-school" data-id="${esc(s.id)}" data-active="${s.is_active}">
+            ${s.is_active?"Deactivate":"Activate"}
           </button>
         </div></td>`}
     </tr>`).join("")}
   </tbody></table>`;
-
   if (!compact) {
-    tbl.querySelectorAll("[data-act='toggle-school']").forEach(b =>
-      b.addEventListener("click", async () => {
-        // api.js: schools.toggle(id) → PATCH /schools/:id/toggle
-        const r = await schools.toggle(b.dataset.id);
-        if (r?.success) { await fetchSchools(); loadSchools(); loadDashboard(); }
-        else alert(r?.message || "Error toggling school status.");
-      }));
+    tbl.querySelectorAll("[data-act='toggle-school']").forEach(b => b.addEventListener("click", async () => {
+      const r = await schools.toggle(b.dataset.id);
+      if (r?.success) { await fetchSchools(); loadSchools(); loadDashboard(); }
+      else alert(r?.message || "Error.");
+    }));
   }
 }
 
-// ── Schools panel ─────────────────────────────────────────────────
 async function loadSchools() {
-  document.getElementById("schoolsTbl").innerHTML = '<div class="empty">Loading…</div>';
-  const q        = document.getElementById("filterSchool").value.toLowerCase();
-  const filtered = q
-    ? allSchools.filter(s => (s.name + " " + s.school_code).toLowerCase().includes(q))
-    : allSchools;
+  document.getElementById("schoolsTbl").innerHTML='<div class="empty">Loading…</div>';
+  const q = document.getElementById("filterSchool").value.toLowerCase();
+  const filtered = q ? allSchools.filter(s=>(s.name+" "+s.school_code).toLowerCase().includes(q)) : allSchools;
   renderSchoolsTable(filtered, "schoolsTbl", false);
 }
-document.getElementById("filterSchool")?.addEventListener("input", loadSchools);
+document.getElementById("filterSchool").addEventListener("input", loadSchools);
 
-// ── Users panel ───────────────────────────────────────────────────
 async function loadUsers() {
-  document.getElementById("usersTbl").innerHTML = '<div class="empty">Loading…</div>';
+  document.getElementById("usersTbl").innerHTML='<div class="empty">Loading…</div>';
   const sid  = document.getElementById("filterUserSchool").value;
   const role = document.getElementById("filterUserRole").value;
-
-  // api.js: users.list(params) → GET /users?school_id=&role=
-  const r    = await users.list({ school_id: sid || undefined, role: role || undefined });
+  const r    = await users.list({ school_id:sid||undefined, role:role||undefined });
   const data = r?.data || [];
-
-  if (!data.length) {
-    document.getElementById("usersTbl").innerHTML = '<div class="empty">No users found</div>';
-    return;
-  }
-
-  const roleBadge = {
-    PRINCIPAL: "bb", DEPUTY_PRINCIPAL: "bpurple", HOD: "bteal", TEACHER: "bg", BURSAR: "by"
-  };
-
-  document.getElementById("usersTbl").innerHTML = `<table><thead><tr>
+  if (!data.length) { document.getElementById("usersTbl").innerHTML='<div class="empty">No users found</div>'; return; }
+  const rmap = { PRINCIPAL:"bb", DEPUTY_PRINCIPAL:"bpurple", HOD:"bteal", TEACHER:"bg", BURSAR:"by" };
+  document.getElementById("usersTbl").innerHTML=`<table><thead><tr>
     <th>Name</th><th>Username</th><th>Role</th><th>School</th><th>Last Login</th><th>Status</th><th>Actions</th>
   </tr></thead><tbody>
-    ${data.map(u => `<tr>
-      <td>
-        <strong>${esc(u.name)}</strong>
-        <br><span style="font-size:11.5px;color:var(--text3)">${esc(u.email)}</span>
-      </td>
+    ${data.map(u=>`<tr>
+      <td><strong>${esc(u.name)}</strong><br><span style="font-size:11.5px;color:var(--text3)">${esc(u.email)}</span></td>
       <td><code>${esc(u.username)}</code></td>
-      <td><span class="badge ${roleBadge[u.role] || "bgray"}">${esc(u.role)}</span></td>
-      <td>${esc(u.school_name || "–")}</td>
-      <td style="font-size:12px">${u.last_login ? new Date(u.last_login).toLocaleDateString("en-KE") : "Never"}</td>
-      <td><span class="badge ${u.is_active ? "bg" : "br"}">${u.is_active ? "Active" : "Inactive"}</span></td>
+      <td><span class="badge ${rmap[u.role]||"bgray"}">${esc(u.role)}</span></td>
+      <td>${esc(u.school_name||"–")}</td>
+      <td style="font-size:12px">${u.last_login?new Date(u.last_login).toLocaleDateString("en-KE"):"Never"}</td>
+      <td><span class="badge ${u.is_active?"bg":"br"}">${u.is_active?"Active":"Inactive"}</span></td>
       <td><div class="action-btns">
-        <button class="btn btn-sm ${u.is_active ? "btn-danger" : "btn-success"}"
-          data-act="toggle-user" data-id="${esc(String(u.id))}" data-active="${u.is_active}">
-          ${u.is_active ? "Deactivate" : "Activate"}
-        </button>
-        <button class="btn btn-sm btn-ghost"
-          data-act="reset-pw" data-id="${esc(String(u.id))}" data-name="${esc(u.name)}">
-          Reset PW
-        </button>
+        <button class="btn btn-sm btn-warn" data-act="toggle-user" data-id="${esc(u.id)}" data-active="${u.is_active}">${u.is_active?"Deactivate":"Activate"}</button>
+        <button class="btn btn-sm btn-ghost" data-act="reset-pw" data-id="${esc(u.id)}" data-name="${esc(u.name)}">Reset PW</button>
       </div></td>
     </tr>`).join("")}
   </tbody></table>`;
-
-  // Toggle active — api.js: users.update(id, { is_active }) → PUT /users/:id
-  document.querySelectorAll("[data-act='toggle-user']").forEach(b =>
-    b.addEventListener("click", async () => {
-      const nowActive = b.dataset.active === "true";
-      const r = await users.update(b.dataset.id, { is_active: !nowActive });
-      if (r?.success) loadUsers();
-      else alert(r?.message || "Error updating user.");
-    }));
-
-  // Reset password — api.js: users.resetPassword(id, pw) → POST /users/:id/reset-password
-  document.querySelectorAll("[data-act='reset-pw']").forEach(b =>
-    b.addEventListener("click", async () => {
-      const pw = prompt(`Reset password for ${b.dataset.name}\n\nNew password (min 8 chars):`);
-      if (!pw) return;
-      if (pw.length < 8) { alert("Password must be at least 8 characters."); return; }
-      const r = await users.resetPassword(b.dataset.id, pw);
-      alert(r?.success ? "Password reset successfully." : (r?.message || "Error resetting password."));
-    }));
+  document.querySelectorAll("[data-act='toggle-user']").forEach(b => b.addEventListener("click", async () => {
+    const r = await users.update(b.dataset.id, { is_active: b.dataset.active !== "true" });
+    if (r?.success) loadUsers(); else alert(r?.message||"Error.");
+  }));
+  document.querySelectorAll("[data-act='reset-pw']").forEach(b => b.addEventListener("click", async () => {
+    const pw = prompt(`Reset password for ${b.dataset.name}\n\nNew password (min 8 chars):`);
+    if (!pw || pw.length < 8) { if (pw !== null) alert("Password too short."); return; }
+    const r = await users.resetPassword(b.dataset.id, pw);
+    alert(r?.message || (r?.success ? "Password reset successfully." : "Error."));
+  }));
 }
+document.getElementById("filterUserSchool").addEventListener("change", loadUsers);
+document.getElementById("filterUserRole").addEventListener("change", loadUsers);
 
-document.getElementById("filterUserSchool")?.addEventListener("change", loadUsers);
-document.getElementById("filterUserRole")?.addEventListener("change", loadUsers);
-
-// ── Audit log ─────────────────────────────────────────────────────
 async function loadAudit() {
-  document.getElementById("auditTbl").innerHTML = '<div class="empty">Loading…</div>';
-  // api.js: auth.auditLog() → GET /auth/audit-log
+  document.getElementById("auditTbl").innerHTML='<div class="empty">Loading…</div>';
   const r    = await apiFetch("/auth/audit-log");
   const data = r?.data || [];
-
-  if (!data.length) {
-    document.getElementById("auditTbl").innerHTML = '<div class="empty">No audit records found</div>';
-    return;
-  }
-
-  document.getElementById("auditTbl").innerHTML = `<table><thead><tr>
+  if (!data.length) { document.getElementById("auditTbl").innerHTML='<div class="empty">No audit records</div>'; return; }
+  document.getElementById("auditTbl").innerHTML=`<table><thead><tr>
     <th>Time</th><th>User</th><th>Role</th><th>Action</th><th>Resource</th><th>IP</th><th>Result</th>
   </tr></thead><tbody>
-    ${data.map(l => `<tr>
+    ${data.map(l=>`<tr>
       <td style="font-size:12px;white-space:nowrap">${new Date(l.created_at).toLocaleString("en-KE")}</td>
-      <td style="font-size:12.5px">${esc(l.user_name || "System")}</td>
-      <td><span class="badge bgray">${esc(l.user_role || "–")}</span></td>
+      <td style="font-size:12.5px">${esc(l.user_name||"System")}</td>
+      <td><span class="badge bgray">${esc(l.user_role||"–")}</span></td>
       <td><strong>${esc(l.action)}</strong></td>
-      <td style="font-size:12px">${esc(l.resource_type || "–")}${l.resource_id ? ` #${esc(String(l.resource_id))}` : ""}</td>
-      <td style="font-size:11px;color:var(--text3)">${esc(l.ip_address || "–")}</td>
-      <td><span class="badge ${l.outcome === "SUCCESS" ? "bg" : "br"}">${esc(l.outcome || "–")}</span></td>
+      <td style="font-size:12px">${esc(l.resource_type||"–")}${l.resource_id?` #${esc(l.resource_id)}`:""}</td>
+      <td style="font-size:11px;color:var(--text3)">${esc(l.ip_address||"–")}</td>
+      <td><span class="badge ${l.outcome==="SUCCESS"?"bg":"br"}">${esc(l.outcome||"–")}</span></td>
     </tr>`).join("")}
   </tbody></table>`;
 }
 
-// ── Register school ───────────────────────────────────────────────
-document.getElementById("btnAddSchool")?.addEventListener("click", () => {
-  resetModal("modal-school");
-  openModal("modal-school");
-});
+document.getElementById("btnAddSchool").addEventListener("click", () => openModal("modal-school"));
+document.getElementById("btnAddAdmin").addEventListener("click",  () => openModal("modal-admin"));
 
-document.getElementById("btnSubmitSchool")?.addEventListener("click", async () => {
+document.getElementById("btnSubmitSchool").addEventListener("click", async () => {
   const name    = document.getElementById("sc-name").value.trim();
   const code    = document.getElementById("sc-code").value.trim().toUpperCase();
   const alertEl = document.getElementById("sc-alert");
-
   if (!name || !code) return showAlert(alertEl, "School name and code are required.");
-  if (!/^[A-Z0-9]{2,20}$/.test(code)) return showAlert(alertEl, "Code must be 2–20 uppercase letters/numbers only.");
-
+  if (!/^[A-Z0-9]{2,20}$/.test(code)) return showAlert(alertEl, "Code must be 2–20 uppercase letters/numbers.");
   setLoading("btnSubmitSchool", true);
-  // api.js: schools.create(d) → POST /schools
   const r = await schools.create({
-    name,
-    school_code:   code,
+    name, school_code: code,
     level:         document.getElementById("sc-level").value,
     current_term:  parseInt(document.getElementById("sc-term").value),
-    county:        document.getElementById("sc-county").value.trim()    || null,
+    county:        document.getElementById("sc-county").value.trim() || null,
     sub_county:    document.getElementById("sc-subcounty").value.trim() || null,
-    phone:         document.getElementById("sc-phone").value.trim()     || null,
-    email:         document.getElementById("sc-email").value.trim()     || null,
-    address:       document.getElementById("sc-addr").value.trim()      || null,
-    academic_year: document.getElementById("sc-year").value.trim()      || String(new Date().getFullYear()),
+    phone:         document.getElementById("sc-phone").value.trim() || null,
+    email:         document.getElementById("sc-email").value.trim() || null,
+    address:       document.getElementById("sc-addr").value.trim() || null,
+    academic_year: document.getElementById("sc-year").value.trim() || String(new Date().getFullYear()),
   });
   setLoading("btnSubmitSchool", false);
-
   if (r?.success) {
     showAlert(alertEl, "✓ School registered successfully.", "ok");
-    setTimeout(async () => {
-      closeModal("modal-school");
-      await fetchSchools();
-      loadSchools();
-      loadDashboard();
-    }, 1400);
+    setTimeout(() => { closeModal("modal-school"); resetModal("modal-school"); fetchSchools(); loadSchools(); loadDashboard(); }, 1400);
   } else {
-    showAlert(alertEl, r?.message || "Failed to register school.");
+    showAlert(alertEl, r?.message || "Error registering school.");
   }
 });
 
-// ── Create user ───────────────────────────────────────────────────
-document.getElementById("btnAddUser")?.addEventListener("click", () => {
-  resetModal("modal-user");
-  openModal("modal-user");
-});
-
-document.getElementById("btnSubmitUser")?.addEventListener("click", async () => {
-  const schoolId = document.getElementById("usr-school").value;
-  const name     = document.getElementById("usr-name").value.trim();
-  const username = document.getElementById("usr-username").value.trim();
-  const email    = document.getElementById("usr-email").value.trim();
-  const role     = document.getElementById("usr-role").value;
-  const pass     = document.getElementById("usr-pass").value;
-  const alertEl  = document.getElementById("usr-alert");
-
-  if (!schoolId || !name || !username || !email || !role || !pass)
-    return showAlert(alertEl, "All required fields must be filled.");
-  if (pass.length < 8)
-    return showAlert(alertEl, "Password must be at least 8 characters.");
-
-  setLoading("btnSubmitUser", true);
-  // api.js: users.create(d) → POST /users
+document.getElementById("btnSubmitAdmin").addEventListener("click", async () => {
+  const schoolId = document.getElementById("adm-school").value;
+  const name     = document.getElementById("adm-name").value.trim();
+  const username = document.getElementById("adm-username").value.trim();
+  const email    = document.getElementById("adm-email").value.trim();
+  const role     = document.getElementById("adm-role").value;
+  const pass     = document.getElementById("adm-pass").value;
+  const alertEl  = document.getElementById("adm-alert");
+  if (!schoolId||!name||!username||!email||!role||!pass) return showAlert(alertEl, "All fields are required.");
+  if (pass.length < 8) return showAlert(alertEl, "Password must be at least 8 characters.");
+  setLoading("btnSubmitAdmin", true);
   const r = await users.create({
     school_id: schoolId, name, username, email, role, password: pass,
-    phone: document.getElementById("usr-phone").value.trim() || null,
+    phone: document.getElementById("adm-phone").value.trim() || null,
   });
-  setLoading("btnSubmitUser", false);
-
+  setLoading("btnSubmitAdmin", false);
   if (r?.success) {
-    showAlert(alertEl, "✓ User created. They must change password on first login.", "ok");
-    setTimeout(() => { closeModal("modal-user"); loadUsers(); }, 1400);
+    showAlert(alertEl, "✓ User created. Must change password on first login.", "ok");
+    setTimeout(() => { closeModal("modal-admin"); resetModal("modal-admin"); loadUsers(); }, 1400);
   } else {
-    showAlert(alertEl, r?.message || "Failed to create user.");
+    showAlert(alertEl, r?.message || "Error creating user.");
   }
 });
 
-// ── Initial load ──────────────────────────────────────────────────
 loadDashboard();
 </script>
 </body>
