@@ -20,18 +20,16 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
 .fg input::placeholder{color:#cbd5e1}
 .role-note{background:#f8fafc;border-radius:10px;padding:10px 14px;font-size:12px;color:#64748b;margin-bottom:18px;border:1px solid #e2e8f0}
 .role-note span{font-weight:700;color:#4f46e5}
-.btn-submit{width:100%;padding:14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;position:relative}
+.btn-submit{width:100%;padding:14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;position:relative;margin-top:4px}
 .btn-submit:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(79,70,229,.35)}
 .btn-submit:disabled{opacity:.7;cursor:not-allowed;transform:none}
-.btn-submit.loading{color:transparent}
+.btn-submit.loading{color:transparent!important}
 .btn-submit.loading::after{content:"";position:absolute;width:20px;height:20px;top:50%;left:50%;margin:-10px 0 0 -10px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .alert{padding:12px 16px;border-radius:10px;font-size:13.5px;margin-top:14px;font-weight:500;display:none}
 .alert.show{display:block}
 .alert-err{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
-.alert-ok{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
-.divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:#94a3b8;font-size:12px}
-.divider::before,.divider::after{content:"";flex:1;height:1px;background:#e2e8f0}
+.alert-warn{background:#fef9c3;color:#854d0e;border:1px solid #fde68a}
 .footer{text-align:center;margin-top:24px;font-size:12px;color:#94a3b8}
 </style>
 </head>
@@ -45,10 +43,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
 
   <div class="fg">
     <label>School Code</label>
-    <input id="school_code" type="text" placeholder="e.g. KPRI001" autocomplete="organization" maxlength="20" style="text-transform:uppercase">
+    <input id="school_code" type="text" placeholder="e.g. KPRI001" autocomplete="organization"
+           maxlength="20" style="text-transform:uppercase">
   </div>
   <div class="role-note">Leave School Code blank if you are a <span>Super Admin</span></div>
-
   <div class="fg">
     <label>Username or Email</label>
     <input id="username" type="text" placeholder="username or email" autocomplete="username">
@@ -58,93 +56,95 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
     <input id="password" type="password" placeholder="••••••••" autocomplete="current-password">
   </div>
 
+  <div class="alert alert-warn" id="warnMsg"></div>
+  <div class="alert alert-err"  id="errMsg"></div>
+
   <button class="btn-submit" id="loginBtn">Sign In</button>
-  <div class="alert alert-err" id="errMsg"></div>
-  <div class="footer">CBC School ERP v4.0 · Powered by ZETU Business Solutions</div>
+
+  <div class="footer">CBC School ERP v4.1 · Powered by ZETU Business Solutions</div>
 </div>
 
 <script type="module">
-import { auth, setSession, getUser, clearSession } from "/js/api.js";
+import { auth, setSession, getUser, getToken, clearSession } from "/js/api.js";
 
-// If already logged in, verify token is still valid before redirecting
-// This prevents ERR_TOO_MANY_REDIRECTS from stale/expired sessions
-const u = getUser();
-if (u) {
-  (async () => {
-    try {
-      const res = await auth.verify();
-      if (res?.success) {
-        const dest = { SUPER_ADMIN:"/super-admin.html", PRINCIPAL:"/school-admin.html",
-          DEPUTY_PRINCIPAL:"/school-admin.html", HOD:"/school-admin.html",
-          TEACHER:"/teacher.html", BURSAR:"/bursar.html" };
-        window.location.href = dest[u.role] || "/school-admin.html";
-      } else {
-        // Token expired or invalid — clear it and stay on login
-        clearSession();
-      }
-    } catch (_) {
-      clearSession(); // Network error — stay on login, don't redirect
-    }
-  })();
+// ── Helpers ────────────────────────────────────────────────────────
+const errEl  = document.getElementById("errMsg");
+const warnEl = document.getElementById("warnMsg");
+const btn    = document.getElementById("loginBtn");
+
+function showErr(msg)  { errEl.textContent = msg;  errEl.className = "alert alert-err show";  warnEl.className = "alert alert-warn"; }
+function showWarn(msg) { warnEl.textContent = msg; warnEl.className = "alert alert-warn show"; }
+function clearMsgs()   { errEl.className = "alert alert-err"; warnEl.className = "alert alert-warn"; }
+
+function roleDest(role) {
+  return { SUPER_ADMIN:"/super-admin.html", PRINCIPAL:"/school-admin.html",
+           DEPUTY_PRINCIPAL:"/school-admin.html", HOD:"/school-admin.html",
+           TEACHER:"/teacher.html", BURSAR:"/bursar.html" }[role] || "/school-admin.html";
 }
 
-const loginBtn = document.getElementById("loginBtn");
-const errMsg   = document.getElementById("errMsg");
+// ── Already logged in? Redirect without any network call ──────────
+// We only use session data — no verify() on login page to avoid redirect loops.
+// The destination dashboard will verify on its own.
+const existingUser  = getUser();
+const existingToken = getToken();
+if (existingUser && existingToken) {
+  // Redirect immediately — dashboard will catch expired token and send back here
+  window.location.replace(roleDest(existingUser.role));
+}
 
-// ── Health check on load ─────────────────────────────────────────
-(async () => {
-  try {
-    const BASE = window.API_BASE || "https://cbc-school-erp-api.onrender.com/api";
-    const res = await fetch(BASE + "/health", { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    // Backend is live — hide any lingering warning
-  } catch (e) {
-    errMsg.className  = "alert alert-warning";
-    errMsg.textContent = "⚠️ Backend is starting up (Render free tier may take 30–60s). Retrying…";
-    // Auto-retry after 10s
-    setTimeout(() => { errMsg.textContent = ""; errMsg.className = "alert"; }, 10000);
-  }
-})();
-
+// ── Login ──────────────────────────────────────────────────────────
 async function doLogin() {
   const school_code = document.getElementById("school_code").value.trim().toUpperCase() || undefined;
   const username    = document.getElementById("username").value.trim();
   const password    = document.getElementById("password").value;
-  errMsg.className  = "alert";
 
-  if (!username || !password) {
-    errMsg.textContent = "Username and password are required.";
-    errMsg.classList.add("show","alert-err"); return;
-  }
+  clearMsgs();
 
-  loginBtn.disabled = true; loginBtn.classList.add("loading");
+  if (!username) return showErr("Please enter your username or email.");
+  if (!password) return showErr("Please enter your password.");
+
+  btn.disabled = true;
+  btn.classList.add("loading");
+
+  // Show slow-start warning after 5 seconds (Render free tier cold start)
+  const slowTimer = setTimeout(() => {
+    showWarn("⏳ Server is starting up — this can take up to 60 seconds on first use. Please wait…");
+  }, 5000);
+
   const res = await auth.login({ username, password, school_code });
-  loginBtn.disabled = false; loginBtn.classList.remove("loading");
 
-  if (!res?.success) {
-    errMsg.textContent = res?.message || "Login failed.";
-    errMsg.classList.add("show","alert-err"); return;
+  clearTimeout(slowTimer);
+  btn.disabled = false;
+  btn.classList.remove("loading");
+  clearMsgs();
+
+  // Network failure
+  if (!res || res._networkError) {
+    showErr("Cannot reach the server. Check your internet or wait 30–60 seconds for the backend to start, then try again.");
+    return;
   }
 
+  // Wrong credentials / account locked / school inactive
+  if (!res.success) {
+    showErr(res.message || "Login failed. Please check your credentials.");
+    return;
+  }
+
+  // ✅ Success
   setSession(res.token, res.user);
 
   if (res.must_change_password) {
-    window.location.href = "/change-password.html"; return;
+    window.location.replace("/change-password.html");
+    return;
   }
 
-  const dest = {
-    SUPER_ADMIN:       "/super-admin.html",
-    PRINCIPAL:         "/school-admin.html",
-    DEPUTY_PRINCIPAL:  "/school-admin.html",
-    HOD:               "/school-admin.html",
-    TEACHER:           "/teacher.html",
-    BURSAR:            "/bursar.html",
-  };
-  window.location.href = dest[res.user.role] || "/school-admin.html";
+  window.location.replace(roleDest(res.user.role));
 }
 
-loginBtn.addEventListener("click", doLogin);
-document.addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+btn.addEventListener("click", doLogin);
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !btn.disabled) doLogin();
+});
 </script>
 </body>
 </html>

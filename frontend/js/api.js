@@ -1,11 +1,11 @@
 /**
- * CBC School ERP — API Client v4.2
- * Key fixes:
- * - apiFetch distinguishes network errors from auth failures
- *   (network errors do NOT trigger logout — they return error object)
- * - verify() failure only clears session if it's a genuine 401/403,
- *   not a network/timeout error
- * - Storage keys from window.STORAGE_KEYS (config.js)
+ * CBC School ERP — API Client v4.3
+ *
+ * CRITICAL FIX: apiFetch no longer auto-redirects to /login.html on 401.
+ * Instead it returns the error data so callers can decide what to do.
+ * Only verifySession() and guardPage() trigger redirects when appropriate.
+ * This fixes the open/close flash: login page was calling verify() which
+ * returned 401, which triggered clearSession()+redirect → infinite loop.
  */
 
 const BASE = () => window.API_BASE || "/api";
@@ -13,7 +13,10 @@ const KEYS = () => window.STORAGE_KEYS || { TOKEN: "cbc_token", USER: "cbc_user"
 
 // ── Session ───────────────────────────────────────────────────────
 export function getToken()  { return sessionStorage.getItem(KEYS().TOKEN); }
-export function getUser()   { try { return JSON.parse(sessionStorage.getItem(KEYS().USER) || "null"); } catch { return null; } }
+export function getUser()   {
+  try { return JSON.parse(sessionStorage.getItem(KEYS().USER) || "null"); }
+  catch { return null; }
+}
 export function setSession(token, user) {
   sessionStorage.setItem(KEYS().TOKEN, token);
   sessionStorage.setItem(KEYS().USER, JSON.stringify(user));
@@ -31,43 +34,47 @@ export function esc(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-// ── Route guard — only checks local session, no network call ─────
+// ── Route guard — reads local session only, no network call ──────
 export function guardPage(allowedRoles = []) {
   const user  = getUser();
   const token = getToken();
-  if (!user || !token) { window.location.href = "/login.html"; return null; }
+  if (!user || !token) {
+    window.location.replace("/login.html");
+    return null;
+  }
   if (allowedRoles.length && !allowedRoles.includes(user.role)) {
-    window.location.href = "/login.html"; return null;
+    window.location.replace("/login.html");
+    return null;
   }
   return user;
 }
 
 // ── Core fetch ────────────────────────────────────────────────────
-// Returns:
-//   { success: true/false, ...data }  on HTTP response (even 4xx/5xx)
-//   { success: false, message: "...", _networkError: true }  on fetch failure
+// NEVER auto-redirects. Returns one of:
+//   { success: true,  ...data }               — HTTP 2xx
+//   { success: false, ...data, _status: N }   — HTTP 4xx/5xx (including 401)
+//   { success: false, message, _networkError } — fetch() threw (offline/timeout)
 export async function apiFetch(path, { method = "GET", body = null, params = null } = {}) {
   const token = getToken();
   const base  = BASE();
 
-  // Build URL — handle both absolute (http://) and relative (/api) bases
-  let url;
+  // Build absolute URL
+  let fullUrl;
   try {
     if (base.startsWith("http")) {
-      url = new URL(path, base.endsWith("/api") ? base.replace("/api", "") + "/api" : base);
-      // Simpler: just concatenate
-      url = new URL(base.replace(/\/$/, "") + path);
+      fullUrl = base.replace(/\/$/, "") + path;
     } else {
-      url = new URL(base.replace(/\/$/, "") + path, window.location.origin);
+      fullUrl = window.location.origin + base.replace(/\/$/, "") + path;
     }
+    const u = new URL(fullUrl);
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "") u.searchParams.set(k, v);
+      });
+    }
+    fullUrl = u.toString();
   } catch {
-    url = new URL(window.location.origin + base.replace(/\/$/, "") + path);
-  }
-
-  if (params) {
-    Object.entries(params).forEach(([k, v]) => {
-      if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, v);
-    });
+    fullUrl = window.location.origin + "/api" + path;
   }
 
   const opts = {
@@ -80,33 +87,37 @@ export async function apiFetch(path, { method = "GET", body = null, params = nul
   if (body && method !== "GET") opts.body = JSON.stringify(body);
 
   try {
-    const res  = await fetch(url.toString(), opts);
+    const res = await fetch(fullUrl, opts);
     let data;
-    try { data = await res.json(); } catch { data = { success: false, message: `HTTP ${res.status}` }; }
+    try { data = await res.json(); }
+    catch { data = { success: false, message: `HTTP ${res.status}` }; }
 
-    // Only redirect to login on genuine auth failures — NOT on network errors
-    if (res.status === 401) {
-      clearSession();
-      window.location.href = "/login.html";
-      return null;
-    }
-
+    // Tag the response with HTTP status — callers use this to decide redirect
+    data._status = res.status;
     return data;
+
   } catch (e) {
-    // Network error (offline, CORS, timeout, backend down)
-    // Do NOT clear session or redirect — let the caller handle it
-    console.error("API network error:", e.message);
-    return { success: false, message: "Network error. Check connection.", _networkError: true };
+    // Network failure (offline, CORS blocked, timeout, DNS fail)
+    console.error("API network error:", path, e.message);
+    return {
+      success: false,
+      message: "Network error. Please check your connection.",
+      _networkError: true,
+    };
   }
 }
 
-// ── Safe verify — does NOT logout on network errors ───────────────
-// Returns { ok: true, user } or { ok: false, reason: "network"|"auth" }
+// ── verifySession — safe session check ───────────────────────────
+// Returns: { ok: true, user }
+//       or { ok: false, reason: "auth" | "network" | "school" }
+// Does NOT redirect. Callers decide based on reason.
 export async function verifySession() {
   const result = await apiFetch("/auth/verify");
-  if (!result) return { ok: false, reason: "auth" };               // 401 already handled
-  if (result._networkError) return { ok: false, reason: "network" }; // backend down
-  if (!result.success) return { ok: false, reason: "auth" };
+  if (!result)                return { ok: false, reason: "auth" };
+  if (result._networkError)   return { ok: false, reason: "network" };
+  if (result._status === 401) return { ok: false, reason: "auth" };
+  if (result._status === 403) return { ok: false, reason: "school" };
+  if (!result.success)        return { ok: false, reason: "auth" };
   return { ok: true, user: result.user };
 }
 
@@ -114,7 +125,7 @@ export async function verifySession() {
 export async function logout() {
   try { await apiFetch("/auth/logout", { method: "POST" }); } catch (_) {}
   clearSession();
-  window.location.href = "/login.html";
+  window.location.replace("/login.html");
 }
 
 // ── Auth ──────────────────────────────────────────────────────────
@@ -126,17 +137,15 @@ export const auth = {
   auditLog:       ()  => apiFetch("/auth/audit-log"),
 };
 
-// ── Schools ───────────────────────────────────────────────────────
 export const schools = {
   list:          ()       => apiFetch("/schools"),
   me:            ()       => apiFetch("/schools/me"),
-  create:        (d)      => apiFetch("/schools",               { method: "POST",  body: d }),
-  update:        (id, d)  => apiFetch(`/schools/${id}`,         { method: "PUT",   body: d }),
-  toggle:        (id)     => apiFetch(`/schools/${id}/toggle`,  { method: "PATCH" }),
-  learningAreas: (p)      => apiFetch("/schools/learning-areas",{ params: p }),
+  create:        (d)      => apiFetch("/schools",                { method: "POST",  body: d }),
+  update:        (id, d)  => apiFetch(`/schools/${id}`,          { method: "PUT",   body: d }),
+  toggle:        (id)     => apiFetch(`/schools/${id}/toggle`,   { method: "PATCH" }),
+  learningAreas: (p)      => apiFetch("/schools/learning-areas", { params: p }),
 };
 
-// ── Users ─────────────────────────────────────────────────────────
 export const users = {
   list:          (p)      => apiFetch("/users",                       { params: p }),
   get:           (id)     => apiFetch(`/users/${id}`),
@@ -146,7 +155,6 @@ export const users = {
   resetPassword: (id, pw) => apiFetch(`/users/${id}/reset-password`,  { method: "POST", body: { new_password: pw } }),
 };
 
-// ── Departments ───────────────────────────────────────────────────
 export const departments = {
   list:   (p)     => apiFetch("/departments",        { params: p }),
   create: (d)     => apiFetch("/departments",        { method: "POST",   body: d }),
@@ -154,7 +162,6 @@ export const departments = {
   delete: (id)    => apiFetch(`/departments/${id}`,  { method: "DELETE" }),
 };
 
-// ── Teachers ──────────────────────────────────────────────────────
 export const teachers = {
   list:        (p)     => apiFetch("/teachers",                { params: p }),
   get:         (id)    => apiFetch(`/teachers/${id}`),
@@ -164,7 +171,6 @@ export const teachers = {
   assignments: (id)    => apiFetch(`/teachers/${id}/assignments`),
 };
 
-// ── Classes ───────────────────────────────────────────────────────
 export const classes = {
   list:     (p)     => apiFetch("/classes",            { params: p }),
   get:      (id)    => apiFetch(`/classes/${id}`),
@@ -174,39 +180,34 @@ export const classes = {
   delete:   (id)    => apiFetch(`/classes/${id}`,      { method: "DELETE" }),
 };
 
-// ── Students ──────────────────────────────────────────────────────
 export const students = {
-  list:    (p)     => apiFetch("/students",             { params: p }),
+  list:    (p)     => apiFetch("/students",         { params: p }),
   get:     (id)    => apiFetch(`/students/${id}`),
-  create:  (d)     => apiFetch("/students",             { method: "POST",   body: d }),
-  update:  (id, d) => apiFetch(`/students/${id}`,       { method: "PUT",    body: d }),
-  promote: (d)     => apiFetch("/students/promote",     { method: "POST",   body: d }),
+  create:  (d)     => apiFetch("/students",         { method: "POST", body: d }),
+  update:  (id, d) => apiFetch(`/students/${id}`,   { method: "PUT",  body: d }),
+  promote: (d)     => apiFetch("/students/promote", { method: "POST", body: d }),
 };
 
-// ── Assignments ───────────────────────────────────────────────────
 export const assignments = {
-  list:   (p)  => apiFetch("/assignments",         { params: p }),
-  create: (d)  => apiFetch("/assignments",         { method: "POST",   body: d }),
-  delete: (id) => apiFetch(`/assignments/${id}`,   { method: "DELETE" }),
+  list:   (p)  => apiFetch("/assignments",        { params: p }),
+  create: (d)  => apiFetch("/assignments",        { method: "POST",   body: d }),
+  delete: (id) => apiFetch(`/assignments/${id}`,  { method: "DELETE" }),
 };
 
-// ── Attendance ────────────────────────────────────────────────────
 export const attendance = {
-  list:    (p)     => apiFetch("/attendance",          { params: p }),
-  summary: (p)     => apiFetch("/attendance/summary",  { params: p }),
-  bulk:    (d)     => apiFetch("/attendance/bulk",     { method: "POST", body: d }),
-  update:  (id, d) => apiFetch(`/attendance/${id}`,    { method: "PUT",  body: d }),
+  list:    (p)     => apiFetch("/attendance",         { params: p }),
+  summary: (p)     => apiFetch("/attendance/summary", { params: p }),
+  bulk:    (d)     => apiFetch("/attendance/bulk",    { method: "POST", body: d }),
+  update:  (id, d) => apiFetch(`/attendance/${id}`,   { method: "PUT",  body: d }),
 };
 
-// ── Assessments ───────────────────────────────────────────────────
 export const assessments = {
-  list:   (p)  => apiFetch("/assessments",          { params: p }),
-  report: (p)  => apiFetch("/assessments/report",   { params: p }),
-  create: (d)  => apiFetch("/assessments",          { method: "POST",   body: d }),
-  delete: (id) => apiFetch(`/assessments/${id}`,    { method: "DELETE" }),
+  list:   (p)  => apiFetch("/assessments",        { params: p }),
+  report: (p)  => apiFetch("/assessments/report", { params: p }),
+  create: (d)  => apiFetch("/assessments",        { method: "POST",   body: d }),
+  delete: (id) => apiFetch(`/assessments/${id}`,  { method: "DELETE" }),
 };
 
-// ── Finance ───────────────────────────────────────────────────────
 export const finance = {
   feeStructures:  (p)     => apiFetch("/finance/fee-structures",        { params: p }),
   createFee:      (d)     => apiFetch("/finance/fee-structures",        { method: "POST",   body: d }),
@@ -217,7 +218,6 @@ export const finance = {
   studentBalance: (id, p) => apiFetch(`/finance/student-balance/${id}`, { params: p }),
 };
 
-// ── Reports ───────────────────────────────────────────────────────
 export const reports = {
   dashboard:    (p)  => apiFetch("/reports/dashboard",           { params: p }),
   reportCards:  (p)  => apiFetch("/reports/cards",               { params: p }),
