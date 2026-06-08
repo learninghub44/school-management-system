@@ -1,29 +1,30 @@
 /**
- * CBC School ERP — API Client v4.3
+ * CBC School ERP — API Client v5.0
+ * Multi-tenant: storage keys scoped per subdomain/school
  *
- * CRITICAL FIX: apiFetch no longer auto-redirects to /login.html on 401.
- * Instead it returns the error data so callers can decide what to do.
- * Only verifySession() and guardPage() trigger redirects when appropriate.
- * This fixes the open/close flash: login page was calling verify() which
- * returned 401, which triggered clearSession()+redirect → infinite loop.
+ * Changes vs v4.4:
+ *  - localStorage with tenant-scoped keys (no cross-school bleed)
+ *  - guardPage() validates tenant context + JWT expiry
+ *  - verifySession() invalidates if school_id mismatches tenant
  */
 
-const BASE = () => window.API_BASE || "/api";
-const KEYS = () => window.STORAGE_KEYS || { TOKEN: "cbc_token", USER: "cbc_user" };
+const BASE  = () => window.API_BASE  || "/api";
+const KEYS  = () => window.STORAGE_KEYS || { TOKEN: "cbc_token", USER: "cbc_user" };
+const TENANT = () => window.TENANT   || { schoolCode: null, isSuperAdmin: false, isRoot: false };
 
 // ── Session ───────────────────────────────────────────────────────
-export function getToken()  { return sessionStorage.getItem(KEYS().TOKEN); }
-export function getUser()   {
-  try { return JSON.parse(sessionStorage.getItem(KEYS().USER) || "null"); }
+export function getToken() { return localStorage.getItem(KEYS().TOKEN); }
+export function getUser() {
+  try { return JSON.parse(localStorage.getItem(KEYS().USER) || "null"); }
   catch { return null; }
 }
 export function setSession(token, user) {
-  sessionStorage.setItem(KEYS().TOKEN, token);
-  sessionStorage.setItem(KEYS().USER, JSON.stringify(user));
+  localStorage.setItem(KEYS().TOKEN, token);
+  localStorage.setItem(KEYS().USER, JSON.stringify(user));
 }
 export function clearSession() {
-  sessionStorage.removeItem(KEYS().TOKEN);
-  sessionStorage.removeItem(KEYS().USER);
+  localStorage.removeItem(KEYS().TOKEN);
+  localStorage.removeItem(KEYS().USER);
 }
 
 // ── XSS escape ────────────────────────────────────────────────────
@@ -34,38 +35,70 @@ export function esc(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-// ── Route guard — reads local session only, no network call ──────
+// ── Decode JWT (client-side, no verify — just read claims) ────────
+function decodeToken(token) {
+  try { return JSON.parse(atob(token.split(".")[1])); }
+  catch { return null; }
+}
+
+// ── Route guard ───────────────────────────────────────────────────
+// Checks: token exists → not expired → role allowed → tenant matches
+// No network call. Returns user or null (and redirects on failure).
 export function guardPage(allowedRoles = []) {
   const user  = getUser();
   const token = getToken();
+  const t     = TENANT();
+
   if (!user || !token) {
     window.location.replace("/login.html");
     return null;
   }
+
+  // JWT expiry check
+  const payload = decodeToken(token);
+  if (!payload || (payload.exp && payload.exp * 1000 < Date.now())) {
+    clearSession();
+    window.location.replace("/login.html");
+    return null;
+  }
+
+  // Role check
   if (allowedRoles.length && !allowedRoles.includes(user.role)) {
     window.location.replace("/login.html");
     return null;
   }
+
+  // Tenant check — school user must match this subdomain's school code
+  if (!t.isSuperAdmin && t.schoolCode) {
+    if (user.school_code !== t.schoolCode) {
+      // Wrong school — clear and redirect (prevents cross-tenant access)
+      clearSession();
+      window.location.replace("/login.html");
+      return null;
+    }
+  }
+
+  // SUPER_ADMIN must be on admin subdomain
+  if (user.role === "SUPER_ADMIN" && !t.isSuperAdmin) {
+    clearSession();
+    window.location.replace("/login.html");
+    return null;
+  }
+
   return user;
 }
 
 // ── Core fetch ────────────────────────────────────────────────────
-// NEVER auto-redirects. Returns one of:
-//   { success: true,  ...data }               — HTTP 2xx
-//   { success: false, ...data, _status: N }   — HTTP 4xx/5xx (including 401)
-//   { success: false, message, _networkError } — fetch() threw (offline/timeout)
 export async function apiFetch(path, { method = "GET", body = null, params = null } = {}) {
   const token = getToken();
   const base  = BASE();
 
-  // Build absolute URL
   let fullUrl;
   try {
-    if (base.startsWith("http")) {
-      fullUrl = base.replace(/\/$/, "") + path;
-    } else {
-      fullUrl = window.location.origin + base.replace(/\/$/, "") + path;
-    }
+    fullUrl = base.startsWith("http")
+      ? base.replace(/\/$/, "") + path
+      : window.location.origin + base.replace(/\/$/, "") + path;
+
     const u = new URL(fullUrl);
     if (params) {
       Object.entries(params).forEach(([k, v]) => {
@@ -91,26 +124,15 @@ export async function apiFetch(path, { method = "GET", body = null, params = nul
     let data;
     try { data = await res.json(); }
     catch { data = { success: false, message: `HTTP ${res.status}` }; }
-
-    // Tag the response with HTTP status — callers use this to decide redirect
     data._status = res.status;
     return data;
-
   } catch (e) {
-    // Network failure (offline, CORS blocked, timeout, DNS fail)
     console.error("API network error:", path, e.message);
-    return {
-      success: false,
-      message: "Network error. Please check your connection.",
-      _networkError: true,
-    };
+    return { success: false, message: "Network error. Please check your connection.", _networkError: true };
   }
 }
 
-// ── verifySession — safe session check ───────────────────────────
-// Returns: { ok: true, user }
-//       or { ok: false, reason: "auth" | "network" | "school" }
-// Does NOT redirect. Callers decide based on reason.
+// ── verifySession ─────────────────────────────────────────────────
 export async function verifySession() {
   const result = await apiFetch("/auth/verify");
   if (!result)                return { ok: false, reason: "auth" };
@@ -118,6 +140,13 @@ export async function verifySession() {
   if (result._status === 401) return { ok: false, reason: "auth" };
   if (result._status === 403) return { ok: false, reason: "school" };
   if (!result.success)        return { ok: false, reason: "auth" };
+
+  // Extra tenant validation — ensure returned user matches this subdomain
+  const t = TENANT();
+  if (!t.isSuperAdmin && t.schoolCode && result.user.school_code !== t.schoolCode) {
+    return { ok: false, reason: "tenant" };
+  }
+
   return { ok: true, user: result.user };
 }
 
