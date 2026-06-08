@@ -13,13 +13,20 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
 .logo-icon{width:56px;height:56px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:12px}
 .logo h1{font-size:24px;font-weight:800;color:#0f172a;letter-spacing:-0.5px}
 .logo p{font-size:13px;color:#64748b;margin-top:4px;font-weight:500}
+.school-badge{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1px solid #c4b5fd;border-radius:12px;padding:10px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.school-badge .icon{font-size:20px}
+.school-badge .info{flex:1}
+.school-badge .label{font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.05em}
+.school-badge .code{font-size:15px;font-weight:800;color:#4f46e5}
+.super-badge{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #fcd34d;border-radius:12px;padding:10px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.super-badge .label{font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em}
+.super-badge .code{font-size:15px;font-weight:800;color:#78350f}
 .fg{margin-bottom:16px}
 .fg label{display:block;font-size:11.5px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
 .fg input{width:100%;padding:12px 16px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px;color:#0f172a;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;background:#fff}
 .fg input:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.12)}
 .fg input::placeholder{color:#cbd5e1}
-.role-note{background:#f8fafc;border-radius:10px;padding:10px 14px;font-size:12px;color:#64748b;margin-bottom:18px;border:1px solid #e2e8f0}
-.role-note span{font-weight:700;color:#4f46e5}
+.fg input:read-only{background:#f8fafc;color:#64748b;cursor:default}
 .btn-submit{width:100%;padding:14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;position:relative;margin-top:4px}
 .btn-submit:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(79,70,229,.35)}
 .btn-submit:disabled{opacity:.7;cursor:not-allowed;transform:none}
@@ -41,12 +48,16 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
     <p>Kenya Competency Based Curriculum</p>
   </div>
 
-  <div class="fg">
+  <!-- Tenant badge — filled by JS -->
+  <div id="tenantBadge"></div>
+
+  <!-- School code input — shown only if not detected from subdomain -->
+  <div class="fg" id="schoolCodeField">
     <label>School Code</label>
-    <input id="school_code" type="text" placeholder="e.g. KPRI001" autocomplete="organization"
-           maxlength="20" style="text-transform:uppercase">
+    <input id="school_code" type="text" placeholder="e.g. KPRI001"
+           autocomplete="organization" maxlength="20" style="text-transform:uppercase">
   </div>
-  <div class="role-note">Leave School Code blank if you are a <span>Super Admin</span></div>
+
   <div class="fg">
     <label>Username or Email</label>
     <input id="username" type="text" placeholder="username or email" autocomplete="username">
@@ -60,77 +71,130 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
   <div class="alert alert-err"  id="errMsg"></div>
 
   <button class="btn-submit" id="loginBtn">Sign In</button>
-
-  <div class="footer">CBC School ERP v4.1 · Powered by ZETU Business Solutions</div>
+  <div class="footer">CBC School ERP v5.0 · Powered by ZETU Business Solutions</div>
 </div>
 
 <script type="module">
 import { auth, setSession, getUser, getToken, clearSession } from "/js/api.js";
 
-// ── Helpers ────────────────────────────────────────────────────────
-const errEl  = document.getElementById("errMsg");
-const warnEl = document.getElementById("warnMsg");
-const btn    = document.getElementById("loginBtn");
+const tenant     = window.TENANT;
+const errEl      = document.getElementById("errMsg");
+const warnEl     = document.getElementById("warnMsg");
+const btn        = document.getElementById("loginBtn");
+const badgeEl    = document.getElementById("tenantBadge");
+const scField    = document.getElementById("schoolCodeField");
+const scInput    = document.getElementById("school_code");
+
+// ── Render tenant badge + pre-fill / hide school code ────────────
+if (tenant.isSuperAdmin) {
+  badgeEl.innerHTML = `
+    <div class="super-badge">
+      <span class="icon">🔐</span>
+      <div class="info">
+        <div class="label">Super Admin Portal</div>
+        <div class="code">System Administrator</div>
+      </div>
+    </div>`;
+  scField.style.display = "none"; // No school code for SUPER_ADMIN
+
+} else if (tenant.schoolCode) {
+  badgeEl.innerHTML = `
+    <div class="school-badge">
+      <span class="icon">🏫</span>
+      <div class="info">
+        <div class="label">School Portal</div>
+        <div class="code">${tenant.schoolCode}</div>
+      </div>
+    </div>`;
+  // Pre-fill and make read-only — user sees it but can't change it
+  scInput.value    = tenant.schoolCode;
+  scInput.readOnly = true;
+
+} else {
+  // Local dev or unknown — show field normally
+  scField.style.display = "block";
+}
+
+// ── Already logged in? Redirect without network call ─────────────
+const existingUser  = getUser();
+const existingToken = getToken();
+if (existingUser && existingToken) {
+  // Validate token expiry before trusting it
+  try {
+    const payload = JSON.parse(atob(existingToken.split(".")[1]));
+    if (!payload.exp || payload.exp * 1000 > Date.now()) {
+      window.location.replace(roleDest(existingUser.role));
+    } else {
+      clearSession(); // Expired — stay on login
+    }
+  } catch (_) {
+    clearSession();
+  }
+}
+
+// ── Role → destination ────────────────────────────────────────────
+function roleDest(role) {
+  return {
+    SUPER_ADMIN:       "/super-admin.html",
+    PRINCIPAL:         "/school-admin.html",
+    DEPUTY_PRINCIPAL:  "/school-admin.html",
+    HOD:               "/school-admin.html",
+    TEACHER:           "/teacher.html",
+    BURSAR:            "/bursar.html",
+  }[role] || "/school-admin.html";
+}
 
 function showErr(msg)  { errEl.textContent = msg;  errEl.className = "alert alert-err show";  warnEl.className = "alert alert-warn"; }
 function showWarn(msg) { warnEl.textContent = msg; warnEl.className = "alert alert-warn show"; }
 function clearMsgs()   { errEl.className = "alert alert-err"; warnEl.className = "alert alert-warn"; }
 
-function roleDest(role) {
-  return { SUPER_ADMIN:"/super-admin.html", PRINCIPAL:"/school-admin.html",
-           DEPUTY_PRINCIPAL:"/school-admin.html", HOD:"/school-admin.html",
-           TEACHER:"/teacher.html", BURSAR:"/bursar.html" }[role] || "/school-admin.html";
-}
-
-// ── Already logged in? Redirect without any network call ──────────
-// We only use session data — no verify() on login page to avoid redirect loops.
-// The destination dashboard will verify on its own.
-const existingUser  = getUser();
-const existingToken = getToken();
-if (existingUser && existingToken) {
-  // Redirect immediately — dashboard will catch expired token and send back here
-  window.location.replace(roleDest(existingUser.role));
-}
-
-// ── Login ──────────────────────────────────────────────────────────
+// ── Login ─────────────────────────────────────────────────────────
 async function doLogin() {
-  const school_code = document.getElementById("school_code").value.trim().toUpperCase() || undefined;
+  const school_code = scInput.value.trim().toUpperCase() || undefined;
   const username    = document.getElementById("username").value.trim();
   const password    = document.getElementById("password").value;
 
   clearMsgs();
-
   if (!username) return showErr("Please enter your username or email.");
   if (!password) return showErr("Please enter your password.");
+  if (!tenant.isSuperAdmin && !school_code) return showErr("School code is required.");
 
   btn.disabled = true;
   btn.classList.add("loading");
 
-  // Show slow-start warning after 5 seconds (Render free tier cold start)
-  const slowTimer = setTimeout(() => {
-    showWarn("⏳ Server is starting up — this can take up to 60 seconds on first use. Please wait…");
-  }, 5000);
+  const slowTimer = setTimeout(() =>
+    showWarn("⏳ Server is starting up — this can take up to 60 seconds. Please wait…"), 5000);
 
-  const res = await auth.login({ username, password, school_code });
+  const res = await auth.login({
+    username,
+    password,
+    school_code: tenant.isSuperAdmin ? undefined : school_code,
+  });
 
   clearTimeout(slowTimer);
   btn.disabled = false;
   btn.classList.remove("loading");
   clearMsgs();
 
-  // Network failure
   if (!res || res._networkError) {
-    showErr("Cannot reach the server. Check your internet or wait 30–60 seconds for the backend to start, then try again.");
+    showErr("Cannot reach the server. Check your connection or wait 30–60 seconds for the backend to start.");
     return;
   }
-
-  // Wrong credentials / account locked / school inactive
   if (!res.success) {
     showErr(res.message || "Login failed. Please check your credentials.");
     return;
   }
 
-  // ✅ Success
+  // Validate returned user matches this subdomain's tenant
+  if (!tenant.isSuperAdmin && tenant.schoolCode && res.user.school_code !== tenant.schoolCode) {
+    showErr("This account does not belong to this school portal.");
+    return;
+  }
+  if (tenant.isSuperAdmin && res.user.role !== "SUPER_ADMIN") {
+    showErr("This portal is for Super Admins only.");
+    return;
+  }
+
   setSession(res.token, res.user);
 
   if (res.must_change_password) {
