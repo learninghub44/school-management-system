@@ -105,7 +105,7 @@ code{font-family:var(--mono);font-size:11.5px;background:rgba(255,255,255,.06);b
 .btn-loading{position:relative;color:transparent!important;pointer-events:none}
 .btn-loading::after{content:"";position:absolute;width:15px;height:15px;top:50%;left:50%;margin:-7.5px 0 0 -7.5px;border:2px solid rgba(0,0,0,.2);border-top-color:#000;border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-input[type="text"],input[type="email"],input[type="tel"],input[type="password"],select,textarea{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:9px 12px;color:var(--text);font-size:13px;transition:var(--trans);outline:none;-webkit-appearance:none}
+input[type="text"],input[type="email"],input[type="tel"],input[type="password"],select,textarea{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:9px 12px;color:var(--text);font-size:13px;transition:var(--trans);outline:none;-webkit-appearance:none;-moz-appearance:none;appearance:none}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentDim)}
 input::placeholder{color:var(--text3)}
 select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
@@ -228,7 +228,7 @@ const vRes = await verifySession();
 if (vRes.reason === "auth") {
   clearSession();
   window.location.replace("/login.html");
-  return;
+  throw new Error("Redirecting to login");
 }
 if (vRes.ok) me = vRes.user;
 
