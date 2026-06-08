@@ -5,7 +5,6 @@
 <title>Bursar Portal — CBC ERP</title>
 <script src="/js/config.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
 </head>
 <body>
 <div id="app"></div>
@@ -72,19 +71,533 @@
   </div>
 </div></div>
 
+<!-- STUDENT BALANCE LOOKUP -->
+<div class="modal-bg" id="modal-balance">
+<div class="modal">
+  <div class="modal-hdr"><h3>Student Balance</h3><button class="modal-close" data-close="modal-balance">×</button></div>
+  <div class="fg-row">
+    <div class="fg"><label>Class</label><select id="bal-class"><option value="">Select Class</option></select></div>
+    <div class="fg"><label>Student</label><select id="bal-student"><option value="">Select Student</option></select></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label>Term</label>
+      <select id="bal-term"><option value="">All Terms</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+    </div>
+    <div class="fg"><label>Academic Year</label><input id="bal-year" maxlength="4"></div>
+  </div>
+  <button class="btn btn-primary" id="btnLoadBalance" style="width:100%;margin-bottom:14px">Load Balance</button>
+  <div id="bal-result"></div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" data-close="modal-balance">Close</button>
+  </div>
+</div></div>
+
 <script type="module">
-import { guardPage, esc, apiFetch, finance, classes, students, verifySession  } from "/js/api.js";
-import { SHARED_CSS, buildSidebar, setupNav, openModal, closeModal, resetModal, showAlert, setLoading, injectStyles } from "/js/layout.js";
+// ── Imports — clearSession NOW INCLUDED ───────────────────────────
+import {
+  guardPage, esc, apiFetch, clearSession,
+  finance, classes, students, verifySession
+} from "/js/api.js";
+import {
+  SHARED_CSS, buildSidebar, setupNav,
+  openModal, closeModal, resetModal,
+  showAlert, setLoading, injectStyles
+} from "/js/layout.js";
+
 injectStyles();
 
 let me = guardPage(["BURSAR"]);
-if (!me) throw new Error();
+if (!me) throw new Error("Unauthorized");
+
+// FIX: consistent pattern — catches auth failure AND tenant mismatch,
+// but survives network errors (Render cold start)
 const vRes = await verifySession();
-if (vRes.reason === "auth") {
-  // Genuine expired/invalid token — clear and go back to login
+if (!vRes.ok && vRes.reason !== "network") {
   clearSession();
   window.location.replace("/login.html");
-  return;
+  throw new Error("Redirecting to login");
 }
-// Network error: keep session, proceed with cached user data
 if (vRes.ok) me = vRes.user;
+
+// ── Nav ───────────────────────────────────────────────────────────
+const NAV = [
+  { panel: "overview",  icon: "📊", label: "Dashboard"      },
+  { panel: "payments",  icon: "💳", label: "Payments"       },
+  { panel: "fees",      icon: "📋", label: "Fee Structures" },
+  { panel: "balances",  icon: "⚖️", label: "Balances"       },
+];
+
+// ── Render shell ──────────────────────────────────────────────────
+document.getElementById("app").innerHTML =
+  buildSidebar(NAV, "overview") + `
+<div class="main">
+  <header class="topbar">
+    <h3 id="pageTitle">Dashboard</h3>
+    <div class="topbar-right">${esc(me.school_name || "")} · Bursar</div>
+  </header>
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div class="panel active" id="panel-overview">
+      <div class="stat-grid" id="statsGrid"><div class="empty">Loading…</div></div>
+      <div class="card">
+        <div class="card-hdr"><h4>Recent Payments</h4></div>
+        <div class="card-body">
+          <div class="table-wrap" id="recentPaymentsTbl"><div class="empty">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENTS -->
+    <div class="panel" id="panel-payments">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Payment Records</h4>
+          <button class="btn btn-primary" id="btnAddPayment">+ Record Payment</button>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <select id="filterPayClass"><option value="">All Classes</option></select>
+            <select id="filterPayTerm"><option value="">All Terms</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+            <select id="filterPayMethod"><option value="">All Methods</option><option>Cash</option><option>M-Pesa</option><option>Bank Transfer</option><option>Cheque</option><option>Card</option></select>
+            <input type="text" id="filterPayQ" placeholder="Receipt or student name…" style="flex:1">
+          </div>
+          <div class="table-wrap" id="paymentsTbl"><div class="empty">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FEE STRUCTURES -->
+    <div class="panel" id="panel-fees">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Fee Structures</h4>
+          <button class="btn btn-primary" id="btnAddFee">+ Add Fee</button>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <select id="filterFeeClass"><option value="">All Classes</option></select>
+            <select id="filterFeeTerm"><option value="">All Terms</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+          </div>
+          <div class="table-wrap" id="feesTbl"><div class="empty">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BALANCES -->
+    <div class="panel" id="panel-balances">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Student Balances</h4>
+          <button class="btn btn-primary" id="btnCheckBalance">Check Balance</button>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <select id="filterBalClass"><option value="">Select Class</option></select>
+            <select id="filterBalTerm"><option value="">All Terms</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+            <button class="btn btn-ghost" id="btnLoadBalances">Load</button>
+          </div>
+          <div class="table-wrap" id="balTbl"><div class="empty">Select a class above and click Load.</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>`;
+
+// ── State ─────────────────────────────────────────────────────────
+let allClasses = [];
+
+// ── Nav & logout ──────────────────────────────────────────────────
+const loaders = {
+  overview: loadOverview,
+  payments: loadPayments,
+  fees:     loadFees,
+  balances: () => {},   // triggered by filter
+};
+setupNav(loaders);
+
+// ── Modal close wiring ────────────────────────────────────────────
+document.querySelectorAll("[data-close]").forEach(b =>
+  b.addEventListener("click", () => closeModal(b.dataset.close)));
+document.querySelectorAll(".modal-bg").forEach(bg =>
+  bg.addEventListener("click", e => { if (e.target === bg) closeModal(bg.id); }));
+
+// ── Fetch classes & populate dropdowns ───────────────────────────
+async function fetchClasses() {
+  // api.js: classes.list(params) → GET /classes
+  const r = await classes.list({ school_id: me.school_id });
+  allClasses = r?.data || [];
+  const opts = allClasses.map(c =>
+    `<option value="${esc(String(c.id))}">${esc(c.name || c.grade_level)}</option>`).join("");
+  [
+    "py-class","fee-class","bal-class",
+    "filterPayClass","filterFeeClass","filterBalClass","filterBalClass"
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isFilter = id.startsWith("filter") || id === "bal-class";
+    el.innerHTML = `<option value="">${isFilter ? "All Classes" : "Select Class"}</option>` + opts;
+  });
+}
+
+// Populate fee items in payment modal
+async function fetchFeeItems(term, year) {
+  // api.js: finance.feeStructures(params) → GET /finance/fee-structures
+  const r   = await finance.feeStructures({ school_id: me.school_id, term, academic_year: year });
+  const el  = document.getElementById("py-fee");
+  if (!el) return;
+  el.innerHTML = '<option value="">General Payment</option>' +
+    (r?.data || []).map(f =>
+      `<option value="${esc(String(f.id))}">${esc(f.name)} — KES ${Number(f.amount).toLocaleString()}</option>`).join("");
+}
+
+await fetchClasses();
+
+// Set default year in modals
+const thisYear = String(new Date().getFullYear());
+["py-year","fee-year","bal-year"].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.value = me.academic_year || thisYear;
+});
+document.getElementById("py-date").value = new Date().toISOString().split("T")[0];
+
+// ── Payment class → student cascade ──────────────────────────────
+document.getElementById("py-class")?.addEventListener("change", async function () {
+  const studEl = document.getElementById("py-student");
+  studEl.innerHTML = '<option value="">Loading…</option>';
+  if (!this.value) { studEl.innerHTML = '<option value="">Select Student</option>'; return; }
+  // api.js: classes.students(id) → GET /classes/:id/students
+  const r = await classes.students(this.value);
+  studEl.innerHTML = '<option value="">Select Student</option>' +
+    (r?.data || []).map(s =>
+      `<option value="${esc(String(s.id))}">${esc(s.full_name || (s.first_name + " " + s.last_name))} — ${esc(s.admission_no || "")}</option>`).join("");
+  // Update fee items for selected term/year
+  await fetchFeeItems(
+    document.getElementById("py-term").value,
+    document.getElementById("py-year").value
+  );
+});
+
+document.getElementById("py-term")?.addEventListener("change", () =>
+  fetchFeeItems(document.getElementById("py-term").value, document.getElementById("py-year").value));
+
+// ── Balance class → student cascade ──────────────────────────────
+document.getElementById("bal-class")?.addEventListener("change", async function () {
+  const studEl = document.getElementById("bal-student");
+  studEl.innerHTML = '<option value="">Loading…</option>';
+  if (!this.value) { studEl.innerHTML = '<option value="">Select Student</option>'; return; }
+  const r = await classes.students(this.value);
+  studEl.innerHTML = '<option value="">Select Student</option>' +
+    (r?.data || []).map(s =>
+      `<option value="${esc(String(s.id))}">${esc(s.full_name || (s.first_name + " " + s.last_name))}</option>`).join("");
+});
+
+// ── Overview ──────────────────────────────────────────────────────
+async function loadOverview() {
+  // api.js: finance.summary(params) → GET /finance/summary
+  const r = await finance.summary({ school_id: me.school_id, academic_year: me.academic_year });
+  const d = r?.data || {};
+
+  document.getElementById("statsGrid").innerHTML = `
+    <div class="stat-card">
+      <div class="val">KES ${Number(d.total_collected || 0).toLocaleString()}</div>
+      <div class="lbl">Total Collected</div>
+      <div class="sub">This year</div>
+    </div>
+    <div class="stat-card">
+      <div class="val">KES ${Number(d.total_expected || 0).toLocaleString()}</div>
+      <div class="lbl">Expected Revenue</div>
+    </div>
+    <div class="stat-card">
+      <div class="val">KES ${Number(d.total_balance || 0).toLocaleString()}</div>
+      <div class="lbl">Outstanding Balance</div>
+    </div>
+    <div class="stat-card">
+      <div class="val">${d.payment_count || 0}</div>
+      <div class="lbl">Total Payments</div>
+    </div>`;
+
+  // Recent payments preview
+  // api.js: finance.payments(params) → GET /finance/payments
+  const pr    = await finance.payments({ school_id: me.school_id, limit: 10 });
+  const pdata = pr?.data || [];
+  const tbl   = document.getElementById("recentPaymentsTbl");
+  if (!pdata.length) { tbl.innerHTML = '<div class="empty">No payments recorded yet</div>'; return; }
+  tbl.innerHTML = renderPaymentsTable(pdata);
+}
+
+// ── Payments panel ────────────────────────────────────────────────
+function renderPaymentsTable(data) {
+  if (!data.length) return '<div class="empty">No payments found</div>';
+  const methodBadge = { Cash: "bg", "M-Pesa": "bb", "Bank Transfer": "bteal", Cheque: "by", Card: "bpurple" };
+  return `<table><thead><tr>
+    <th>Date</th><th>Student</th><th>Class</th><th>Receipt</th>
+    <th>Amount (KES)</th><th>Method</th><th>Term</th><th>Ref</th>
+  </tr></thead><tbody>
+    ${data.map(p => `<tr>
+      <td style="white-space:nowrap">${new Date(p.payment_date || p.created_at).toLocaleDateString("en-KE")}</td>
+      <td><strong>${esc(p.student_name || "–")}</strong></td>
+      <td>${esc(p.class_name || "–")}</td>
+      <td style="font-family:monospace;font-size:12px">${esc(p.receipt_no || "–")}</td>
+      <td><strong>${Number(p.amount).toLocaleString()}</strong></td>
+      <td><span class="badge ${methodBadge[p.payment_method] || "bgray"}">${esc(p.payment_method || "–")}</span></td>
+      <td>T${esc(String(p.term || "–"))} / ${esc(String(p.academic_year || "–"))}</td>
+      <td style="font-size:11.5px;color:#64748b">${esc(p.reference_no || "–")}</td>
+    </tr>`).join("")}
+  </tbody></table>`;
+}
+
+async function loadPayments() {
+  document.getElementById("paymentsTbl").innerHTML = '<div class="empty">Loading…</div>';
+  const classId = document.getElementById("filterPayClass").value;
+  const term    = document.getElementById("filterPayTerm").value;
+  const method  = document.getElementById("filterPayMethod").value;
+  const q       = document.getElementById("filterPayQ").value.trim();
+  // api.js: finance.payments(params) → GET /finance/payments
+  const r = await finance.payments({
+    school_id:      me.school_id,
+    class_id:       classId  || undefined,
+    term:           term     || undefined,
+    payment_method: method   || undefined,
+    search:         q        || undefined,
+  });
+  document.getElementById("paymentsTbl").innerHTML = renderPaymentsTable(r?.data || []);
+}
+["filterPayClass","filterPayTerm","filterPayMethod"].forEach(id =>
+  document.getElementById(id)?.addEventListener("change", loadPayments));
+document.getElementById("filterPayQ")?.addEventListener("input", loadPayments);
+
+// ── Record payment ────────────────────────────────────────────────
+document.getElementById("btnAddPayment")?.addEventListener("click", () => {
+  resetModal("modal-payment");
+  document.getElementById("py-date").value = new Date().toISOString().split("T")[0];
+  document.getElementById("py-year").value = me.academic_year || thisYear;
+  openModal("modal-payment");
+});
+
+document.getElementById("btnSubmitPayment")?.addEventListener("click", async () => {
+  const studentId = document.getElementById("py-student").value;
+  const receipt   = document.getElementById("py-receipt").value.trim();
+  const amount    = parseFloat(document.getElementById("py-amount").value);
+  const method    = document.getElementById("py-method").value;
+  const date      = document.getElementById("py-date").value;
+  const term      = document.getElementById("py-term").value;
+  const year      = document.getElementById("py-year").value.trim();
+  const alertEl   = document.getElementById("py-alert");
+
+  if (!studentId || !receipt || !amount || !method || !date || !term || !year)
+    return showAlert(alertEl, "Student, receipt no, amount, method, date, term and year are required.");
+  if (isNaN(amount) || amount <= 0)
+    return showAlert(alertEl, "Amount must be a positive number.");
+
+  setLoading("btnSubmitPayment", true);
+  // api.js: finance.recordPayment(d) → POST /finance/payments
+  const r = await finance.recordPayment({
+    student_id:       studentId,
+    receipt_no:       receipt,
+    amount,
+    payment_method:   method,
+    payment_date:     date,
+    term:             parseInt(term),
+    academic_year:    year,
+    fee_structure_id: document.getElementById("py-fee").value    || null,
+    balance_after:    parseFloat(document.getElementById("py-balance").value) || 0,
+    reference_no:     document.getElementById("py-ref").value.trim()   || null,
+    notes:            document.getElementById("py-notes").value.trim() || null,
+    school_id:        me.school_id,
+    recorded_by:      me.id,
+  });
+  setLoading("btnSubmitPayment", false);
+
+  if (r?.success) {
+    showAlert(alertEl, "✓ Payment recorded successfully.", "ok");
+    setTimeout(() => { closeModal("modal-payment"); loadPayments(); loadOverview(); }, 1400);
+  } else showAlert(alertEl, r?.message || "Failed to record payment.");
+});
+
+// ── Fee structures ────────────────────────────────────────────────
+async function loadFees() {
+  document.getElementById("feesTbl").innerHTML = '<div class="empty">Loading…</div>';
+  const classId = document.getElementById("filterFeeClass").value;
+  const term    = document.getElementById("filterFeeTerm").value;
+  // api.js: finance.feeStructures(params) → GET /finance/fee-structures
+  const r    = await finance.feeStructures({
+    school_id: me.school_id,
+    class_id:  classId || undefined,
+    term:      term    || undefined,
+  });
+  const data = r?.data || [];
+  if (!data.length) { document.getElementById("feesTbl").innerHTML = '<div class="empty">No fee structures found</div>'; return; }
+  document.getElementById("feesTbl").innerHTML = `<table><thead><tr>
+    <th>Fee Name</th><th>Amount (KES)</th><th>Class</th><th>Term</th><th>Year</th><th>Actions</th>
+  </tr></thead><tbody>
+    ${data.map(f => `<tr>
+      <td><strong>${esc(f.name)}</strong></td>
+      <td><strong>${Number(f.amount).toLocaleString()}</strong></td>
+      <td>${esc(f.class_name || "All Classes")}</td>
+      <td>T${esc(String(f.term || "–"))}</td>
+      <td>${esc(String(f.academic_year || "–"))}</td>
+      <td><button class="btn btn-sm btn-danger" data-act="del-fee" data-id="${esc(String(f.id))}" data-name="${esc(f.name)}">Delete</button></td>
+    </tr>`).join("")}
+  </tbody></table>`;
+
+  document.querySelectorAll("[data-act='del-fee']").forEach(b =>
+    b.addEventListener("click", async () => {
+      if (!confirm(`Delete fee structure "${b.dataset.name}"?`)) return;
+      // api.js: finance.deleteFee(id) → DELETE /finance/fee-structures/:id
+      const r = await finance.deleteFee(b.dataset.id);
+      if (r?.success) loadFees();
+      else alert(r?.message || "Error deleting fee structure.");
+    }));
+}
+["filterFeeClass","filterFeeTerm"].forEach(id =>
+  document.getElementById(id)?.addEventListener("change", loadFees));
+
+document.getElementById("btnAddFee")?.addEventListener("click", () => {
+  resetModal("modal-fee");
+  document.getElementById("fee-year").value = me.academic_year || thisYear;
+  openModal("modal-fee");
+});
+
+document.getElementById("btnSubmitFee")?.addEventListener("click", async () => {
+  const name    = document.getElementById("fee-name").value.trim();
+  const amount  = parseFloat(document.getElementById("fee-amount").value);
+  const term    = document.getElementById("fee-term").value;
+  const year    = document.getElementById("fee-year").value.trim();
+  const alertEl = document.getElementById("fee-alert");
+
+  if (!name || !amount || !term || !year)
+    return showAlert(alertEl, "Fee name, amount, term and year are required.");
+  if (isNaN(amount) || amount <= 0)
+    return showAlert(alertEl, "Amount must be a positive number.");
+
+  setLoading("btnSubmitFee", true);
+  // api.js: finance.createFee(d) → POST /finance/fee-structures
+  const r = await finance.createFee({
+    name,
+    amount,
+    term:          parseInt(term),
+    academic_year: year,
+    class_id:      document.getElementById("fee-class").value || null,
+    school_id:     me.school_id,
+  });
+  setLoading("btnSubmitFee", false);
+
+  if (r?.success) {
+    showAlert(alertEl, "✓ Fee structure added.", "ok");
+    setTimeout(() => { closeModal("modal-fee"); loadFees(); }, 1200);
+  } else showAlert(alertEl, r?.message || "Failed to add fee structure.");
+});
+
+// ── Balances panel ────────────────────────────────────────────────
+document.getElementById("btnLoadBalances")?.addEventListener("click", async () => {
+  const classId = document.getElementById("filterBalClass").value;
+  const term    = document.getElementById("filterBalTerm").value;
+  const tbl     = document.getElementById("balTbl");
+  if (!classId) { tbl.innerHTML = '<div class="empty">Please select a class first.</div>'; return; }
+  tbl.innerHTML = '<div class="empty">Loading…</div>';
+
+  // Get students in class, then fetch balance for each
+  // api.js: classes.students(id) → GET /classes/:id/students
+  const sr   = await classes.students(classId);
+  const data = sr?.data || [];
+  if (!data.length) { tbl.innerHTML = '<div class="empty">No students in this class</div>'; return; }
+
+  // api.js: finance.summary(params) → GET /finance/summary (for class-level summary)
+  const params = {
+    school_id: me.school_id,
+    class_id:  classId,
+    term:      term || undefined,
+    academic_year: me.academic_year,
+  };
+  const balR = await finance.summary(params);
+  const bals = balR?.data?.student_balances || [];
+
+  // Merge student data with balance data
+  const balMap = {};
+  bals.forEach(b => { balMap[String(b.student_id)] = b; });
+
+  tbl.innerHTML = `<table><thead><tr>
+    <th>Student</th><th>Adm No</th><th>Total Paid (KES)</th><th>Expected (KES)</th><th>Balance (KES)</th><th>Actions</th>
+  </tr></thead><tbody>
+    ${data.map(s => {
+      const b   = balMap[String(s.id)] || {};
+      const paid = Number(b.total_paid || 0);
+      const exp  = Number(b.total_expected || 0);
+      const bal  = exp - paid;
+      return `<tr>
+        <td><strong>${esc(s.full_name || (s.first_name + " " + s.last_name))}</strong></td>
+        <td>${esc(s.admission_no || "–")}</td>
+        <td>${paid.toLocaleString()}</td>
+        <td>${exp.toLocaleString()}</td>
+        <td class="${bal > 0 ? "br" : bal < 0 ? "bb" : "bg"}" style="font-weight:700">
+          ${bal > 0 ? "-" : bal < 0 ? "+" : ""}${Math.abs(bal).toLocaleString()}
+        </td>
+        <td>
+          <button class="btn btn-sm btn-ghost" data-act="view-student-bal"
+            data-id="${esc(String(s.id))}"
+            data-name="${esc(s.full_name || (s.first_name + " " + s.last_name))}">
+            Details
+          </button>
+        </td>
+      </tr>`;
+    }).join("")}
+  </tbody></table>`;
+
+  // Detailed balance lookup per student
+  document.querySelectorAll("[data-act='view-student-bal']").forEach(b =>
+    b.addEventListener("click", async () => {
+      // api.js: finance.studentBalance(id, params) → GET /finance/student-balance/:id
+      const r = await finance.studentBalance(b.dataset.id, {
+        term:          term    || undefined,
+        academic_year: me.academic_year,
+      });
+      const d = r?.data || {};
+      document.getElementById("bal-result").innerHTML = `
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-top:8px">
+          <h4 style="font-size:14px;margin-bottom:12px">${esc(b.dataset.name)} — Balance Details</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+            <div>Total Expected:</div><div><strong>KES ${Number(d.total_expected || 0).toLocaleString()}</strong></div>
+            <div>Total Paid:</div><div><strong>KES ${Number(d.total_paid || 0).toLocaleString()}</strong></div>
+            <div>Outstanding:</div><div><strong style="color:${(d.outstanding || 0) > 0 ? "#b91c1c" : "#15803d"}">KES ${Number(d.outstanding || 0).toLocaleString()}</strong></div>
+          </div>
+        </div>`;
+      openModal("modal-balance");
+    }));
+});
+
+// Quick balance check button
+document.getElementById("btnCheckBalance")?.addEventListener("click", () => {
+  resetModal("modal-balance");
+  document.getElementById("bal-year").value = me.academic_year || thisYear;
+  openModal("modal-balance");
+});
+
+document.getElementById("btnLoadBalance")?.addEventListener("click", async () => {
+  const studentId = document.getElementById("bal-student").value;
+  const alertEl   = document.getElementById("bal-result");
+  if (!studentId) { alertEl.innerHTML = '<div class="alert alert-err">Select a student first.</div>'; return; }
+  const term  = document.getElementById("bal-term").value;
+  const year  = document.getElementById("bal-year").value.trim();
+  // api.js: finance.studentBalance(id, params) → GET /finance/student-balance/:id
+  const r = await finance.studentBalance(studentId, {
+    term:          term || undefined,
+    academic_year: year || me.academic_year,
+  });
+  const d = r?.data || {};
+  alertEl.innerHTML = `
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-top:8px;font-size:13px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>Total Expected:</div><div><strong>KES ${Number(d.total_expected || 0).toLocaleString()}</strong></div>
+        <div>Total Paid:</div><div><strong>KES ${Number(d.total_paid || 0).toLocaleString()}</strong></div>
+        <div>Outstanding:</div><div><strong style="color:${(d.outstanding || 0) > 0 ? "#b91c1c" : "#15803d"}">KES ${Number(d.outstanding || 0).toLocaleString()}</strong></div>
+      </div>
+    </div>`;
+});
+
+// ── Initial load ──────────────────────────────────────────────────
+loadOverview();
+</script>
+</body>
+</html>
