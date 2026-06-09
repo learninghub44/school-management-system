@@ -156,7 +156,7 @@ app.use((err, req, res, next) => {
 });
 
 startCleanupJob();
-const PORT = parseInt(process.env.PORT || "3000", 10);
+const PORT = parseInt(process.env.PORT || "5000", 10);
 app.listen(PORT, () =>
   console.log(`🚀 CBC School ERP v4.1 running on port ${PORT} [${process.env.NODE_ENV || "development"}]`)
 );

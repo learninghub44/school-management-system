@@ -1,4 +1,4 @@
-import { supabase } from "../js/supabaseClient.js";
+import { supabase } from "./core/supabaseClient.js";
 
 /* =========================
    LOAD CLASSES
