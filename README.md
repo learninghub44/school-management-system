@@ -1,207 +1,159 @@
-# 🎓 CBC School ERP — Multi-Tenant
+# CBC School ERP
 
-A full-stack, multi-tenant school management system for Kenya's **Competency Based Curriculum (CBC)**. Built with **Vanilla HTML/CSS/JS** frontend and **Express.js + Supabase** backend.
+Multi-tenant school management system for Kenya's Competency Based Curriculum (CBC).
 
----
+The current application is a vanilla HTML/CSS/JS frontend backed by an Express API and PostgreSQL. Supabase is used as the hosted PostgreSQL provider, but the active authentication flow is the backend JWT flow, not Supabase Auth.
 
-## 🏗 Architecture
+## Architecture
 
-```
-CBC School ERP
-├── frontend/               Vanilla HTML/CSS/JS (deploy to Cloudflare Pages / Netlify)
-│   ├── login.html          Universal login (routes by role)
-│   ├── super-admin.html    Super Admin console
-│   ├── school-admin.html   School Admin dashboard
-│   ├── dashboard.html      Teacher / Finance staff dashboard
-│   └── js/api.js           Unified API client
-│
-└── backend/                Express.js API (deploy to Render)
-    ├── server.js
-    ├── routes/
-    │   ├── auth.js         Login, verify, change-password
-    │   ├── schools.js      CRUD schools + create school admins
-    │   ├── users.js        CRUD users (school-scoped)
-    │   ├── students.js     CRUD students
-    │   ├── teachers.js     CRUD teachers
-    │   ├── finance.js      Payments + fee structures
-    │   ├── attendance.js   Mark + view attendance
-    │   └── assessments.js  CBC assessments (EE/ME/AE/BE)
-    ├── middleware/
-    │   ├── authMiddleware.js        JWT verification
-    │   ├── roleMiddleware.js        Role guard
-    │   └── schoolScopeMiddleware.js Tenant isolation
-    ├
-    ├── scripts/
-    │   └── seed-super-admin.
-    └── cbc_schema.sql
+```text
+frontend/                 Static browser app
+  index.html              School code entry
+  login.html              JWT login via /api/auth/login
+  super-admin.html        System administrator console
+  school-admin.html       Principal, deputy principal, and HOD console
+  teacher.html            Teacher dashboard
+  bursar.html             Finance dashboard
+  js/api.js               Shared API client and session guard
+
+backend/                  Express API
+  server.js               App entrypoint and route mounting
+  config/db.js            PostgreSQL pool
+  routes/                 Domain endpoints
+  middleware/             Auth, roles, tenant checks, audit logging
+  cbc_schema.sql          Database schema
 ```
 
----
+## Roles
 
-## 👥 Roles & Access
+| Role | Main Access |
+| --- | --- |
+| `SUPER_ADMIN` | Register schools, manage school users, view audit log |
+| `PRINCIPAL` | Manage own school, staff, students, classes, attendance, assessments |
+| `DEPUTY_PRINCIPAL` | Similar to principal within own school |
+| `HOD` | Read school operations and record academic workflows |
+| `TEACHER` | Teacher dashboard, attendance and CBC assessments |
+| `BURSAR` | Fee structures, payments, balances, finance summaries |
 
-| Role          | Created By   | Access                                        |
-|---------------|--------------|-----------------------------------------------|
-| `SUPER_ADMIN` | Seed script  | All schools, create schools, create admins    |
-| `SCHOOL_ADMIN`| Super Admin  | Own school only — full CRUD on all modules    |
-| `TEACHER`     | School Admin | Students, attendance, CBC assessments         |
-| `FINANCE`     | School Admin | Payment records, fee structures               |
-| `STUDENT`     | School Admin | Student portal (read-only)                    |
-| `PARENT`      | School Admin | Parent portal (read-only)                     |
+Every tenant-owned table carries `school_id`. Non-super-admin users are locked to the `school_id` fetched from the database during JWT verification.
 
----
+## Quick Start
 
-## 🔐 Multi-Tenancy
-
-Every table (students, teachers, payments, attendance, assessments) has a `school_id` column. The `schoolScopeMiddleware` enforces that:
-
-- Non-SUPER_ADMIN users can **only read/write their own school's data**
-- SUPER_ADMIN can pass `?school_id=xxx` to operate on any school
-- Supabase RLS policies add a second layer of protection at the database level
-
----
-
-## 🚀 Quick Start
-
-### 1. Supabase Setup
-
-1. Create a new Supabase project
-2. Run `backend/cbc_schema.sql` in the SQL editor (drops and recreates all tables)
-3. Copy your **Project URL** and **service_role key** from Project Settings → API
-
-### 2. Backend (.env)
+1. Create a PostgreSQL database, for example on Supabase.
+2. Run `backend/cbc_schema.sql` in the SQL editor.
+3. Create a backend env file:
 
 ```bash
 cd backend
 cp .env.example .env
-# Fill in all values in .env
+```
+
+4. Fill in:
+
+```text
+DATABASE_URL=postgresql://...
+JWT_SECRET=<at least 32 chars, preferably 64+>
+JWT_EXPIRES=10h
+PORT=5000
+NODE_ENV=development
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5500
+```
+
+5. Install and run:
+
+```bash
 npm install
+npm run dev
 ```
 
-### 3. Seed Super Admin
+The backend serves the frontend too, so the app is available at `http://localhost:5000`.
+
+## Create First Super Admin
+
+Generate a bcrypt hash:
 
 ```bash
-# Edit scripts/seed-super-admin.js — change email & password first!
-node scripts/seed-super-admin.js
+cd backend
+node -e "require('bcryptjs').hash('YourPassword123',12).then(console.log)"
 ```
 
-### 4. Run locally
+Then run in PostgreSQL:
 
-```bash
-# Backend
-cd backend && npm run dev    # http://localhost:5000
-
-# Frontend — serve with any static server
-npx serve frontend           # http://localhost:3000
+```sql
+INSERT INTO users (username, email, password_hash, name, role, must_change_password)
+VALUES ('superadmin', 'admin@yourschool.com', '<BCRYPT_HASH>', 'System Admin', 'SUPER_ADMIN', TRUE);
 ```
 
----
+Login at `/login.html?school=ADMIN` with username `superadmin`.
 
-## ☁️ Deployment
+## Key API Endpoints
 
-### Backend → Render
+```text
+POST   /api/auth/login
+POST   /api/auth/logout
+GET    /api/auth/verify
+POST   /api/auth/change-password
 
-1. Push to GitHub
-2. New Web Service → connect repo
-3. Root Directory: `backend`
-4. Build Command: `npm install`
-5. Start Command: `node server.js`
-6. Add all env vars from `.env.example`
+GET    /api/schools
+POST   /api/schools
+PATCH  /api/schools/:id/toggle
 
-### Frontend → Cloudflare Pages / Netlify
+GET    /api/users
+POST   /api/users
+PUT    /api/users/:id
+POST   /api/users/:id/reset-password
+DELETE /api/users/:id
 
-1. Set `window.API_BASE_URL` in your frontend or use a `config.js`:
+GET    /api/students
+POST   /api/students
+PUT    /api/students/:id
+POST   /api/students/promote
 
-```html
-<!-- Add before any script tags in each HTML file -->
-<script>window.API_BASE_URL = "https://your-api.onrender.com/api";</script>
+GET    /api/classes
+POST   /api/classes
+GET    /api/classes/:id/students
+
+GET    /api/attendance
+POST   /api/attendance/bulk
+
+GET    /api/assessments
+POST   /api/assessments
+GET    /api/assessments/report
+
+GET    /api/finance/payments
+POST   /api/finance/payments
+GET    /api/finance/summary
+GET    /api/finance/fee-structures
+POST   /api/finance/fee-structures
 ```
 
-2. Deploy the `frontend/` folder as a static site
+## Deployment
 
----
+Render backend:
 
-## 🏫 Workflow: Adding a School
-
-```
-Super Admin logs in → super-admin.html
-  └── Creates School (name, unique school code, county)
-  └── Adds School Admin (email, password) for that school
-
-School Admin logs in → school-admin.html
-  └── Adds Students
-  └── Adds Teachers
-  └── Creates staff accounts (TEACHER, FINANCE roles)
-  └── Records fee structures and payments
-  └── Views attendance and assessments
-
-Teacher logs in → dashboard.html
-  └── Views their school's students
-  └── Marks daily attendance
-  └── Records CBC assessments (EE/ME/AE/BE)
-
-Finance staff logs in → dashboard.html
-  └── Records payments
-  └── Views payment history
+```text
+Root Directory: backend
+Build Command: npm install
+Start Command: node server.js
 ```
 
----
+Required environment variables:
 
-## 📊 CBC Grading System
-
-| Grade | Meaning               |
-|-------|-----------------------|
-| EE    | Exceeds Expectation   |
-| ME    | Meets Expectation     |
-| AE    | Approaches Expectation|
-| BE    | Below Expectation     |
-
----
-
-## 🔑 Key Environment Variables
-
-| Variable                  | Description                         |
-|---------------------------|-------------------------------------|
-| `PORT`                    | Server port (default 5000)          |
-| `JWT_SECRET`              | Min 64-char random string           |
-| `JWT_EXPIRE`              | Token expiry e.g. `7d`              |       |
-    |
-| `CORS_ORIGIN`             | Comma-separated allowed origins     |
-
----
-
-## 📡 API Reference (Key Endpoints)
-
+```text
+DATABASE_URL
+JWT_SECRET
+JWT_EXPIRES
+NODE_ENV
+PORT
+ALLOWED_ORIGINS
 ```
-POST   /api/auth/login                   Login (all roles)
-GET    /api/auth/me                      Get current user
 
-GET    /api/schools                      List schools
-POST   /api/schools                      Create school (SUPER_ADMIN)
-POST   /api/schools/:id/admin            Add school admin (SUPER_ADMIN)
-GET    /api/schools/:id/stats            School stats
+Cloudflare Pages frontend:
 
-GET    /api/users                        List users (school-scoped)
-POST   /api/users                        Create user
-PUT    /api/users/:id                    Update user
-DELETE /api/users/:id                    Deactivate user
-
-GET    /api/students                     List students (school-scoped)
-POST   /api/students                     Add student
-PUT    /api/students/:id                 Update student
-
-GET    /api/teachers                     List teachers
-POST   /api/teachers                     Add teacher
-
-GET    /api/finance/payments             List payments
-POST   /api/finance/payments             Record payment
-GET    /api/finance/summary              Revenue summary
-GET    /api/finance/fee-structures       Fee structures
-POST   /api/finance/fee-structures       Create fee structure
-
-POST   /api/attendance                   Mark attendance (bulk)
-GET    /api/attendance/report/:studentId Attendance report
-
-POST   /api/assessments                  Record CBC assessment
-GET    /api/assessments/student/:id/report Student report
+```text
+Build command: none
+Build output directory: frontend
+Environment variable: BACKEND_URL=https://your-render-service.onrender.com
 ```
+
+The Cloudflare worker in `frontend/_worker.js` proxies `/api/*` requests to `BACKEND_URL`.
