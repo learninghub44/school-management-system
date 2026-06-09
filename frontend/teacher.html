@@ -68,11 +68,9 @@ injectStyles();
 let me = guardPage(["TEACHER"]);
 if (!me) throw new Error();
 const vRes = await verifySession();
-if (vRes.reason === "auth") {
-  // Genuine expired/invalid token — clear and go back to login
+if (!vRes.ok && vRes.reason !== "network") {
   clearSession();
   window.location.replace("/login.html");
-  return;
+  throw new Error("Redirecting to login");
 }
-// Network error: keep session, proceed with cached user data
 if (vRes.ok) me = vRes.user;
