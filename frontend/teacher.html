@@ -61,8 +61,8 @@
 </div></div>
 
 <script type="module">
-import { guardPage, esc, apiFetch, attendance, assessments, classes, schools, verifySession  } from "/js/api.js";
-import { SHARED_CSS, buildSidebar, setupNav, openModal, closeModal, resetModal, showAlert, setLoading, injectStyles } from "/js/layout.js";
+import { guardPage, esc, apiFetch, attendance, assessments, classes, schools, verifySession, clearSession, logout} from "/js/api.js";
+import {, buildSidebar, setupNav, openModal, closeModal, resetModal, showAlert, setLoading, injectStyles } from "/js/layout.js";
 injectStyles();
 
 let me = guardPage(["TEACHER"]);
@@ -71,6 +71,6 @@ const vRes = await verifySession();
 if (!vRes.ok && vRes.reason !== "network") {
   clearSession();
   window.location.replace("/login.html");
-  throw new Error("Redirecting to login");
+  throw new Error("Redirecting");
 }
 if (vRes.ok) me = vRes.user;

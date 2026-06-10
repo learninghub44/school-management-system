@@ -1,58 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ZETU School ERP</title>
-
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CBC School ERP</title>
 <script src="/js/config.js"></script>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Inter,sans-serif;}
-body{background:#0b1220;color:#e5e7eb;}
-
-  <div class="divider">Enter your school code to sign in</div>
-
-  <div class="alert alert-err" id="errMsg"></div>
-
-  <div class="fg">
-    <label>School Code</label>
-    <input id="schoolCode" type="text" placeholder="e.g. KPRI001" maxlength="20" autofocus>
-  </div>
-
-  <button class="btn btn-primary" id="continueBtn">Continue →</button>
-  <button class="btn btn-secondary" id="adminBtn">🔐 Super Admin Login</button>
-
-  <div class="footer">CBC School ERP v5.2 · Powered by ZETU Business Solutions</div>
-</div>
-
-<script>
-// Root landing page — redirects using ?school=CODE query param
-// This works on pages.dev without needing wildcard subdomains
-const errEl = document.getElementById("errMsg");
-const input = document.getElementById("schoolCode");
-
-function showErr(msg) { errEl.textContent = msg; errEl.className = "alert alert-err show"; }
-
-document.getElementById("continueBtn").addEventListener("click", () => {
-  const code = input.value.trim().toUpperCase();
-  if (!code)                         return showErr("Please enter your school code.");
-  if (!/^[A-Z0-9]{2,20}$/.test(code)) return showErr("Invalid school code format (letters and numbers only).");
-  errEl.className = "alert alert-err";
-  // Use query param — works on pages.dev without subdomain support
-  window.location.href = "/login.html?school=" + encodeURIComponent(code);
-});
-
-document.getElementById("adminBtn").addEventListener("click", () => {
-  window.location.href = "/login.html?school=ADMIN";
-});
-
-input.addEventListener("keydown", e => {
-  if (e.key === "Enter") document.getElementById("continueBtn").click();
-});
+</head>
+<body>
+<script type="module">
+import { getUser, getToken, clearSession } from "/js/api.js";
+const u = getUser();
+const t = getToken();
+if (u && t) {
+  try {
+    const p = JSON.parse(atob(t.split(".")[1]));
+    if (!p.exp || p.exp * 1000 > Date.now()) {
+      const dest = { SUPER_ADMIN:"/super-admin.html", PRINCIPAL:"/school-admin.html",
+        DEPUTY_PRINCIPAL:"/school-admin.html", HOD:"/school-admin.html",
+        TEACHER:"/teacher.html", BURSAR:"/bursar.html" };
+      window.location.replace(dest[u.role] || "/login.html");
+    } else { clearSession(); window.location.replace("/login.html"); }
+  } catch { clearSession(); window.location.replace("/login.html"); }
+} else {
+  window.location.replace("/login.html");
+}
 </script>
-
 </body>
 </html>

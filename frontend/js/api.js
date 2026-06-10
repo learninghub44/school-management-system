@@ -1,16 +1,16 @@
 /**
- * CBC School ERP — API Client v5.0
- * Multi-tenant: storage keys scoped per subdomain/school
+ * CBC School ERP — API Client v5.3
  *
- * Changes vs v4.4:
- *  - localStorage with tenant-scoped keys (no cross-school bleed)
- *  - guardPage() validates tenant context + JWT expiry
- *  - verifySession() invalidates if school_id mismatches tenant
+ * Key design decisions:
+ * - Single storage key pair (no tenant scoping) — simplest, most robust
+ * - guardPage() only checks: token exists + not expired + role allowed
+ *   NO tenant/subdomain checks — those caused redirect loops
+ * - apiFetch() NEVER redirects — returns data + _status for callers
+ * - verifySession() only redirects on genuine 401, not network errors
  */
 
-const BASE  = () => window.API_BASE  || "/api";
-const KEYS  = () => window.STORAGE_KEYS || { TOKEN: "cbc_token", USER: "cbc_user" };
-const TENANT = () => window.TENANT   || { schoolCode: null, isSuperAdmin: false, isRoot: false };
+const BASE = () => window.API_BASE || "/api";
+const KEYS = () => window.STORAGE_KEYS || { TOKEN: "cbc_erp_token", USER: "cbc_erp_user" };
 
 // ── Session ───────────────────────────────────────────────────────
 export function getToken() { return localStorage.getItem(KEYS().TOKEN); }
@@ -35,53 +35,42 @@ export function esc(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-// ── Decode JWT (client-side, no verify — just read claims) ────────
-function decodeToken(token) {
-  try { return JSON.parse(atob(token.split(".")[1])); }
-  catch { return null; }
-}
-
 // ── Route guard ───────────────────────────────────────────────────
-// Checks: token exists → not expired → role allowed → tenant matches
-// No network call. Returns user or null (and redirects on failure).
+// ONLY checks: token exists + not expired + role is allowed
+// No tenant/subdomain checks — those cause redirect loops
 export function guardPage(allowedRoles = []) {
   const user  = getUser();
   const token = getToken();
-  const t     = TENANT();
 
   if (!user || !token) {
     window.location.replace("/login.html");
     return null;
   }
 
-  // JWT expiry check
-  const payload = decodeToken(token);
-  if (!payload || (payload.exp && payload.exp * 1000 < Date.now())) {
-    clearSession();
-    window.location.replace("/login.html");
-    return null;
-  }
-
-  // Role check
-  if (allowedRoles.length && !allowedRoles.includes(user.role)) {
-    window.location.replace("/login.html");
-    return null;
-  }
-
-  // Tenant check — school user must match this subdomain's school code
-  if (!t.isSuperAdmin && t.schoolCode) {
-    if (user.school_code !== t.schoolCode) {
-      // Wrong school — clear and redirect (prevents cross-tenant access)
+  // Check JWT expiry client-side (decode without verify)
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
       clearSession();
       window.location.replace("/login.html");
       return null;
     }
+  } catch (_) {
+    // Can't decode — let backend verify it
   }
 
-  // SUPER_ADMIN must be on admin subdomain
-  if (user.role === "SUPER_ADMIN" && !t.isSuperAdmin) {
-    clearSession();
-    window.location.replace("/login.html");
+  // Role check
+  if (allowedRoles.length && !allowedRoles.includes(user.role)) {
+    // Wrong role for this page — redirect to correct dashboard
+    const dest = {
+      SUPER_ADMIN:      "/super-admin.html",
+      PRINCIPAL:        "/school-admin.html",
+      DEPUTY_PRINCIPAL: "/school-admin.html",
+      HOD:              "/school-admin.html",
+      TEACHER:          "/teacher.html",
+      BURSAR:           "/bursar.html",
+    }[user.role] || "/login.html";
+    window.location.replace(dest);
     return null;
   }
 
@@ -89,6 +78,7 @@ export function guardPage(allowedRoles = []) {
 }
 
 // ── Core fetch ────────────────────────────────────────────────────
+// NEVER auto-redirects. Returns { ...data, _status: N } or { _networkError: true }
 export async function apiFetch(path, { method = "GET", body = null, params = null } = {}) {
   const token = getToken();
   const base  = BASE();
@@ -127,8 +117,8 @@ export async function apiFetch(path, { method = "GET", body = null, params = nul
     data._status = res.status;
     return data;
   } catch (e) {
-    console.error("API network error:", path, e.message);
-    return { success: false, message: "Network error. Please check your connection.", _networkError: true };
+    console.error("API error:", path, e.message);
+    return { success: false, message: "Network error. Check your connection.", _networkError: true };
   }
 }
 
@@ -138,15 +128,8 @@ export async function verifySession() {
   if (!result)                return { ok: false, reason: "auth" };
   if (result._networkError)   return { ok: false, reason: "network" };
   if (result._status === 401) return { ok: false, reason: "auth" };
-  if (result._status === 403) return { ok: false, reason: "school" };
+  if (result._status === 403) return { ok: false, reason: "auth" };
   if (!result.success)        return { ok: false, reason: "auth" };
-
-  // Extra tenant validation — ensure returned user matches this subdomain
-  const t = TENANT();
-  if (!t.isSuperAdmin && t.schoolCode && result.user.school_code !== t.schoolCode) {
-    return { ok: false, reason: "tenant" };
-  }
-
   return { ok: true, user: result.user };
 }
 
