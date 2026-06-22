@@ -29,13 +29,17 @@ a{color:var(--accent);text-decoration:none}
 .sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;padding:0 0 20px}
 .sidebar-brand{padding:24px 20px 20px;border-bottom:1px solid var(--border);margin-bottom:8px}
 .sidebar-brand .brand-badge{display:inline-flex;align-items:center;gap:8px;background:var(--accentDim);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:6px 10px;margin-bottom:10px}
-.sidebar-brand .brand-badge span{font-size:16px}
+.sidebar-brand .brand-badge span{display:flex;align-items:center;justify-content:center}
 .sidebar-brand .brand-badge strong{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent);text-transform:uppercase}
 .sidebar-brand h2{font-size:15px;font-weight:700;color:var(--text);line-height:1.3}
 .sidebar-brand p{font-size:11px;color:var(--text3);margin-top:2px}
 .nav-section{padding:6px 12px;font-size:9.5px;font-weight:700;letter-spacing:.12em;color:var(--text3);text-transform:uppercase;margin-top:12px;margin-bottom:2px}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;margin:1px 8px;border-radius:8px;cursor:pointer;color:var(--text2);font-size:13px;font-weight:500;transition:var(--trans);position:relative;border:1px solid transparent;user-select:none}
 .nav-item .nav-icon{width:30px;height:30px;background:var(--surface);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;transition:var(--trans);flex-shrink:0}
+.icon-svg{width:1em;height:1em;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;display:inline-block;vertical-align:-.15em}
+.nav-icon .icon-svg{width:16px;height:16px}
+.brand-badge .icon-svg{width:16px;height:16px}
+.btn-logout .icon-svg{width:14px;height:14px;margin-right:6px}
 .nav-item:hover{color:var(--text);background:var(--surface)}
 .nav-item:hover .nav-icon{background:var(--surface2)}
 .nav-item.active{color:var(--accent);background:var(--accentDim);border-color:rgba(245,158,11,.2)}
@@ -46,7 +50,7 @@ a{color:var(--accent);text-decoration:none}
 .sidebar-user .avatar{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),#d97706);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#000;flex-shrink:0}
 .sidebar-user .u-info strong{font-size:12px;display:block;color:var(--text)}
 .sidebar-user .u-info span{font-size:10px;color:var(--text3)}
-.btn-logout{width:100%;margin-top:10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171;padding:9px;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:600;transition:var(--trans)}
+.btn-logout{width:100%;margin-top:10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171;padding:9px;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:600;transition:var(--trans);display:flex;align-items:center;justify-content:center}
 .btn-logout:hover{background:rgba(239,68,68,.2)}
 .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:60px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
@@ -135,7 +139,7 @@ label{display:block;font-size:11.5px;font-weight:600;color:var(--text3);letter-s
 <div class="modal-bg" id="modal-school">
 <div class="modal">
   <div class="modal-hdr">
-    <h3>🏫 Register New School</h3>
+    <h3>Register New School</h3>
     <button class="modal-close" data-close="modal-school">×</button>
   </div>
   <div class="fg-row">
@@ -171,7 +175,7 @@ label{display:block;font-size:11.5px;font-weight:600;color:var(--text3);letter-s
 <div class="modal-bg" id="modal-admin">
 <div class="modal">
   <div class="modal-hdr">
-    <h3>👤 Create School User</h3>
+    <h3>Create School User</h3>
     <button class="modal-close" data-close="modal-admin">×</button>
   </div>
   <div class="fg"><label>School *</label><select id="adm-school"><option value="">Select School</option></select></div>
@@ -250,6 +254,22 @@ function setLoading(btn, on) {
   btn.disabled = on;
 }
 
+const ICONS = {
+  chart: '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-7"/>',
+  school: '<path d="M3 21h18"/><path d="M5 21V9l7-4 7 4v12"/><path d="M9 21v-6h6v6"/><path d="M9 10h.01"/><path d="M15 10h.01"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>',
+  card: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/>',
+  logout: '<path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 19V5a2 2 0 0 0-2-2h-5"/>'
+};
+
+function icon(name, label = "") {
+  const paths = ICONS[name] || ICONS.card;
+  const aria = label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true"';
+  return `<svg class="icon-svg" viewBox="0 0 24 24"${aria}>${paths}</svg>`;
+}
+
 // ── Auth guard ────────────────────────────────────────────────────
 let me = guardPage(["SUPER_ADMIN"]);
 if (!me) throw new Error("Not authorized");
@@ -267,19 +287,19 @@ if (vRes.ok) me = vRes.user;
 let allSchools = [];
 
 const NAV = [
-  { panel:"overview", icon:"📊", label:"Dashboard" },
-  { panel:"schools",  icon:"🏫", label:"Schools" },
-  { panel:"users",    icon:"👤", label:"School Users" },
-  { panel:"audit",    icon:"🔎", label:"Audit Log" },
+  { panel:"overview", icon:"chart", label:"Dashboard" },
+  { panel:"schools",  icon:"school", label:"Schools" },
+  { panel:"users",    icon:"user", label:"School Users" },
+  { panel:"audit",    icon:"search", label:"Audit Log" },
 ];
 
 const initials = (me.name || "SA").split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2);
-NAV.splice(3, 0, { panel:"plans", icon:"PAY", label:"Payment Plans" });
+NAV.splice(3, 0, { panel:"plans", icon:"card", label:"Payment Plans" });
 
 document.getElementById("app").innerHTML = `
 <aside class="sidebar">
   <div class="sidebar-brand">
-    <div class="brand-badge"><span>🛡️</span><strong>Super Admin</strong></div>
+    <div class="brand-badge"><span>${icon("shield", "Security")}</span><strong>Super Admin</strong></div>
     <h2>CBC School ERP</h2>
     <p>System Administration</p>
   </div>
@@ -287,7 +307,7 @@ document.getElementById("app").innerHTML = `
     <div class="nav-section">Navigation</div>
     ${NAV.map(n => `
       <div class="nav-item${n.panel==="overview"?" active":""}" data-panel="${esc(n.panel)}">
-        <span class="nav-icon">${n.icon}</span>${esc(n.label)}
+        <span class="nav-icon">${icon(n.icon, n.label)}</span>${esc(n.label)}
       </div>`).join("")}
   </div>
   <div class="sidebar-footer">
@@ -298,7 +318,7 @@ document.getElementById("app").innerHTML = `
         <span>${esc(me.email || "")}</span>
       </div>
     </div>
-    <button class="btn-logout" id="logoutBtn">🚪 Sign Out</button>
+    <button class="btn-logout" id="logoutBtn">${icon("logout")} Sign Out</button>
   </div>
 </aside>
 <div class="main">
@@ -545,7 +565,7 @@ document.getElementById("btnSubmitSchool").addEventListener("click", async () =>
   });
   setLoading("btnSubmitSchool", false);
   if (r?.success) {
-    showAlert(alertEl, "✓ School registered successfully.", "ok");
+    showAlert(alertEl, "School registered successfully.", "ok");
     setTimeout(() => { closeModal("modal-school"); resetModal("modal-school"); fetchSchools(); loadSchools(); loadDashboard(); }, 1400);
   } else {
     showAlert(alertEl, r?.message || "Error registering school.");
@@ -569,7 +589,7 @@ document.getElementById("btnSubmitAdmin").addEventListener("click", async () => 
   });
   setLoading("btnSubmitAdmin", false);
   if (r?.success) {
-    showAlert(alertEl, "✓ User created. Must change password on first login.", "ok");
+    showAlert(alertEl, "User created. Must change password on first login.", "ok");
     setTimeout(() => { closeModal("modal-admin"); resetModal("modal-admin"); loadUsers(); }, 1400);
   } else {
     showAlert(alertEl, r?.message || "Error creating user.");

@@ -57,7 +57,7 @@ const allowedOrigins = (
   .map(o => o.trim())
   .filter(Boolean);
 
-console.log("✅ CORS allowed origins:", allowedOrigins);
+console.log("CORS allowed origins:", allowedOrigins);
 
 app.use(cors({
   origin: (origin, cb) => {
@@ -163,7 +163,7 @@ app.use((err, req, res, next) => {
 startCleanupJob();
 const PORT = parseInt(process.env.PORT || "5000", 10);
 app.listen(PORT, () =>
-  console.log(`🚀 CBC School ERP v4.1 running on port ${PORT} [${process.env.NODE_ENV || "development"}]`)
+  console.log(`CBC School ERP v4.1 running on port ${PORT} [${process.env.NODE_ENV || "development"}]`)
 );
 
 module.exports = app;

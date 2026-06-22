@@ -65,18 +65,18 @@ Then login at `/login.html` with:
 
 | Feature | Super Admin | Principal | Dep. Principal | HOD | Teacher | Bursar |
 |---------|-------------|-----------|----------------|-----|---------|--------|
-| Register Schools | ✅ | – | – | – | – | – |
-| Create Staff | ✅ | ✅ | ✅ | – | – | – |
-| Manage Students | ✅ | ✅ | ✅ | 👁 | 👁 | 👁 |
-| Manage Teachers | ✅ | ✅ | ✅ | 👁 | – | – |
-| Manage Classes | ✅ | ✅ | ✅ | 👁 | – | – |
-| Record Attendance | ✅ | ✅ | ✅ | ✅ | ✅ (own) | – |
-| CBC Assessments | ✅ | ✅ | ✅ | ✅ | ✅ (own) | – |
-| Fee Structures | ✅ | – | – | – | – | ✅ |
-| Record Payments | ✅ | – | – | – | – | ✅ |
-| View Finance | ✅ | ✅ | ✅ | – | – | ✅ |
-| Report Cards | ✅ | ✅ | ✅ | ✅ | ✅ | – |
-| Audit Log | ✅ | ✅ | ✅ | – | – | – |
+| Register Schools | Yes | No | No | No | No | No |
+| Create Staff | Yes | Yes | Yes | No | No | No |
+| Manage Students | Yes | Yes | Yes | View | View | View |
+| Manage Teachers | Yes | Yes | Yes | View | No | No |
+| Manage Classes | Yes | Yes | Yes | View | No | No |
+| Record Attendance | Yes | Yes | Yes | Yes | Own only | No |
+| CBC Assessments | Yes | Yes | Yes | Yes | Own only | No |
+| Fee Structures | Yes | No | No | No | No | Yes |
+| Record Payments | Yes | No | No | No | No | Yes |
+| View Finance | Yes | Yes | Yes | No | No | Yes |
+| Report Cards | Yes | Yes | Yes | Yes | Yes | No |
+| Audit Log | Yes | Yes | Yes | No | No | No |
 
 ---
 

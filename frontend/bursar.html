@@ -97,7 +97,7 @@
 import {
   guardPage, esc, apiFetch, clearSession,
   finance, classes, students, verifySession, logout} from "/js/api.js";
-import {, buildSidebar, setupNav,
+import { buildSidebar, setupNav,
   openModal, closeModal, resetModal,
   showAlert, setLoading, injectStyles
 } from "/js/layout.js";
@@ -119,10 +119,10 @@ if (vRes.ok) me = vRes.user;
 
 // ── Nav ───────────────────────────────────────────────────────────
 const NAV = [
-  { panel: "overview",  icon: "📊", label: "Dashboard"      },
-  { panel: "payments",  icon: "💳", label: "Payments"       },
-  { panel: "fees",      icon: "📋", label: "Fee Structures" },
-  { panel: "balances",  icon: "⚖️", label: "Balances"       },
+  { panel: "overview",  icon: "chart",     label: "Dashboard"      },
+  { panel: "payments",  icon: "card",      label: "Payments"       },
+  { panel: "fees",      icon: "clipboard", label: "Fee Structures" },
+  { panel: "balances",  icon: "scale",     label: "Balances"       },
 ];
 
 // ── Render shell ──────────────────────────────────────────────────
@@ -409,7 +409,7 @@ document.getElementById("btnSubmitPayment")?.addEventListener("click", async () 
   setLoading("btnSubmitPayment", false);
 
   if (r?.success) {
-    showAlert(alertEl, "✓ Payment recorded successfully.", "ok");
+    showAlert(alertEl, "Payment recorded successfully.", "ok");
     setTimeout(() => { closeModal("modal-payment"); loadPayments(); loadOverview(); }, 1400);
   } else showAlert(alertEl, r?.message || "Failed to record payment.");
 });
@@ -483,7 +483,7 @@ document.getElementById("btnSubmitFee")?.addEventListener("click", async () => {
   setLoading("btnSubmitFee", false);
 
   if (r?.success) {
-    showAlert(alertEl, "✓ Fee structure added.", "ok");
+    showAlert(alertEl, "Fee structure added.", "ok");
     setTimeout(() => { closeModal("modal-fee"); loadFees(); }, 1200);
   } else showAlert(alertEl, r?.message || "Failed to add fee structure.");
 });

@@ -9,7 +9,7 @@ const CSS = `
 body{font-family:'Plus Jakarta Sans',sans-serif;background:#f1f5f9;color:#0f172a;min-height:100vh;display:flex}
 .sidebar{width:265px;background:#fff;display:flex;flex-direction:column;flex-shrink:0;height:100vh;position:sticky;top:0;border-right:1px solid #e2e8f0;overflow-y:auto}
 .sidebar-brand{padding:22px 20px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #f1f5f9}
-.brand-icon{font-size:28px;line-height:1}
+.brand-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:#4f46e5;flex-shrink:0}
 .sidebar-brand h2{font-size:16px;font-weight:800;color:#0f172a;letter-spacing:-0.3px}
 .sidebar-brand p{font-size:11.5px;color:#64748b;margin-top:2px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
 .school-meta{margin:12px 16px;background:#f8fafc;border-radius:10px;padding:10px 12px;border:1px solid #e2e8f0}
@@ -20,13 +20,17 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#f1f5f9;color:#0f172a
 .nav-item{padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;border-radius:10px;color:#64748b;margin-bottom:2px;transition:all .15s;user-select:none}
 .nav-item:hover{background:#f1f5f9;color:#0f172a}
 .nav-item.active{background:#4f46e5;color:#fff;box-shadow:0 4px 12px rgba(79,70,229,.25)}
-.nav-icon{font-size:16px;width:20px;text-align:center}
+.nav-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon-svg{width:1em;height:1em;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;display:inline-block;vertical-align:-.15em}
+.brand-icon .icon-svg{width:28px;height:28px}
+.nav-icon .icon-svg{width:18px;height:18px}
+.btn-logout .icon-svg{width:15px;height:15px;margin-right:6px}
 .sidebar-footer{padding:16px;border-top:1px solid #f1f5f9}
 .user-card{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
 .user-info strong{display:block;font-size:13px;color:#0f172a;font-weight:700}
 .role-badge{font-size:10px;font-weight:700;background:#e0e7ff;color:#4338ca;padding:2px 7px;border-radius:20px;display:inline-block;margin-top:2px}
-.btn-logout{background:#f1f5f9;border:none;color:#ef4444;padding:10px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;width:100%;transition:all .2s;font-family:inherit}
+.btn-logout{background:#f1f5f9;border:none;color:#ef4444;padding:10px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;width:100%;transition:all .2s;font-family:inherit;display:flex;align-items:center;justify-content:center}
 .btn-logout:hover{background:#fee2e2}
 .main{flex:1;display:flex;flex-direction:column;min-width:0}
 .topbar{background:#fff;padding:16px 28px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px}
@@ -105,6 +109,28 @@ export function injectStyles() {
 // Keep SHARED_CSS export for backward compat (some pages assign to <style> tag)
 export const SHARED_CSS = CSS;
 
+const ICONS = {
+  school: '<path d="M3 21h18"/><path d="M5 21V9l7-4 7 4v12"/><path d="M9 21v-6h6v6"/><path d="M9 10h.01"/><path d="M15 10h.01"/>',
+  chart: '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-7"/>',
+  student: '<path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>',
+  teacher: '<circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/><path d="M19 8h3v8h-3"/>',
+  clipboard: '<path d="M9 5h6"/><path d="M9 3h6v4H9z"/><path d="M7 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M8 12h8"/><path d="M8 16h6"/>',
+  attendance: '<path d="M20 6 9 17l-5-5"/>',
+  assessment: '<path d="M4 20h16"/><path d="M6 18 17.5 6.5a2.1 2.1 0 0 1 3 3L9 21H6z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  card: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/>',
+  scale: '<path d="M12 3v18"/><path d="M5 6h14"/><path d="M6 6l-3 7h6z"/><path d="M18 6l-3 7h6z"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>',
+  logout: '<path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 19V5a2 2 0 0 0-2-2h-5"/>'
+};
+
+export function icon(name, label = "") {
+  const paths = ICONS[name] || ICONS.clipboard;
+  const aria = label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true"';
+  return `<svg class="icon-svg" viewBox="0 0 24 24"${aria}>${paths}</svg>`;
+}
+
 // ── Sidebar HTML builder ──────────────────────────────────────────
 export function buildSidebar(navItems, activePanel) {
   const user = getUser();
@@ -112,7 +138,7 @@ export function buildSidebar(navItems, activePanel) {
   return `
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-icon">🏫</div>
+      <div class="brand-icon">${icon("school", "School")}</div>
       <div>
         <h2>CBC School ERP</h2>
         <p>${esc(user?.school_name || "System Admin")}</p>
@@ -126,7 +152,7 @@ export function buildSidebar(navItems, activePanel) {
     <nav class="nav" id="mainNav">
       ${navItems.map(n => `
         <div class="nav-item${n.panel === activePanel ? " active" : ""}" data-panel="${esc(n.panel)}">
-          <span class="nav-icon">${n.icon}</span>${esc(n.label)}
+          <span class="nav-icon">${icon(n.icon, n.label)}</span>${esc(n.label)}
         </div>`).join("")}
     </nav>
     <div class="sidebar-footer">
@@ -137,7 +163,7 @@ export function buildSidebar(navItems, activePanel) {
           <span class="role-badge">${esc(user?.role || "")}</span>
         </div>
       </div>
-      <button class="btn-logout" id="logoutBtn">🚪 Sign Out</button>
+      <button class="btn-logout" id="logoutBtn">${icon("logout")} Sign Out</button>
     </div>
   </aside>`;
 }
@@ -157,7 +183,7 @@ export function setupNav(loaders) {
   });
   document.getElementById("logoutBtn")?.addEventListener("click", async () => {
     const b = document.getElementById("logoutBtn");
-    b.disabled = true; b.textContent = "Signing out…";
+    b.disabled = true; b.textContent = "Signing out...";
     await logout();
   });
 }

@@ -62,7 +62,7 @@ VALUES ('superadmin', 'admin@yourschool.com', '<BCRYPT_HASH>', 'System Admin', '
    |-----|-------|
    | `BACKEND_URL` | `https://cbc-school-erp-api-xxxx.onrender.com` |
 
-   ⚠️ This is the critical step — replace `xxxx` with your actual Render URL
+   Important: This is the critical step — replace `xxxx` with your actual Render URL
 
 4. Deploy (trigger a new deployment after adding the env var)
 
