@@ -35,7 +35,6 @@ function getSchoolCode() {
   return (
     document.getElementById("school_code")?.value ||
     document.getElementById("schoolCode")?.value ||
-    window.TENANT?.schoolCode ||
     ""
   ).trim().toUpperCase();
 }
@@ -67,7 +66,6 @@ if (loginForm) {
     ).trim();
     const password = document.getElementById("password")?.value || "";
     const schoolCode = getSchoolCode();
-    const isSuperAdmin = window.TENANT?.isSuperAdmin || schoolCode === "ADMIN100";
 
     if (!username || !password) {
       setMessage("Username/email and password are required.");
@@ -76,7 +74,7 @@ if (loginForm) {
     const result = await auth.login({
       username,
       password,
-      school_code: isSuperAdmin || !schoolCode ? undefined : schoolCode,
+      school_code: schoolCode || undefined,
     });
 
     if (!result?.success) {

@@ -6,9 +6,8 @@
  * - School staff always use "cbc_token_SCHOOL" (single shared key per browser)
  * - No subdomain requirement — works on plain pages.dev
  *
- * Login URLs:
- *   Super Admin:  /login.html  (leave school code blank)
- *   School staff: /login.html  (enter school code)
+ * Login URL:
+ *   All staff use /login.html
  */
 (function () {
   const hostname = window.location.hostname;
