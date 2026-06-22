@@ -111,16 +111,21 @@ app.use(express.static(path.join(__dirname, "../frontend"), {
 // ── API routes ────────────────────────────────────────────────────
 app.use("/api/auth",        require("./routes/auth"));
 app.use("/api/schools",     require("./routes/schools"));
-app.use("/api/users",       require("./routes/users"));
-app.use("/api/departments", require("./routes/departments"));
-app.use("/api/teachers",    require("./routes/teachers"));
-app.use("/api/classes",     require("./routes/classes"));
-app.use("/api/students",    require("./routes/students"));
-app.use("/api/assignments", require("./routes/assignments"));
-app.use("/api/attendance",  require("./routes/attendance"));
-app.use("/api/assessments", require("./routes/assessments"));
-app.use("/api/finance",     require("./routes/finance"));
-app.use("/api/reports",     require("./routes/reports"));
+app.use("/api/subscriptions", require("./routes/subscriptions"));
+
+const requireSubscription = require("./middleware/subscriptionMiddleware");
+const authMiddleware = require("./middleware/authMiddleware");
+app.use("/api/users",       authMiddleware, requireSubscription, require("./routes/users"));
+app.use("/api/departments", authMiddleware, requireSubscription, require("./routes/departments"));
+app.use("/api/teachers",    authMiddleware, requireSubscription, require("./routes/teachers"));
+app.use("/api/classes",     authMiddleware, requireSubscription, require("./routes/classes"));
+app.use("/api/students",    authMiddleware, requireSubscription, require("./routes/students"));
+app.use("/api/assignments", authMiddleware, requireSubscription, require("./routes/assignments"));
+app.use("/api/attendance",  authMiddleware, requireSubscription, require("./routes/attendance"));
+app.use("/api/assessments", authMiddleware, requireSubscription, require("./routes/assessments"));
+app.use("/api/finance",     authMiddleware, requireSubscription, require("./routes/finance"));
+app.use("/api/reports",     authMiddleware, requireSubscription, require("./routes/reports"));
+app.use("/api/ai",          require("./routes/ai"));
 
 // ── Health check ─────────────────────────────────────────────────
 app.get("/api/health", (req, res) =>

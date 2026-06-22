@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Subscription - CBC School ERP</title>
+<script src="/js/config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;padding:28px}
+.wrap{max-width:1040px;margin:0 auto}
+.top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:28px}
+h1{font-size:28px;line-height:1.2}
+.muted{color:#94a3b8;font-size:14px;margin-top:6px}
+.btn{border:1px solid rgba(255,255,255,.14);background:#1e293b;color:#e2e8f0;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer}
+.btn-primary{background:#f59e0b;border-color:#f59e0b;color:#111827}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.card{background:#111827;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:20px}
+.plan-name{font-size:17px;font-weight:800;margin-bottom:10px}
+.price{font-size:30px;font-weight:800;color:#fff;margin-bottom:4px}
+.chip{display:inline-flex;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 9px;font-size:11px;color:#cbd5e1;margin:8px 6px 16px 0}
+.alert{padding:12px 14px;border-radius:8px;margin-bottom:16px;font-size:13px}
+.err{background:#7f1d1d;color:#fecaca}.ok{background:#064e3b;color:#bbf7d0}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="top">
+    <div>
+      <h1>Choose a subscription</h1>
+      <p class="muted">Your school needs an active plan before staff can use the ERP modules.</p>
+    </div>
+    <button class="btn" id="logoutBtn">Sign Out</button>
+  </div>
+  <div id="status"></div>
+  <div class="grid" id="plans"><div class="card">Loading plans...</div></div>
+</main>
+
+<script type="module">
+import { guardPage, subscriptions, logout, esc } from "/js/api.js";
+
+const user = guardPage(["PRINCIPAL","DEPUTY_PRINCIPAL","HOD","TEACHER","BURSAR"]);
+const plansEl = document.getElementById("plans");
+const statusEl = document.getElementById("status");
+
+function show(msg, type = "err") {
+  statusEl.innerHTML = `<div class="alert ${type}">${esc(msg)}</div>`;
+}
+
+function canPay() {
+  return ["PRINCIPAL", "DEPUTY_PRINCIPAL"].includes(user?.role);
+}
+
+async function load() {
+  const current = await subscriptions.me();
+  if (current?.data?.status && ["active","trialing"].includes(current.data.status)) {
+    show(`Subscription active: ${current.data.plan_name}.`, "ok");
+  }
+
+  const r = await subscriptions.plans();
+  const plans = r?.data || [];
+  if (!plans.length) {
+    plansEl.innerHTML = '<div class="card">No subscription plans are available yet.</div>';
+    return;
+  }
+  plansEl.innerHTML = plans.map(p => `
+    <section class="card">
+      <div class="plan-name">${esc(p.name)}</div>
+      <div class="price">${esc(p.currency)} ${Number(p.amount).toLocaleString("en-KE")}</div>
+      <div class="muted">per ${esc(p.billing_interval)}</div>
+      <div>
+        <span class="chip">${p.student_limit ? `${esc(p.student_limit)} students` : "Unlimited students"}</span>
+        <span class="chip">${p.ai_enabled ? "AI included" : "AI not included"}</span>
+      </div>
+      <button class="btn btn-primary" data-plan="${esc(p.id)}" ${canPay() ? "" : "disabled"}>Pay with Pesapal</button>
+      ${canPay() ? "" : '<p class="muted">Ask a Principal or Deputy Principal to renew.</p>'}
+    </section>
+  `).join("");
+
+  plansEl.querySelectorAll("[data-plan]").forEach(btn => btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    btn.textContent = "Starting checkout...";
+    const out = await subscriptions.checkout({ plan_id: Number(btn.dataset.plan) });
+    if (out?.redirect_url) {
+      window.location.href = out.redirect_url;
+      return;
+    }
+    btn.disabled = false;
+    btn.textContent = "Pay with Pesapal";
+    show(out?.message || "Could not start Pesapal checkout.");
+  }));
+}
+
+document.getElementById("logoutBtn").addEventListener("click", logout);
+load();
+</script>
+</body>
+</html>

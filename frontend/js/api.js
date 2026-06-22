@@ -230,6 +230,19 @@ export const finance = {
   studentBalance: (id, p) => apiFetch(`/finance/student-balance/${id}`, { params: p }),
 };
 
+export const subscriptions = {
+  plans:          ()      => apiFetch("/subscriptions/plans"),
+  createPlan:     (d)     => apiFetch("/subscriptions/plans",       { method: "POST", body: d }),
+  updatePlan:     (id, d) => apiFetch(`/subscriptions/plans/${id}`, { method: "PUT",  body: d }),
+  me:             ()      => apiFetch("/subscriptions/me"),
+  checkout:       (d)     => apiFetch("/subscriptions/checkout",     { method: "POST", body: d }),
+  activatePayment:(id)    => apiFetch(`/subscriptions/payments/${id}/activate`, { method: "POST" }),
+};
+
+export const ai = {
+  assist: (d) => apiFetch("/ai/assist", { method: "POST", body: d }),
+};
+
 export const reports = {
   dashboard:    (p)  => apiFetch("/reports/dashboard",           { params: p }),
   reportCards:  (p)  => apiFetch("/reports/cards",               { params: p }),
