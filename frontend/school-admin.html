@@ -211,7 +211,7 @@ import {
   users, teachers, classes, students, departments,
   assignments, attendance, assessments, reports, schools, verifySession
 } from "/js/api.js";
-import {, buildSidebar, setupNav,
+import { buildSidebar, setupNav,
   openModal, closeModal, resetModal,
   showAlert, setLoading, injectStyles
 } from "/js/layout.js";
@@ -234,14 +234,14 @@ if (vRes.ok) me = vRes.user;
 
 // ── Nav items ─────────────────────────────────────────────────────
 const NAV = [
-  { panel: "overview",    icon: "📊", label: "Dashboard"    },
-  { panel: "students",    icon: "🎒", label: "Students"     },
-  { panel: "teachers",    icon: "👨‍🏫", label: "Teachers"    },
-  { panel: "classes",     icon: "🏫", label: "Classes"      },
-  { panel: "assignments", icon: "📋", label: "Assignments"  },
-  { panel: "attendance",  icon: "✅", label: "Attendance"   },
-  { panel: "assessments", icon: "📝", label: "Assessments"  },
-  { panel: "staff",       icon: "👤", label: "Staff Accounts"},
+  { panel: "overview",    icon: "chart",      label: "Dashboard"     },
+  { panel: "students",    icon: "student",    label: "Students"      },
+  { panel: "teachers",    icon: "teacher",    label: "Teachers"      },
+  { panel: "classes",     icon: "school",     label: "Classes"       },
+  { panel: "assignments", icon: "clipboard",  label: "Assignments"   },
+  { panel: "attendance",  icon: "attendance", label: "Attendance"    },
+  { panel: "assessments", icon: "assessment", label: "Assessments"   },
+  { panel: "staff",       icon: "user",       label: "Staff Accounts" },
 ];
 
 // ── Render shell ──────────────────────────────────────────────────
@@ -508,7 +508,7 @@ document.getElementById("btnSubmitStudent")?.addEventListener("click", async () 
   });
   setLoading("btnSubmitStudent", false);
   if (r?.success) {
-    showAlert(alertEl, "✓ Student added successfully.", "ok");
+    showAlert(alertEl, "Student added successfully.", "ok");
     setTimeout(() => { closeModal("modal-student"); loadStudents(); }, 1200);
   } else showAlert(alertEl, r?.message || "Failed to add student.");
 });
@@ -567,7 +567,7 @@ document.getElementById("btnSubmitTeacher")?.addEventListener("click", async () 
   });
   setLoading("btnSubmitTeacher", false);
   if (r?.success) {
-    showAlert(alertEl, "✓ Teacher added.", "ok");
+    showAlert(alertEl, "Teacher added.", "ok");
     setTimeout(async () => { closeModal("modal-teacher"); await fetchTeachers(); loadTeachers(); }, 1200);
   } else showAlert(alertEl, r?.message || "Failed to add teacher.");
 });
@@ -622,7 +622,7 @@ document.getElementById("btnSubmitClass")?.addEventListener("click", async () =>
   });
   setLoading("btnSubmitClass", false);
   if (r?.success) {
-    showAlert(alertEl, "✓ Class created.", "ok");
+    showAlert(alertEl, "Class created.", "ok");
     setTimeout(async () => { closeModal("modal-class"); await fetchClasses(); loadClasses(); }, 1200);
   } else showAlert(alertEl, r?.message || "Failed to create class.");
 });
@@ -678,7 +678,7 @@ document.getElementById("btnSubmitAssign")?.addEventListener("click", async () =
   });
   setLoading("btnSubmitAssign", false);
   if (r?.success) {
-    showAlert(alertEl, "✓ Assignment created.", "ok");
+    showAlert(alertEl, "Assignment created.", "ok");
     setTimeout(() => { closeModal("modal-assign"); loadAssignments(); }, 1200);
   } else showAlert(alertEl, r?.message || "Failed to create assignment.");
 });
@@ -728,7 +728,7 @@ document.getElementById("btnSubmitAtt")?.addEventListener("click", async () => {
   const r = await attendance.bulk({ class_id: classId, date, records, school_id: me.school_id });
   setLoading("btnSubmitAtt", false);
   if (r?.success) {
-    showAlert(alertEl, "✓ Attendance saved.", "ok");
+    showAlert(alertEl, "Attendance saved.", "ok");
     setTimeout(() => closeModal("modal-att"), 1200);
   } else showAlert(alertEl, r?.message || "Failed to save attendance.");
 });
@@ -817,7 +817,7 @@ document.getElementById("btnSubmitAssess")?.addEventListener("click", async () =
   });
   setLoading("btnSubmitAssess", false);
   if (r?.success) {
-    showAlert(alertEl, "✓ Assessment saved.", "ok");
+    showAlert(alertEl, "Assessment saved.", "ok");
     setTimeout(() => { closeModal("modal-assess"); loadAssessments(); }, 1200);
   } else showAlert(alertEl, r?.message || "Failed to save assessment.");
 });
@@ -892,7 +892,7 @@ document.getElementById("btnSubmitStaff")?.addEventListener("click", async () =>
   });
   setLoading("btnSubmitStaff", false);
   if (r?.success) {
-    showAlert(alertEl, "✓ Account created. User must change password on first login.", "ok");
+    showAlert(alertEl, "Account created. User must change password on first login.", "ok");
     setTimeout(() => { closeModal("modal-staff"); loadStaff(); }, 1400);
   } else showAlert(alertEl, r?.message || "Failed to create account.");
 });
