@@ -34,7 +34,8 @@ router.post("/login",
       return res.status(400).json({ success: false, message: "Invalid request." });
 
     const { username, password } = req.body;
-    const school_code = req.body.school_code?.toUpperCase() || null;
+    const raw_school_code = req.body.school_code?.trim().toUpperCase() || null;
+    const school_code = raw_school_code === "ADMIN100" ? null : raw_school_code;
     const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress;
 
     try {
@@ -67,7 +68,7 @@ router.post("/login",
                   NULL AS logo_url, TRUE AS school_active
            FROM users u
            WHERE (u.username = $1 OR u.email = $1)
-             AND u.role = 'SUPER_ADMIN'`,
+             AND UPPER(u.role) = 'SUPER_ADMIN'`,
           [username]
         );
         user = rows[0] || null;
