@@ -73,15 +73,10 @@ if (loginForm) {
       setMessage("Username/email and password are required.");
       return;
     }
-    if (!isSuperAdmin && !schoolCode) {
-      setMessage("School code is required.");
-      return;
-    }
-
     const result = await auth.login({
       username,
       password,
-      school_code: isSuperAdmin ? undefined : schoolCode,
+      school_code: isSuperAdmin || !schoolCode ? undefined : schoolCode,
     });
 
     if (!result?.success) {
