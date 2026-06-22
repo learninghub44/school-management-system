@@ -60,6 +60,44 @@ function subscriptionEndDate(interval) {
   return end;
 }
 
+function splitName(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return { first_name: "School", middle_name: "", last_name: "Account" };
+  if (parts.length === 1) return { first_name: parts[0], middle_name: "", last_name: "School" };
+  return {
+    first_name: parts[0],
+    middle_name: parts.length > 2 ? parts.slice(1, -1).join(" ") : "",
+    last_name: parts[parts.length - 1],
+  };
+}
+
+function buildPesapalRecurringOrder({ reference, plan, school, user, callbackUrl, notificationId }) {
+  const contactName = splitName(user?.name || school.name);
+  return {
+    id: reference,
+    currency: plan.currency,
+    amount: Number(plan.amount),
+    description: `${plan.name} subscription for ${school.name}`,
+    callback_url: callbackUrl,
+    notification_id: notificationId,
+    billing_address: {
+      email_address: school.email || user.email || "",
+      phone_number: school.phone || user.phone || "",
+      country_code: "KE",
+      first_name: contactName.first_name,
+      middle_name: contactName.middle_name,
+      last_name: contactName.last_name,
+      line_1: school.address || school.name || "",
+      line_2: "",
+      city: school.sub_county || "",
+      state: school.county || "",
+      postal_code: "",
+      zip_code: "",
+    },
+    account_number: school.school_code || String(school.id),
+  };
+}
+
 async function activateSubscription(paymentId) {
   const { rows: payments } = await db.query(
     `SELECT sp.*, pp.billing_interval
@@ -204,24 +242,18 @@ router.post("/checkout", auth, roleM(CHECKOUT_ROLES),
       const callbackUrl = process.env.PESAPAL_CALLBACK_URL || `${req.protocol}://${req.get("host")}/subscription.html`;
       const token = await getPesapalToken();
       const notificationId = await getNotificationId(token);
+      const pesapalOrder = buildPesapalRecurringOrder({
+        reference,
+        plan,
+        school,
+        user: req.user,
+        callbackUrl,
+        notificationId,
+      });
       const order = await pesapalFetch("/Transactions/SubmitOrderRequest", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          id: reference,
-          currency: plan.currency,
-          amount: Number(plan.amount),
-          description: `${plan.name} subscription for ${school.name}`,
-          callback_url: callbackUrl,
-          notification_id: notificationId,
-          billing_address: {
-            email_address: school.email || req.user.email,
-            phone_number: school.phone || "",
-            country_code: "KE",
-            first_name: school.name,
-            last_name: "School",
-          },
-        }),
+        body: JSON.stringify(pesapalOrder),
       });
 
       const redirectUrl = order.redirect_url || order.redirectUrl;
