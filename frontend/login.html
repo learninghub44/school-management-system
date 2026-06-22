@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sign In — CBC School ERP</title>
+<title>Sign In - CBC School ERP</title>
 <script src="/js/config.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -10,8 +10,8 @@
 body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4338ca 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .card{background:#fff;border-radius:24px;padding:44px 40px;width:100%;max-width:440px;box-shadow:0 25px 60px rgba(0,0,0,.3)}
 .logo{text-align:center;margin-bottom:28px}
-.logo-icon{width:56px;height:56px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:12px}
-.logo h1{font-size:24px;font-weight:800;color:#0f172a;letter-spacing:-0.5px}
+.logo-icon{width:56px;height:56px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:12px;color:#fff;font-weight:800}
+.logo h1{font-size:24px;font-weight:800;color:#0f172a}
 .logo p{font-size:13px;color:#64748b;margin-top:4px;font-weight:500}
 .fg{margin-bottom:16px}
 .fg label{display:block;font-size:11.5px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
@@ -23,142 +23,44 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
 .btn-submit{width:100%;padding:14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;position:relative;margin-top:4px}
 .btn-submit:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(79,70,229,.35)}
 .btn-submit:disabled{opacity:.7;cursor:not-allowed;transform:none}
-.btn-submit.loading{color:transparent!important}
-.btn-submit.loading::after{content:"";position:absolute;width:20px;height:20px;top:50%;left:50%;margin:-10px 0 0 -10px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
 .alert{padding:12px 16px;border-radius:10px;font-size:13.5px;margin-top:14px;font-weight:500;display:none}
 .alert.show{display:block}
 .alert-err{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
-.alert-warn{background:#fef9c3;color:#854d0e;border:1px solid #fde68a}
+.alert-ok{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
 .footer{text-align:center;margin-top:24px;font-size:12px;color:#94a3b8}
 </style>
 </head>
 <body>
 <div class="card">
   <div class="logo">
-    <div class="logo-icon">🏫</div>
+    <div class="logo-icon">ERP</div>
     <h1>CBC School ERP</h1>
     <p>Kenya Competency Based Curriculum</p>
   </div>
 
-  <div class="fg">
-    <label>School Code</label>
-    <input id="school_code" type="text" placeholder="e.g. KPRI001"
-           autocomplete="organization" maxlength="20" style="text-transform:uppercase">
-  </div>
-  <p class="hint">Leave blank if you are a <strong>Super Admin</strong></p>
+  <form id="loginForm">
+    <div class="fg">
+      <label>School Code</label>
+      <input id="school_code" type="text" placeholder="e.g. KPRI001" autocomplete="organization" maxlength="20" style="text-transform:uppercase">
+    </div>
+    <p class="hint">Leave blank if you are a <strong>Super Admin</strong></p>
 
-  <div class="fg">
-    <label>Username or Email</label>
-    <input id="username" type="text" placeholder="username or email" autocomplete="username">
-  </div>
-  <div class="fg">
-    <label>Password</label>
-    <input id="password" type="password" placeholder="••••••••" autocomplete="current-password">
-  </div>
+    <div class="fg">
+      <label>Username or Email</label>
+      <input id="username" type="text" placeholder="username or email" autocomplete="username">
+    </div>
+    <div class="fg">
+      <label>Password</label>
+      <input id="password" type="password" placeholder="Password" autocomplete="current-password">
+    </div>
 
-  <div class="alert alert-warn" id="warnMsg"></div>
-  <div class="alert alert-err"  id="errMsg"></div>
+    <div class="alert" id="message"></div>
+    <button class="btn-submit" id="loginBtn" type="submit">Sign In</button>
+  </form>
 
-  <button class="btn-submit" id="loginBtn">Sign In</button>
-  <div class="footer">CBC School ERP v5.3 · Powered by ZETU Business Solutions</div>
+  <div class="footer">CBC School ERP v5.3 - Powered by ZETU Business Solutions</div>
 </div>
 
-<script type="module">
-import { auth, setSession, getUser, getToken, clearSession } from "/js/api.js";
-
-const errEl  = document.getElementById("errMsg");
-const warnEl = document.getElementById("warnMsg");
-const btn    = document.getElementById("loginBtn");
-
-function showErr(msg)  { errEl.textContent  = msg; errEl.className  = "alert alert-err show";  warnEl.className = "alert alert-warn"; }
-function showWarn(msg) { warnEl.textContent = msg; warnEl.className = "alert alert-warn show"; }
-function clearMsgs()   { errEl.className = "alert alert-err"; warnEl.className = "alert alert-warn"; }
-
-function roleDest(role) {
-  return {
-    SUPER_ADMIN:      "/super-admin.html",
-    PRINCIPAL:        "/school-admin.html",
-    DEPUTY_PRINCIPAL: "/school-admin.html",
-    HOD:              "/school-admin.html",
-    TEACHER:          "/teacher.html",
-    BURSAR:           "/bursar.html",
-  }[role] || "/school-admin.html";
-}
-
-// ── Already logged in? Check token expiry and redirect ───────────
-const u = getUser();
-const t = getToken();
-if (u && t) {
-  try {
-    const payload = JSON.parse(atob(t.split(".")[1]));
-    if (!payload.exp || payload.exp * 1000 > Date.now()) {
-      window.location.replace(roleDest(u.role));
-    } else {
-      clearSession();
-    }
-  } catch (_) { clearSession(); }
-}
-
-// ── Login ─────────────────────────────────────────────────────────
-async function doLogin() {
-  const school_code_raw = document.getElementById("school_code").value.trim().toUpperCase();
-  const username        = document.getElementById("username").value.trim();
-  const password        = document.getElementById("password").value;
-
-  clearMsgs();
-  if (!username) return showErr("Please enter your username or email.");
-  if (!password) return showErr("Please enter your password.");
-
-  // school_code: send only if user typed something
-  // Empty = Super Admin login attempt (no school code sent to backend)
-  const school_code = school_code_raw || undefined;
-
-  btn.disabled = true;
-  btn.classList.add("loading");
-
-  const slowTimer = setTimeout(() =>
-    showWarn("⏳ Server starting up — can take 30–60 seconds. Please wait…"), 5000);
-
-  const res = await auth.login({ username, password, school_code });
-
-  clearTimeout(slowTimer);
-  btn.disabled = false;
-  btn.classList.remove("loading");
-  clearMsgs();
-
-  if (!res || res._networkError) {
-    showErr("Cannot reach the server. Check connection or wait 30–60 seconds for backend to start.");
-    return;
-  }
-
-  if (!res.success) {
-    // Show clear message for common errors
-    if (res._status === 423) {
-      showErr(res.message || "Account locked. Try again later.");
-    } else if (res._status === 403) {
-      showErr(res.message || "Account or school is deactivated.");
-    } else {
-      showErr(res.message || "Invalid credentials. Check username, password and school code.");
-    }
-    return;
-  }
-
-  // Success — save and redirect
-  setSession(res.token, res.user);
-
-  if (res.must_change_password) {
-    window.location.replace("/change-password.html");
-    return;
-  }
-
-  window.location.replace(roleDest(res.user.role));
-}
-
-btn.addEventListener("click", doLogin);
-document.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !btn.disabled) doLogin();
-});
-</script>
+<script type="module" src="/js/login.js"></script>
 </body>
 </html>

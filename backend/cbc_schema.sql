@@ -8,6 +8,9 @@
 -- Drop in dependency order
 DROP TABLE IF EXISTS audit_logs          CASCADE;
 DROP TABLE IF EXISTS token_blocklist     CASCADE;
+DROP TABLE IF EXISTS subscription_payments CASCADE;
+DROP TABLE IF EXISTS school_subscriptions CASCADE;
+DROP TABLE IF EXISTS payment_plans       CASCADE;
 DROP TABLE IF EXISTS timetable           CASCADE;
 DROP TABLE IF EXISTS report_cards        CASCADE;
 DROP TABLE IF EXISTS assessments         CASCADE;
@@ -228,6 +231,56 @@ CREATE TABLE payments (
 );
 
 -- ================================================================
+-- SUBSCRIPTION PLANS AND PESAPAL PAYMENTS
+-- ================================================================
+CREATE TABLE payment_plans (
+  id               SERIAL        PRIMARY KEY,
+  name             VARCHAR(100)  UNIQUE NOT NULL,
+  amount           NUMERIC(12,2) NOT NULL CHECK (amount > 0),
+  currency         CHAR(3)       NOT NULL DEFAULT 'KES',
+  billing_interval VARCHAR(10)   NOT NULL CHECK (billing_interval IN ('month','term','year')),
+  student_limit    INTEGER,
+  ai_enabled       BOOLEAN       DEFAULT TRUE,
+  is_active        BOOLEAN       DEFAULT TRUE,
+  created_at       TIMESTAMPTZ   DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ   DEFAULT NOW()
+);
+
+CREATE TABLE school_subscriptions (
+  id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id            UUID        UNIQUE NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+  plan_id              INTEGER     NOT NULL REFERENCES payment_plans(id),
+  status               VARCHAR(20) NOT NULL DEFAULT 'inactive'
+                         CHECK (status IN ('inactive','trialing','active','past_due','cancelled')),
+  current_period_start TIMESTAMPTZ,
+  current_period_end   TIMESTAMPTZ,
+  last_payment_id      UUID,
+  created_at           TIMESTAMPTZ DEFAULT NOW(),
+  updated_at           TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE subscription_payments (
+  id                 UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id          UUID          NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+  plan_id            INTEGER       NOT NULL REFERENCES payment_plans(id),
+  merchant_reference VARCHAR(80)   UNIQUE NOT NULL,
+  order_tracking_id  VARCHAR(120)  UNIQUE,
+  amount             NUMERIC(12,2) NOT NULL,
+  currency           CHAR(3)       NOT NULL DEFAULT 'KES',
+  status             VARCHAR(20)   NOT NULL DEFAULT 'pending'
+                       CHECK (status IN ('pending','completed','failed','cancelled','invalid')),
+  checkout_url       TEXT,
+  provider_payload   JSONB,
+  created_by         UUID          REFERENCES users(id),
+  created_at         TIMESTAMPTZ   DEFAULT NOW(),
+  updated_at         TIMESTAMPTZ   DEFAULT NOW()
+);
+
+ALTER TABLE school_subscriptions
+  ADD CONSTRAINT school_subscriptions_last_payment_fk
+  FOREIGN KEY (last_payment_id) REFERENCES subscription_payments(id) ON DELETE SET NULL;
+
+-- ================================================================
 -- CBC ASSESSMENTS
 -- ================================================================
 CREATE TABLE assessments (
@@ -337,6 +390,11 @@ CREATE INDEX idx_attendance_class      ON attendance(class_id);
 CREATE INDEX idx_payments_school       ON payments(school_id);
 CREATE INDEX idx_payments_student      ON payments(student_id);
 CREATE INDEX idx_payments_date         ON payments(payment_date);
+CREATE INDEX idx_payment_plans_active  ON payment_plans(is_active);
+CREATE INDEX idx_school_subs_school    ON school_subscriptions(school_id);
+CREATE INDEX idx_school_subs_status    ON school_subscriptions(status);
+CREATE INDEX idx_sub_payments_school   ON subscription_payments(school_id);
+CREATE INDEX idx_sub_payments_tracking ON subscription_payments(order_tracking_id);
 CREATE INDEX idx_assessments_school    ON assessments(school_id);
 CREATE INDEX idx_assessments_student   ON assessments(student_id);
 CREATE INDEX idx_assessments_term      ON assessments(term, academic_year);

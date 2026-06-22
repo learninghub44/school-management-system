@@ -44,9 +44,15 @@ router.post("/login",
         // Staff login with school code
         const { rows } = await db.query(
           `SELECT u.*, s.name AS school_name, s.school_code, s.academic_year,
-                  s.current_term, s.logo_url, s.is_active AS school_active
+                  s.current_term, s.logo_url, s.is_active AS school_active,
+                  ss.status AS subscription_status,
+                  ss.current_period_end AS subscription_expires_at,
+                  pp.name AS subscription_plan,
+                  pp.ai_enabled
            FROM users u
            JOIN schools s ON s.id = u.school_id
+           LEFT JOIN school_subscriptions ss ON ss.school_id = s.id
+           LEFT JOIN payment_plans pp ON pp.id = ss.plan_id
            WHERE (u.username = $1 OR u.email = $1)
              AND s.school_code = $2
              AND u.role != 'SUPER_ADMIN'`,
@@ -123,6 +129,10 @@ router.post("/login",
         academic_year: user.academic_year,
         current_term:  user.current_term,
         logo_url:      user.logo_url,
+        subscription_status: user.subscription_status || null,
+        subscription_expires_at: user.subscription_expires_at || null,
+        subscription_plan: user.subscription_plan || null,
+        ai_enabled: user.ai_enabled || false,
         name:          user.name,
         email:         user.email,
         username:      user.username,
@@ -175,9 +185,15 @@ router.get("/verify", auth, async (req, res) => {
       `SELECT u.id, u.name, u.email, u.username, u.role, u.is_active,
               u.must_change_password, u.school_id,
               s.name AS school_name, s.school_code, s.academic_year,
-              s.current_term, s.logo_url, s.is_active AS school_active
+              s.current_term, s.logo_url, s.is_active AS school_active,
+              ss.status AS subscription_status,
+              ss.current_period_end AS subscription_expires_at,
+              pp.name AS subscription_plan,
+              pp.ai_enabled
        FROM users u
        LEFT JOIN schools s ON s.id = u.school_id
+       LEFT JOIN school_subscriptions ss ON ss.school_id = s.id
+       LEFT JOIN payment_plans pp ON pp.id = ss.plan_id
        WHERE u.id = $1`, [req.user.id]
     );
     const user = rows[0];

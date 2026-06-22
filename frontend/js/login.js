@@ -8,9 +8,16 @@ const messageEl = document.getElementById("message");
 
 function setMessage(message, type = "error") {
   if (!messageEl) return;
-  messageEl.className = type;
-  messageEl.innerText = message;
+  messageEl.className = type === "success" ? "alert alert-ok show" : "alert alert-err show";
+  messageEl.textContent = message;
   messageEl.style.display = "block";
+}
+
+function hasActiveSubscription(user) {
+  if (!user || user.role === "SUPER_ADMIN") return true;
+  if (!["active", "trialing"].includes(user.subscription_status)) return false;
+  if (!user.subscription_expires_at) return true;
+  return new Date(user.subscription_expires_at) >= new Date();
 }
 
 function roleDestination(role) {
@@ -87,6 +94,8 @@ if (loginForm) {
 
     window.location.href = result.must_change_password
       ? "/change-password.html"
+      : !hasActiveSubscription(result.user)
+      ? "/subscription.html"
       : roleDestination(result.user.role);
   });
 }
@@ -106,7 +115,7 @@ function redirectExistingSession() {
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
     if (!payload.exp || payload.exp * 1000 > Date.now()) {
-      window.location.href = roleDestination(user.role);
+      window.location.href = hasActiveSubscription(user) ? roleDestination(user.role) : "/subscription.html";
       return;
     }
   } catch (_) {

@@ -199,6 +199,34 @@ label{display:block;font-size:11.5px;font-weight:600;color:var(--text3);letter-s
 </div>
 </div>
 
+<div class="modal-bg" id="modal-plan">
+<div class="modal">
+  <div class="modal-hdr">
+    <h3>Create Payment Plan</h3>
+    <button class="modal-close" data-close="modal-plan">×</button>
+  </div>
+  <div class="fg"><label>Plan Name *</label><input id="pl-name" maxlength="100" placeholder="e.g. Standard Annual"></div>
+  <div class="fg-row">
+    <div class="fg"><label>Amount *</label><input id="pl-amount" type="number" min="1" step="1" placeholder="25000"></div>
+    <div class="fg"><label>Currency</label><input id="pl-currency" maxlength="3" value="KES" style="text-transform:uppercase"></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label>Billing Interval</label>
+      <select id="pl-interval"><option value="month">Monthly</option><option value="term">Per Term</option><option value="year" selected>Annual</option></select>
+    </div>
+    <div class="fg"><label>Student Limit</label><input id="pl-limit" type="number" min="1" placeholder="Leave blank for unlimited"></div>
+  </div>
+  <div class="fg"><label>AI Access</label>
+    <select id="pl-ai"><option value="true">Included</option><option value="false">Not Included</option></select>
+  </div>
+  <div id="pl-alert"></div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" data-close="modal-plan">Cancel</button>
+    <button class="btn btn-primary" id="btnSubmitPlan">Create Plan</button>
+  </div>
+</div>
+</div>
+
 <div id="app"></div>
 
 <script type="module">
@@ -246,6 +274,7 @@ const NAV = [
 ];
 
 const initials = (me.name || "SA").split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2);
+NAV.splice(3, 0, { panel:"plans", icon:"PAY", label:"Payment Plans" });
 
 document.getElementById("app").innerHTML = `
 <aside class="sidebar">
@@ -321,6 +350,17 @@ document.getElementById("app").innerHTML = `
         </div>
       </div>
     </div>
+    <div class="panel" id="panel-plans">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Pesapal Subscription Plans</h4>
+          <button class="btn btn-primary" id="btnAddPlan">+ Create Plan</button>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap" id="plansTbl"><div class="empty">Loading...</div></div>
+        </div>
+      </div>
+    </div>
     <div class="panel" id="panel-audit">
       <div class="card">
         <div class="card-hdr"><h4>Audit Log</h4></div>
@@ -331,6 +371,7 @@ document.getElementById("app").innerHTML = `
 </div>`;
 
 const loaders = { overview:loadDashboard, schools:loadSchools, users:loadUsers, audit:loadAudit };
+loaders.plans = loadPlans;
 
 document.querySelectorAll(".nav-item").forEach(el => {
   el.addEventListener("click", () => {
@@ -482,6 +523,7 @@ async function loadAudit() {
 
 document.getElementById("btnAddSchool").addEventListener("click", () => openModal("modal-school"));
 document.getElementById("btnAddAdmin").addEventListener("click",  () => openModal("modal-admin"));
+document.getElementById("btnAddPlan").addEventListener("click",   () => openModal("modal-plan"));
 
 document.getElementById("btnSubmitSchool").addEventListener("click", async () => {
   const name    = document.getElementById("sc-name").value.trim();
@@ -531,6 +573,59 @@ document.getElementById("btnSubmitAdmin").addEventListener("click", async () => 
     setTimeout(() => { closeModal("modal-admin"); resetModal("modal-admin"); loadUsers(); }, 1400);
   } else {
     showAlert(alertEl, r?.message || "Error creating user.");
+  }
+});
+
+async function loadPlans() {
+  document.getElementById("plansTbl").innerHTML='<div class="empty">Loading...</div>';
+  const r = await apiFetch("/subscriptions/plans");
+  const data = r?.data || [];
+  if (!data.length) { document.getElementById("plansTbl").innerHTML='<div class="empty">No payment plans created yet</div>'; return; }
+  document.getElementById("plansTbl").innerHTML = `<table><thead><tr>
+    <th>Plan</th><th>Price</th><th>Interval</th><th>Students</th><th>AI</th><th>Status</th><th>Actions</th>
+  </tr></thead><tbody>
+    ${data.map(p => `<tr>
+      <td><strong>${esc(p.name)}</strong></td>
+      <td>${esc(p.currency)} ${Number(p.amount).toLocaleString("en-KE")}</td>
+      <td><span class="badge bgray">${esc(p.billing_interval)}</span></td>
+      <td>${p.student_limit ? esc(p.student_limit) : "Unlimited"}</td>
+      <td><span class="badge ${p.ai_enabled ? "bg" : "bgray"}">${p.ai_enabled ? "Enabled" : "Off"}</span></td>
+      <td><span class="badge ${p.is_active ? "bg" : "br"}">${p.is_active ? "Active" : "Inactive"}</span></td>
+      <td><button class="btn btn-sm ${p.is_active ? "btn-danger" : "btn-success"}" data-act="toggle-plan" data-id="${esc(p.id)}" data-active="${p.is_active}">${p.is_active ? "Deactivate" : "Activate"}</button></td>
+    </tr>`).join("")}
+  </tbody></table>`;
+  document.querySelectorAll("[data-act='toggle-plan']").forEach(b => b.addEventListener("click", async () => {
+    const r = await apiFetch(`/subscriptions/plans/${b.dataset.id}`, {
+      method:"PUT",
+      body:{ is_active: b.dataset.active !== "true" },
+    });
+    if (r?.success) loadPlans(); else alert(r?.message || "Error.");
+  }));
+}
+
+document.getElementById("btnSubmitPlan").addEventListener("click", async () => {
+  const name = document.getElementById("pl-name").value.trim();
+  const amount = Number(document.getElementById("pl-amount").value);
+  const alertEl = document.getElementById("pl-alert");
+  if (!name || !amount) return showAlert(alertEl, "Plan name and amount are required.");
+  setLoading("btnSubmitPlan", true);
+  const r = await apiFetch("/subscriptions/plans", {
+    method:"POST",
+    body:{
+      name,
+      amount,
+      currency: document.getElementById("pl-currency").value.trim().toUpperCase() || "KES",
+      billing_interval: document.getElementById("pl-interval").value,
+      student_limit: document.getElementById("pl-limit").value ? Number(document.getElementById("pl-limit").value) : null,
+      ai_enabled: document.getElementById("pl-ai").value === "true",
+    },
+  });
+  setLoading("btnSubmitPlan", false);
+  if (r?.success) {
+    showAlert(alertEl, "Plan created successfully.", "ok");
+    setTimeout(() => { closeModal("modal-plan"); resetModal("modal-plan"); loadPlans(); }, 1000);
+  } else {
+    showAlert(alertEl, r?.message || "Error creating plan.");
   }
 });
 
