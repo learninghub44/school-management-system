@@ -67,7 +67,7 @@ if (loginForm) {
     ).trim();
     const password = document.getElementById("password")?.value || "";
     const schoolCode = getSchoolCode();
-    const isSuperAdmin = window.TENANT?.isSuperAdmin || schoolCode === "ADMIN";
+    const isSuperAdmin = window.TENANT?.isSuperAdmin || schoolCode === "ADMIN100";
 
     if (!username || !password) {
       setMessage("Username/email and password are required.");
