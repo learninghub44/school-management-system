@@ -155,6 +155,30 @@ async function activateSubscription(paymentId) {
   return rows[0];
 }
 
+// ── TEMP DEBUG: remove after fixing payment ───────────────────────
+router.get("/debug-pesapal", async (req, res) => {
+  const info = {
+    PESAPAL_BASE_URL: process.env.PESAPAL_BASE_URL || "(not set, using sandbox default)",
+    PESAPAL_CONSUMER_KEY: process.env.PESAPAL_CONSUMER_KEY
+      ? process.env.PESAPAL_CONSUMER_KEY.slice(0, 8) + "..."
+      : "(NOT SET)",
+    PESAPAL_CONSUMER_SECRET: process.env.PESAPAL_CONSUMER_SECRET
+      ? process.env.PESAPAL_CONSUMER_SECRET.slice(0, 4) + "..."
+      : "(NOT SET)",
+    PESAPAL_IPN_ID: process.env.PESAPAL_IPN_ID || "(not set)",
+    PESAPAL_IPN_URL: process.env.PESAPAL_IPN_URL || "(not set)",
+    PESAPAL_CALLBACK_URL: process.env.PESAPAL_CALLBACK_URL || "(not set)",
+    NODE_ENV: process.env.NODE_ENV,
+  };
+  try {
+    const token = await getPesapalToken();
+    return res.json({ success: true, config: info, token_preview: token.slice(0, 20) + "..." });
+  } catch (err) {
+    return res.status(500).json({ success: false, config: info, error: err.message });
+  }
+});
+// ── END DEBUG ─────────────────────────────────────────────────────
+
 router.get("/plans", auth, async (req, res) => {
   try {
     const where = req.user.role === "SUPER_ADMIN" ? "" : "WHERE is_active = TRUE";
