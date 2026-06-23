@@ -259,8 +259,9 @@ h1 .accent{
   background:rgba(74,222,128,0.1);
   border:1px solid var(--border-mid);
   display:flex;align-items:center;justify-content:center;
-  font-size:22px;margin-bottom:20px;
+  margin-bottom:20px;
 }
+.feat-icon svg,.adv-icon svg{width:22px;height:22px;stroke:#4ade80;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .feat-title{
   font-family:var(--font-display);
   font-size:18px;font-weight:700;
@@ -579,7 +580,10 @@ footer{
             <!-- 3D bottom edge -->
             <path d="M4 44 L4 48 L86 48 L90 44 Z" fill="#071209" stroke="rgba(74,222,128,0.1)" stroke-width="0.8"/>
             <path d="M90 44 L90 48 L86 48 Z" fill="#061508"/>
-            <text x="12" y="18" font-family="sans-serif" font-size="8" fill="#4ade80" font-weight="bold">💳 M-Pesa</text>
+            <!-- card icon -->
+            <path d="M73 8 L73 16 Q73 18 71 18 L63 18 Q61 18 61 16 L61 8 Q61 6 63 6 L71 6 Q73 6 73 8 Z" stroke="#4ade80" stroke-width="0.8" fill="none"/>
+            <line x1="61" y1="10" x2="73" y2="10" stroke="#4ade80" stroke-width="0.8"/>
+            <text x="12" y="18" font-family="sans-serif" font-size="8" fill="#4ade80" font-weight="bold">M-Pesa</text>
             <text x="12" y="30" font-family="monospace" font-size="7" fill="#bbf7d0">KES 142,500</text>
             <text x="12" y="39" font-family="monospace" font-size="5.5" fill="#6b8f72">collected today</text>
           </g>
@@ -588,7 +592,7 @@ footer{
           <g transform="translate(28,210)">
             <rect x="0" y="0" width="78" height="42" rx="9" fill="#0d1f10" stroke="rgba(74,222,128,0.3)" stroke-width="1.2"/>
             <path d="M3 42 L3 46 L75 46 L78 42 Z" fill="#071209" stroke="rgba(74,222,128,0.08)" stroke-width="0.8"/>
-            <text x="10" y="17" font-family="sans-serif" font-size="7.5" fill="#4ade80" font-weight="bold">📋 CBC</text>
+            <text x="10" y="17" font-family="sans-serif" font-size="7.5" fill="#4ade80" font-weight="bold">CBC</text>
             <text x="10" y="28" font-family="monospace" font-size="6.5" fill="#bbf7d0">Assessments</text>
             <text x="10" y="38" font-family="monospace" font-size="5.5" fill="#6b8f72">KICD Aligned ✓</text>
           </g>
@@ -597,7 +601,7 @@ footer{
           <g transform="translate(355,270)">
             <rect x="0" y="0" width="82" height="38" rx="9" fill="#0d1f10" stroke="rgba(74,222,128,0.25)" stroke-width="1"/>
             <path d="M3 38 L3 42 L79 42 L82 38 Z" fill="#071209"/>
-            <text x="10" y="15" font-family="sans-serif" font-size="7" fill="#fbbf24" font-weight="bold">🔔 Alerts</text>
+            <text x="10" y="15" font-family="sans-serif" font-size="7" fill="#fbbf24" font-weight="bold">Alerts</text>
             <text x="10" y="26" font-family="monospace" font-size="6" fill="#bbf7d0">3 fee defaults</text>
             <text x="10" y="34" font-family="monospace" font-size="5" fill="#6b8f72">auto-notified</text>
           </g>
@@ -621,22 +625,22 @@ footer{
 <div class="adv-band">
   <div class="adv-inner">
     <div class="adv-item fade-up">
-      <div class="adv-icon">🇰🇪</div>
+      <div class="adv-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
       <div class="adv-title">Built for Kenya</div>
       <div class="adv-desc">CBC curriculum, M-Pesa payments, KES fees, and KICD-aligned reports — not a generic system retrofitted.</div>
     </div>
     <div class="adv-item fade-up" style="transition-delay:.1s">
-      <div class="adv-icon">⚡</div>
+      <div class="adv-icon"><svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
       <div class="adv-title">Deploy in a Day</div>
       <div class="adv-desc">No IT team needed. Create your school, add staff, import students, and go live in under 24 hours.</div>
     </div>
     <div class="adv-item fade-up" style="transition-delay:.2s">
-      <div class="adv-icon">🔒</div>
+      <div class="adv-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
       <div class="adv-title">Role-Based Access</div>
       <div class="adv-desc">Principals, teachers, bursars, and HODs each see only what they need. Secure, scoped, and auditable.</div>
     </div>
     <div class="adv-item fade-up" style="transition-delay:.3s">
-      <div class="adv-icon">📱</div>
+      <div class="adv-icon"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
       <div class="adv-title">Works on Any Device</div>
       <div class="adv-desc">Fully responsive — teachers can take attendance on a phone, bursars track fees on a tablet or laptop.</div>
     </div>
@@ -651,47 +655,47 @@ footer{
 
   <div class="features-grid">
     <div class="feat fade-up">
-      <div class="feat-icon">📚</div>
+      <div class="feat-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg></div>
       <div class="feat-title">CBC Assessment Engine</div>
       <div class="feat-desc">Record strand-level achievement, generate formative and summative reports aligned to the KICD framework automatically.</div>
     </div>
     <div class="feat fade-up" style="transition-delay:.05s">
-      <div class="feat-icon">📋</div>
+      <div class="feat-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
       <div class="feat-title">Attendance Tracking</div>
       <div class="feat-desc">Daily attendance per class with teacher-level access, parent SMS alerts, and trend analytics over any date range.</div>
     </div>
     <div class="feat fade-up" style="transition-delay:.1s">
-      <div class="feat-icon">💳</div>
+      <div class="feat-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
       <div class="feat-title">Fee Management</div>
       <div class="feat-desc">Fee structures per class, M-Pesa payment recording, receipts, balance tracking, and collection reports by term.</div>
     </div>
     <div class="feat fade-up" style="transition-delay:.15s">
-      <div class="feat-icon">👥</div>
+      <div class="feat-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <div class="feat-title">Staff & Roles</div>
       <div class="feat-desc">Principal, Deputy, HOD, Teacher, and Bursar roles — each with scoped access. No admin seeing what they shouldn't.</div>
     </div>
     <div class="feat fade-up" style="transition-delay:.2s">
-      <div class="feat-icon">🏫</div>
+      <div class="feat-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
       <div class="feat-title">Multi-School Ready</div>
       <div class="feat-desc">Run a network of schools under one account. Full data isolation between schools — no cross-contamination.</div>
     </div>
     <div class="feat fade-up" style="transition-delay:.25s">
-      <div class="feat-icon">🤖</div>
+      <div class="feat-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div>
       <div class="feat-title">AI Teaching Assistant</div>
       <div class="feat-desc">Ask the AI for lesson plans, CBC-aligned activities, assessment rubrics, or report card remarks in seconds.</div>
     </div>
     <div class="feat fade-up" style="transition-delay:.3s">
-      <div class="feat-icon">📊</div>
+      <div class="feat-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
       <div class="feat-title">Reports & Analytics</div>
       <div class="feat-desc">Timetables, report cards, class performance summaries, and financial dashboards — printable or exportable.</div>
     </div>
     <div class="feat fade-up" style="transition-delay:.35s">
-      <div class="feat-icon">🔐</div>
+      <div class="feat-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
       <div class="feat-title">Enterprise Security</div>
       <div class="feat-desc">JWT auth with live revocation, audit logs on every action, token blocklist, and Helmet-hardened API.</div>
     </div>
     <div class="feat fade-up" style="transition-delay:.4s">
-      <div class="feat-icon">📱</div>
+      <div class="feat-icon"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
       <div class="feat-title">Works Everywhere</div>
       <div class="feat-desc">Fully responsive from desktop to phone. Hosted on Cloudflare's global edge — fast in Nairobi, Kisumu, or Mombasa.</div>
     </div>
