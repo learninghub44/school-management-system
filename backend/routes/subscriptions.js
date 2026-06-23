@@ -67,9 +67,32 @@ async function getPesapalToken() {
   return data.token;
 }
 
+let _cachedIpnId = null;
+
 async function getNotificationId(token) {
-  if (process.env.PESAPAL_IPN_ID) return process.env.PESAPAL_IPN_ID;
+  if (_cachedIpnId) return _cachedIpnId;
+  if (process.env.PESAPAL_IPN_ID) {
+    _cachedIpnId = process.env.PESAPAL_IPN_ID;
+    return _cachedIpnId;
+  }
   if (!process.env.PESAPAL_IPN_URL) throw new Error("PESAPAL_IPN_URL or PESAPAL_IPN_ID is required.");
+
+  // Try to reuse existing registered IPN
+  try {
+    const existing = await pesapalFetch("/URLSetup/GetIpnList", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const list = Array.isArray(existing) ? existing : (existing.data || []);
+    const match = list.find(i => i.url === process.env.PESAPAL_IPN_URL);
+    if (match?.ipn_id) {
+      console.log("[Pesapal] Reusing existing IPN ID:", match.ipn_id);
+      _cachedIpnId = match.ipn_id;
+      return _cachedIpnId;
+    }
+  } catch (e) {
+    console.warn("[Pesapal] Could not fetch IPN list:", e.message);
+  }
+
   const data = await pesapalFetch("/URLSetup/RegisterIPN", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
@@ -78,7 +101,9 @@ async function getNotificationId(token) {
       ipn_notification_type: "GET",
     }),
   });
-  return data.ipn_id;
+  console.log("[Pesapal] Registered IPN ID:", data.ipn_id, "— set PESAPAL_IPN_ID=" + data.ipn_id + " in Render env");
+  _cachedIpnId = data.ipn_id;
+  return _cachedIpnId;
 }
 
 function subscriptionEndDate(interval) {
@@ -292,7 +317,10 @@ router.post("/checkout", auth, roleM(CHECKOUT_ROLES),
       const school = schools[0];
       const plan = plans[0];
       const reference = `SUB-${Date.now()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
-      const callbackUrl = process.env.PESAPAL_CALLBACK_URL || `${req.protocol}://${req.get("host")}/subscription.html`;
+      // Sanitize callback URL — fix double-https:// and double-slash bugs in env var
+      const rawCallback = process.env.PESAPAL_CALLBACK_URL || `${req.protocol}://${req.get("host")}/subscription.html`;
+      const callbackUrl = rawCallback.replace(/^https?:\/\/https?:\/\//, "https://").replace(/([^:])\/\/+/g, "$1/").replace(/\/$/, "") + (rawCallback.includes("subscription.html") ? "" : "");
+      console.log("[Pesapal] Callback URL:", callbackUrl);
       const token = await getPesapalToken();
       const notificationId = await getNotificationId(token);
       const pesapalOrder = buildPesapalRecurringOrder({
