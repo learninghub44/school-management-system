@@ -5,6 +5,27 @@
 <title>Bursar Portal — CBC ERP</title>
 <script src="/js/config.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+#app{display:flex;min-height:100vh}
+@media(max-width:768px){
+  #app{display:block}
+  .sidebar{display:none!important}
+  .main{width:100%!important;min-width:0!important}
+  .mob-menu-btn{display:flex!important;align-items:center;justify-content:center}
+  .topbar{padding:12px 16px!important}
+  .content{padding:14px!important}
+  .fg-row{grid-template-columns:1fr!important}
+  .stat-grid{grid-template-columns:1fr 1fr!important}
+  .table-wrap{overflow-x:auto}
+  table{min-width:480px}
+}
+.sidebar-open .sidebar{display:flex!important;position:fixed!important;left:0!important;top:0!important;height:100vh!important;width:265px!important;z-index:1000!important}
+.sidebar-open .sidebar-overlay{display:block!important;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999}
+.modal-bg{position:fixed!important;inset:0!important;z-index:9999!important;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:16px;overflow-y:auto}
+.modal-bg.open{display:flex!important}
+.modal{background:#fff;border-radius:18px;padding:28px;width:100%;max-width:540px;margin:auto;box-shadow:0 24px 48px rgba(0,0,0,.18);max-height:calc(100vh - 32px);overflow-y:auto}
+@media(max-width:480px){.modal-bg{align-items:flex-end;padding:0}.modal{border-radius:18px 18px 0 0;max-height:90vh;padding:20px 16px}}
+</style>
 </head>
 <body>
 <div id="app"></div>
