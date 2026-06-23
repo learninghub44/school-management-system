@@ -33,14 +33,17 @@ async function pesapalFetch(path, options = {}) {
 
   console.log(`[Pesapal] ${path} → HTTP ${res.status}`, raw.slice(0, 500));
 
-  if (!res.ok) {
+  // Pesapal sometimes returns HTTP 200 with status:"500" and an error in the body
+  const pesapalStatus = String(data.status || "");
+  const hasError = !res.ok || pesapalStatus === "500" || pesapalStatus.startsWith("4");
+  if (hasError) {
     const msg =
       data.error?.message ||
       data.message ||
       data.error ||
       data.error_description ||
       (typeof data === "string" ? data : null) ||
-      `Pesapal HTTP ${res.status}`;
+      `Pesapal HTTP ${res.status} (status:${pesapalStatus})`;
     throw new Error(msg);
   }
   return data;
