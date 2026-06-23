@@ -122,6 +122,10 @@ if (process.env.NODE_ENV !== "test") {
   app.use(morgan("combined"));
 }
 
+// ── Global HTML sanitization on all request bodies ────────────────
+const { sanitizeBody } = require("./middleware/sanitize");
+app.use(sanitizeBody);
+
 // ── Serve frontend static files ──────────────────────────────────
 app.use(express.static(path.join(__dirname, "../frontend"), {
   maxAge: process.env.NODE_ENV === "production" ? "1d" : 0,
@@ -133,20 +137,31 @@ app.use("/api/auth",        require("./routes/auth"));
 app.use("/api/schools",     require("./routes/schools"));   // auth applied per-route (learning-areas is public-ish)
 app.use("/api/subscriptions", require("./routes/subscriptions")); // auth applied per-route (IPN + webhook are public)
 
+// ── Enforce must_change_password — block all routes except change-password ──
+function requirePasswordChange(req, res, next) {
+  if (req.user?.must_change_password)
+    return res.status(403).json({
+      success: false,
+      code: "PASSWORD_CHANGE_REQUIRED",
+      message: "You must change your password before continuing.",
+    });
+  next();
+}
+
 const requireSubscription = require("./middleware/subscriptionMiddleware");
 const authMiddleware = require("./middleware/authMiddleware");
-app.use("/api/users",       authMiddleware, requireSubscription, require("./routes/users"));
-app.use("/api/departments", authMiddleware, requireSubscription, require("./routes/departments"));
-app.use("/api/teachers",    authMiddleware, requireSubscription, require("./routes/teachers"));
-app.use("/api/classes",     authMiddleware, requireSubscription, require("./routes/classes"));
-app.use("/api/students",    authMiddleware, requireSubscription, require("./routes/students"));
-app.use("/api/assignments", authMiddleware, requireSubscription, require("./routes/assignments"));
-app.use("/api/attendance",  authMiddleware, requireSubscription, require("./routes/attendance"));
-app.use("/api/assessments", authMiddleware, requireSubscription, require("./routes/assessments"));
-app.use("/api/finance",     authMiddleware, requireSubscription, require("./routes/finance"));
-app.use("/api/reports",     authMiddleware, requireSubscription, require("./routes/reports"));
-app.use("/api/ai",          authMiddleware, requireSubscription, require("./routes/ai"));
-app.use("/api/exams",       authMiddleware, requireSubscription, require("./routes/exams"));
+app.use("/api/users",       authMiddleware, requirePasswordChange, requireSubscription, require("./routes/users"));
+app.use("/api/departments", authMiddleware, requirePasswordChange, requireSubscription, require("./routes/departments"));
+app.use("/api/teachers",    authMiddleware, requirePasswordChange, requireSubscription, require("./routes/teachers"));
+app.use("/api/classes",     authMiddleware, requirePasswordChange, requireSubscription, require("./routes/classes"));
+app.use("/api/students",    authMiddleware, requirePasswordChange, requireSubscription, require("./routes/students"));
+app.use("/api/assignments", authMiddleware, requirePasswordChange, requireSubscription, require("./routes/assignments"));
+app.use("/api/attendance",  authMiddleware, requirePasswordChange, requireSubscription, require("./routes/attendance"));
+app.use("/api/assessments", authMiddleware, requirePasswordChange, requireSubscription, require("./routes/assessments"));
+app.use("/api/finance",     authMiddleware, requirePasswordChange, requireSubscription, require("./routes/finance"));
+app.use("/api/reports",     authMiddleware, requirePasswordChange, requireSubscription, require("./routes/reports"));
+app.use("/api/ai",          authMiddleware, requirePasswordChange, requireSubscription, require("./routes/ai"));
+app.use("/api/exams",       authMiddleware, requirePasswordChange, requireSubscription, require("./routes/exams"));
 
 // ── Health check ─────────────────────────────────────────────────
 app.get("/api/health", (req, res) =>

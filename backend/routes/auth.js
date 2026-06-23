@@ -96,11 +96,7 @@ router.post("/login",
         return res.status(401).json({ success: false, message: "Invalid credentials." });
       }
 
-      // Check school active
-      if (!user.school_active)
-        return res.status(403).json({ success: false, message: "School account is deactivated." });
-
-      // Check account locked
+      // Check account locked first (before revealing school/account state)
       if (user.locked_until && new Date(user.locked_until) > new Date()) {
         const mins = Math.ceil((new Date(user.locked_until) - Date.now()) / 60000);
         return res.status(423).json({
@@ -112,6 +108,10 @@ router.post("/login",
       // Check account active
       if (!user.is_active)
         return res.status(403).json({ success: false, message: "Account is deactivated." });
+
+      // Check school active
+      if (!user.school_active)
+        return res.status(403).json({ success: false, message: "School account is deactivated." });
 
       // Reset failed attempts + record login
       await db.query(
@@ -257,8 +257,24 @@ router.get("/audit-log", auth, async (req, res) => {
 
     const p = [], where = [];
     if (role !== "SUPER_ADMIN") { p.push(school_id); where.push(`al.school_id=$${p.length}`); }
-    if (req.query.action)  { p.push(req.query.action);  where.push(`al.action=$${p.length}`); }
-    if (req.query.user_id) { p.push(req.query.user_id); where.push(`al.user_id=$${p.length}`); }
+
+    // Validate and sanitize filters
+    if (req.query.action) {
+      if (!/^[A-Z_]{2,50}$/.test(req.query.action))
+        return res.status(400).json({ success: false, message: "Invalid action filter." });
+      p.push(req.query.action); where.push(`al.action=$${p.length}`);
+    }
+    if (req.query.user_id) {
+      if (!/^[0-9a-f-]{36}$/i.test(req.query.user_id))
+        return res.status(400).json({ success: false, message: "Invalid user_id filter." });
+      p.push(req.query.user_id); where.push(`al.user_id=$${p.length}`);
+    }
+
+    // Pagination — max 200 per page
+    const limit  = Math.min(parseInt(req.query.limit)  || 100, 200);
+    const offset = Math.max(parseInt(req.query.offset) || 0,   0);
+    p.push(limit); const limitParam = p.length;
+    p.push(offset); const offsetParam = p.length;
 
     const whereClause = where.length ? "WHERE " + where.join(" AND ") : "";
     const { rows } = await db.query(
@@ -267,7 +283,7 @@ router.get("/audit-log", auth, async (req, res) => {
        LEFT JOIN users u ON u.id = al.user_id
        ${whereClause}
        ORDER BY al.created_at DESC
-       LIMIT 200`, p
+       LIMIT $${limitParam} OFFSET $${offsetParam}`, p
     );
     return res.json({ success: true, data: rows });
   } catch (err) {

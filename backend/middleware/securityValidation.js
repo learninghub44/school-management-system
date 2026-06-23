@@ -147,27 +147,32 @@ const validateRole = (allowedRoles) => {
 };
 
 /**
- * Rate limiting per user (in-memory, for production use Redis)
+ * Rate limiting per user (in-memory — use Redis in high-scale production)
+ * Uses a Map with periodic cleanup to prevent unbounded memory growth.
  */
 const userRateLimit = (maxRequests = 100, windowMs = 60000) => {
-  const userRequests = {};
+  const userRequests = new Map();
+
+  // Periodically purge expired entries to prevent memory leak
+  const cleanup = setInterval(() => {
+    const now = Date.now();
+    for (const [key, data] of userRequests.entries()) {
+      if (now > data.resetTime) userRequests.delete(key);
+    }
+  }, windowMs * 2);
+  // Don't hold process open for this interval
+  if (cleanup.unref) cleanup.unref();
 
   return (req, res, next) => {
     const userId = req.user?.id;
     if (!userId) return next();
 
     const now = Date.now();
-    const userKey = `${userId}`;
+    let userData = userRequests.get(userId);
 
-    if (!userRequests[userKey]) {
-      userRequests[userKey] = { count: 0, resetTime: now + windowMs };
-    }
-
-    const userData = userRequests[userKey];
-
-    if (now > userData.resetTime) {
-      userData.count = 0;
-      userData.resetTime = now + windowMs;
+    if (!userData || now > userData.resetTime) {
+      userData = { count: 0, resetTime: now + windowMs };
+      userRequests.set(userId, userData);
     }
 
     userData.count++;

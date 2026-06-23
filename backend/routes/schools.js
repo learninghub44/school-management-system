@@ -111,7 +111,7 @@ router.post("/", auth, roleM(["SUPER_ADMIN"]),
 );
 
 // ── PUT /api/schools/:id — SUPER_ADMIN or own school ─────────────
-router.put("/:id", auth,
+router.put("/:id", auth, roleM(["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL"]),
   [
     body("name").optional().trim().isLength({ max: 255 }),
     body("email").optional().isEmail().normalizeEmail(),
@@ -138,8 +138,9 @@ router.put("/:id", auth,
     if (!errs.isEmpty())
       return res.status(400).json({ success: false, errors: errs.array() });
 
-    // Access check: SUPER_ADMIN can update any, others can only update own
-    if (req.user.role !== "SUPER_ADMIN" && req.user.school_id !== req.params.id)
+    // Access check: SUPER_ADMIN can update any, others can only update own school
+    // school_id from JWT is a UUID string — compare strictly
+    if (req.user.role !== "SUPER_ADMIN" && String(req.user.school_id) !== String(req.params.id))
       return res.status(403).json({ success: false, message: "Access denied." });
 
     try {

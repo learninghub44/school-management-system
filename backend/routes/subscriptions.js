@@ -183,8 +183,10 @@ async function activateSubscription(paymentId) {
   return rows[0];
 }
 
-// ── TEMP DEBUG: SUPER_ADMIN only ──────────────────────────────────
+// ── DEBUG endpoints — SUPER_ADMIN only, disabled in production ────
 router.get("/debug-pesapal", auth, roleM(["SUPER_ADMIN"]), async (req, res) => {
+  if (process.env.NODE_ENV === "production")
+    return res.status(403).json({ success: false, message: "Debug endpoints disabled in production." });
   const rawCallback = process.env.PESAPAL_CALLBACK_URL || "https://cbc-school-erp.pages.dev/subscription.html";
   const callbackUrl = rawCallback.replace(/^https?:\/\/https?:\/\//, "https://").replace(/([^:])\/\/+/g, "$1/").replace(/\/$/, "");
 
@@ -266,6 +268,8 @@ router.get("/debug-pesapal", auth, roleM(["SUPER_ADMIN"]), async (req, res) => {
 });
 // ── DB CHECK DEBUG ───────────────────────────────────────────────
 router.get("/debug-db", auth, roleM(["SUPER_ADMIN"]), async (req, res) => {
+  if (process.env.NODE_ENV === "production")
+    return res.status(403).json({ success: false, message: "Debug endpoints disabled in production." });
   try {
     const tables = await db.query(`
       SELECT table_name FROM information_schema.tables
@@ -437,11 +441,12 @@ router.post("/checkout", auth, roleM(CHECKOUT_ROLES),
       return res.status(201).json({ success: true, data: rows[0], redirect_url: redirectUrl });
     } catch (err) {
       console.error("[Pesapal] Checkout error:", err.message, err.stack);
-      // Surface the real error — could be Pesapal or DB
-      const isDbError = err.message?.includes("relation") || err.message?.includes("column") || err.code?.startsWith("2") || err.code?.startsWith("4");
-      const userMsg = isDbError
-        ? `Database error during checkout: ${err.message}`
-        : (err.message || "Unable to start Pesapal checkout.");
+      // Only expose Pesapal-originated messages; never leak DB internals
+      const isPesapalError = err.message?.toLowerCase().includes("pesapal") ||
+        err.message?.toLowerCase().includes("token") ||
+        err.message?.toLowerCase().includes("ipn") ||
+        err.message?.toLowerCase().includes("credentials");
+      const userMsg = isPesapalError ? err.message : "Unable to start checkout. Please try again.";
       return res.status(500).json({ success: false, message: userMsg });
     }
   }
@@ -622,12 +627,23 @@ router.post("/paystack/checkout", auth, roleM(CHECKOUT_ROLES),
   }
 );
 
-// GET /api/subscriptions/paystack/callback?reference=xxx  (Paystack redirects here via callback_url)
+// GET /api/subscriptions/paystack/verify/:reference
 // Frontend hits this after Paystack redirects back — verifies and activates
 router.get("/paystack/verify/:reference", auth, async (req, res) => {
   try {
     const { reference } = req.params;
-    if (!reference) return res.status(400).json({ success: false, message: "reference required." });
+    if (!reference || !/^[A-Z0-9\-]{10,80}$/i.test(reference))
+      return res.status(400).json({ success: false, message: "Invalid reference." });
+
+    // Verify the payment record belongs to the requesting school (prevents cross-school activation)
+    const { rows: existing } = await db.query(
+      "SELECT id, school_id, status FROM subscription_payments WHERE merchant_reference=$1",
+      [reference]
+    );
+    if (!existing.length)
+      return res.status(404).json({ success: false, message: "Payment not found." });
+    if (req.user.role !== "SUPER_ADMIN" && existing[0].school_id !== req.user.school_id)
+      return res.status(403).json({ success: false, message: "Access denied." });
 
     const data = await paystackFetch(`/transaction/verify/${encodeURIComponent(reference)}`);
     const txn = data.data;

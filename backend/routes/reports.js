@@ -178,8 +178,9 @@ router.post("/cards/:id/publish",
 );
 
 // ── GET /api/reports/timetable ─────────────────────────────────────
-// FIX: was completely missing school isolation guard for non-SUPER_ADMIN
-router.get("/timetable", auth, async (req, res) => {
+router.get("/timetable", auth,
+  roleM(["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL", "HOD", "TEACHER", "BURSAR"]),
+  async (req, res) => {
   try {
     const schoolId = getSchoolId(req);
     // Hard guard: non-SUPER_ADMIN must always be scoped
@@ -210,7 +211,8 @@ router.get("/timetable", auth, async (req, res) => {
   } catch (err) {
     return res.status(500).json({ success: false, message: "Server error." });
   }
-});
+  }
+);
 
 // ── POST /api/reports/timetable ───────────────────────────────────
 router.post("/timetable",

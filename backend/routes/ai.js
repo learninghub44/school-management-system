@@ -56,7 +56,7 @@ router.post("/assist", auth, requireSubscription,
       return res.json({ success: true, output });
     } catch (err) {
       console.error("AI assist:", err.message);
-      return res.status(500).json({ success: false, message: err.message || "AI request failed." });
+      return res.status(500).json({ success: false, message: "AI request failed." });
     }
   }
 );
