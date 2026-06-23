@@ -12,31 +12,50 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#0f172a;color:#e2e8f0
 .top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:28px}
 h1{font-size:28px;line-height:1.2}
 .muted{color:#94a3b8;font-size:14px;margin-top:6px}
-.btn{border:1px solid rgba(255,255,255,.14);background:#1e293b;color:#e2e8f0;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;transition:opacity .15s}
+.btn{border:1px solid rgba(255,255,255,.14);background:#1e293b;color:#e2e8f0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;transition:all .15s}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn-primary{background:#f59e0b;border-color:#f59e0b;color:#111827}
-.btn-primary:hover:not(:disabled){background:#d97706;border-color:#d97706}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
-.card{background:#111827;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:20px}
+.btn-primary:hover:not(:disabled){background:#d97706}
+.btn-green{background:#059669;border-color:#059669;color:#fff}
+.btn-green:hover:not(:disabled){background:#047857}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.card{background:#111827;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:22px}
 .plan-name{font-size:17px;font-weight:800;margin-bottom:10px}
-.price{font-size:30px;font-weight:800;color:#fff;margin-bottom:4px}
-.chip{display:inline-flex;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 9px;font-size:11px;color:#cbd5e1;margin:8px 6px 16px 0}
-.alert{padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;line-height:1.5;display:flex;gap:10px;align-items:flex-start}
-.alert-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.price{font-size:32px;font-weight:800;color:#fff;margin-bottom:2px}
+.chip{display:inline-flex;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 9px;font-size:11px;color:#cbd5e1;margin:8px 4px 16px 0}
+.alert{padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;line-height:1.6;display:flex;gap:10px;align-items:flex-start}
+.alert-icon{font-size:18px;flex-shrink:0}
 .err{background:#7f1d1d;color:#fecaca;border:1px solid #991b1b}
 .ok{background:#064e3b;color:#bbf7d0;border:1px solid #065f46}
 .warn{background:#78350f;color:#fde68a;border:1px solid #92400e}
 .info{background:#1e3a5f;color:#bae6fd;border:1px solid #1d4ed8}
 
-/* Callback result screen */
+/* Payment method picker modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:#111827;border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:28px;max-width:420px;width:90%;animation:pop .18s ease}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+.modal h2{font-size:18px;font-weight:800;margin-bottom:6px}
+.modal .sub{color:#94a3b8;font-size:13px;margin-bottom:20px}
+.pay-opts{display:flex;flex-direction:column;gap:10px}
+.pay-opt{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid rgba(255,255,255,.12);border-radius:10px;cursor:pointer;background:#1e293b;transition:border-color .15s}
+.pay-opt:hover{border-color:#f59e0b}
+.pay-opt .logo{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.pay-opt .logo.pesapal{background:#003f72}
+.pay-opt .logo.paystack{background:#0ba4db}
+.pay-opt .name{font-weight:700;font-size:15px}
+.pay-opt .desc{font-size:12px;color:#94a3b8;margin-top:2px}
+.modal-cancel{margin-top:16px;width:100%;background:transparent;border:1px solid rgba(255,255,255,.1);color:#94a3b8;border-radius:8px;padding:10px;cursor:pointer;font-family:inherit;font-size:14px}
+.modal-cancel:hover{background:#1e293b}
+
+/* Result screen */
 .result-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:20px}
 .result-screen.show{display:flex}
-.result-icon{font-size:64px;line-height:1}
+.result-icon{font-size:64px}
 .result-title{font-size:26px;font-weight:800}
-.result-sub{color:#94a3b8;font-size:15px;max-width:420px;line-height:1.6}
-.spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,.1);border-top-color:#f59e0b;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto}
+.result-sub{color:#94a3b8;font-size:15px;max-width:440px;line-height:1.7}
+.spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,.1);border-top-color:#f59e0b;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.plans-section{display:block}
 .plans-section.hide{display:none}
 </style>
 </head>
@@ -45,77 +64,196 @@ h1{font-size:28px;line-height:1.2}
   <div class="top">
     <div>
       <h1>Subscription</h1>
-      <p class="muted">Your school needs an active plan before staff can use the ERP modules.</p>
+      <p class="muted">Your school needs an active plan to unlock all ERP modules.</p>
     </div>
     <button class="btn" id="logoutBtn">Sign Out</button>
   </div>
 
-  <!-- Callback result screen (shown after returning from Pesapal) -->
+  <!-- Result screen after returning from payment -->
   <div class="result-screen" id="resultScreen">
     <div class="result-icon" id="resultIcon">⏳</div>
     <div class="result-title" id="resultTitle">Verifying payment...</div>
-    <div class="result-sub" id="resultSub">Please wait while we confirm your payment with Pesapal.</div>
+    <div class="result-sub" id="resultSub">Please wait while we confirm your payment.</div>
     <div class="spinner" id="resultSpinner"></div>
-    <button class="btn btn-primary" id="resultBtn" style="display:none" onclick="window.location.href='/subscription.html'">Back to Plans</button>
+    <button class="btn btn-primary" id="resultBtn" style="display:none">Back to Plans</button>
   </div>
 
-  <!-- Plans section (hidden during callback processing) -->
+  <!-- Plans -->
   <div class="plans-section" id="plansSection">
     <div id="status"></div>
     <div class="grid" id="plans"><div class="card">Loading plans...</div></div>
   </div>
 </main>
 
+<!-- Payment method modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2>Choose Payment Method</h2>
+    <div class="sub" id="modalPlanLabel">Select how you'd like to pay</div>
+    <div class="pay-opts">
+      <div class="pay-opt" id="optPesapal">
+        <div class="logo pesapal">🔵</div>
+        <div>
+          <div class="name">Pesapal</div>
+          <div class="desc">M-Pesa, Visa, Mastercard via Pesapal</div>
+        </div>
+      </div>
+      <div class="pay-opt" id="optPaystack">
+        <div class="logo paystack">🟢</div>
+        <div>
+          <div class="name">Paystack</div>
+          <div class="desc">M-Pesa, cards & bank via Paystack</div>
+        </div>
+      </div>
+    </div>
+    <button class="modal-cancel" id="modalCancel">Cancel</button>
+  </div>
+</div>
+
 <script type="module">
-import { guardPage, subscriptions, logout, esc, apiFetch } from "/js/api.js";
+import { guardPage, subscriptions, logout, esc } from "/js/api.js";
 
 const user = guardPage(["PRINCIPAL","DEPUTY_PRINCIPAL","HOD","TEACHER","BURSAR"]);
-const plansEl   = document.getElementById("plans");
-const statusEl  = document.getElementById("status");
-const resultScreen  = document.getElementById("resultScreen");
-const plansSection  = document.getElementById("plansSection");
-const resultIcon    = document.getElementById("resultIcon");
-const resultTitle   = document.getElementById("resultTitle");
-const resultSub     = document.getElementById("resultSub");
-const resultSpinner = document.getElementById("resultSpinner");
-const resultBtn     = document.getElementById("resultBtn");
+const plansEl      = document.getElementById("plans");
+const statusEl     = document.getElementById("status");
+const resultScreen = document.getElementById("resultScreen");
+const plansSection = document.getElementById("plansSection");
+const resultIcon   = document.getElementById("resultIcon");
+const resultTitle  = document.getElementById("resultTitle");
+const resultSub    = document.getElementById("resultSub");
+const resultSpinner= document.getElementById("resultSpinner");
+const resultBtn    = document.getElementById("resultBtn");
+const modalBg      = document.getElementById("modalBg");
+const modalLabel   = document.getElementById("modalPlanLabel");
+
+// Currently selected plan for modal
+let selectedPlan = null;
+let selectedBtn  = null;
 
 function showAlert(msg, type = "err") {
-  const icons = { err: "⚠️", ok: "✅", warn: "⏳", info: "ℹ️" };
-  statusEl.innerHTML = `<div class="alert ${type}"><span class="alert-icon">${icons[type]||"ℹ️"}</span><span>${esc(msg)}</span></div>`;
+  const icons = { err:"⚠️", ok:"✅", warn:"⏳", info:"ℹ️" };
+  statusEl.innerHTML = `<div class="alert ${type}"><span class="alert-icon">${icons[type]||"ℹ️"}</span><span>${msg}</span></div>`;
 }
 
 function canPay() {
   return ["PRINCIPAL","DEPUTY_PRINCIPAL"].includes(user?.role);
 }
 
-// ── Handle Pesapal callback (user returned from payment page) ─────
+function resetBtn(btn, plan) {
+  if (!btn) return;
+  btn.disabled = false;
+  btn.textContent = "Pay Now";
+}
+
+// ── Payment method modal ──────────────────────────────────────────
+function openModal(plan, btn) {
+  selectedPlan = plan;
+  selectedBtn  = btn;
+  modalLabel.textContent = `${plan.name} — KES ${Number(plan.amount).toLocaleString("en-KE")} / ${plan.billing_interval}`;
+  modalBg.classList.add("show");
+}
+
+document.getElementById("modalCancel").addEventListener("click", () => {
+  modalBg.classList.remove("show");
+  resetBtn(selectedBtn, selectedPlan);
+});
+modalBg.addEventListener("click", e => {
+  if (e.target === modalBg) {
+    modalBg.classList.remove("show");
+    resetBtn(selectedBtn, selectedPlan);
+  }
+});
+
+// ── Initiate checkout ─────────────────────────────────────────────
+async function startCheckout(provider) {
+  modalBg.classList.remove("show");
+  if (!selectedPlan || !selectedBtn) return;
+
+  const btn = selectedBtn;
+  const plan = selectedPlan;
+  btn.disabled = true;
+  btn.textContent = `Starting ${provider === "paystack" ? "Paystack" : "Pesapal"}...`;
+  statusEl.innerHTML = "";
+
+  const endpoint = provider === "paystack"
+    ? "/subscriptions/paystack/checkout"
+    : "/subscriptions/checkout";
+
+  const base = window.API_BASE || "/api";
+  const token = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
+
+  let out;
+  try {
+    const r = await fetch(`${base}${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type":"application/json", Authorization:`Bearer ${token}` },
+      body: JSON.stringify({ plan_id: Number(plan.id) }),
+    });
+    out = await r.json().catch(() => ({}));
+    out._status = r.status;
+  } catch(e) {
+    out = { success: false, message: "Network error. Check your connection." };
+  }
+
+  if (out?.redirect_url) {
+    showAlert(`Redirecting to ${provider === "paystack" ? "Paystack" : "Pesapal"} to pay KES ${Number(plan.amount).toLocaleString("en-KE")}…`, "info");
+    setTimeout(() => { window.location.href = out.redirect_url; }, 600);
+    return;
+  }
+
+  resetBtn(btn, plan);
+  const msg = out?.message || "Could not start checkout.";
+  if (msg.includes("amount_exceeds") || msg.includes("exceeds limit")) {
+    showAlert("Pesapal transaction limit exceeded. Try paying with <strong>Paystack</strong> instead, or contact Pesapal support to raise your limit.", "warn");
+  } else if (msg.includes("PAYSTACK_SECRET_KEY") || msg.includes("not configured")) {
+    showAlert("Paystack is not yet configured. Contact your system administrator to add PAYSTACK_SECRET_KEY.", "err");
+  } else {
+    showAlert(msg, "err");
+  }
+}
+
+document.getElementById("optPesapal").addEventListener("click", () => startCheckout("pesapal"));
+document.getElementById("optPaystack").addEventListener("click", () => startCheckout("paystack"));
+
+// ── Handle callback returns from both Pesapal & Paystack ──────────
 async function handleCallback() {
   const params = new URLSearchParams(window.location.search);
-  const trackingId       = params.get("OrderTrackingId") || params.get("orderTrackingId");
-  const merchantRef      = params.get("OrderMerchantReference") || params.get("orderMerchantReference");
-  const orderNotifyId    = params.get("OrderNotificationType") || null;
+  const pesapalTracking = params.get("OrderTrackingId") || params.get("orderTrackingId");
+  const pesapalRef      = params.get("OrderMerchantReference") || params.get("orderMerchantReference");
+  const paystackRef     = params.get("reference") || params.get("trxref");
 
-  if (!trackingId && !merchantRef) return false; // not a callback
+  if (!pesapalTracking && !pesapalRef && !paystackRef) return false;
 
-  // Show result screen, hide plans
   resultScreen.classList.add("show");
   plansSection.classList.add("hide");
-
-  // Clean URL without reloading
   window.history.replaceState({}, "", window.location.pathname);
 
-  try {
-    // Ping our IPN endpoint to trigger status check & DB update
-    const qs = trackingId
-      ? `OrderTrackingId=${encodeURIComponent(trackingId)}`
-      : `OrderMerchantReference=${encodeURIComponent(merchantRef)}`;
-    const r = await fetch(`${window.API_BASE || "/api"}/subscriptions/ipn?${qs}`);
-    const data = await r.json().catch(() => ({}));
+  const base = window.API_BASE || "/api";
+  const provider = paystackRef ? "Paystack" : "Pesapal";
 
-    // Now check subscription status
-    const subRes = await subscriptions.me();
-    const sub = subRes?.data;
+  try {
+    resultSub.textContent = `Confirming your ${provider} payment…`;
+
+    if (paystackRef) {
+      // Verify Paystack payment
+      const r = await fetch(`${base}/subscriptions/paystack/verify/${encodeURIComponent(paystackRef)}`);
+      const data = await r.json().catch(() => ({}));
+      if (!data.paid) throw new Error(data.message || "Payment not completed.");
+    } else {
+      // Trigger Pesapal IPN
+      const qs = pesapalTracking
+        ? `OrderTrackingId=${encodeURIComponent(pesapalTracking)}`
+        : `OrderMerchantReference=${encodeURIComponent(pesapalRef)}`;
+      await fetch(`${base}/subscriptions/ipn?${qs}`);
+    }
+
+    // Check subscription status
+    const token = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
+    const subRes = await fetch(`${base}/subscriptions/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const subData = await subRes.json().catch(() => ({}));
+    const sub = subData?.data;
 
     resultSpinner.style.display = "none";
     resultBtn.style.display = "inline-block";
@@ -123,105 +261,76 @@ async function handleCallback() {
     if (sub?.status === "active" || sub?.status === "trialing") {
       resultIcon.textContent  = "🎉";
       resultTitle.textContent = "Payment Successful!";
-      resultSub.textContent   = `Your school is now on the ${sub.plan_name} plan, active until ${new Date(sub.current_period_end).toLocaleDateString("en-KE", { day:"numeric", month:"long", year:"numeric" })}.`;
-      resultBtn.textContent   = "Go to Dashboard";
-      resultBtn.onclick       = () => window.location.href = "/index.html";
+      const end = new Date(sub.current_period_end).toLocaleDateString("en-KE", { day:"numeric", month:"long", year:"numeric" });
+      resultSub.textContent = `Your school is on the ${sub.plan_name} plan, active until ${end}.`;
+      resultBtn.textContent = "Go to Dashboard";
+      resultBtn.onclick = () => window.location.href = "/index.html";
     } else {
-      // Payment made but subscription not yet active — could be processing delay
       resultIcon.textContent  = "⏳";
-      resultTitle.textContent = "Payment Received — Pending Confirmation";
-      resultSub.innerHTML     = `Your payment is being processed. This usually takes a few seconds.<br><br>
-        If you paid successfully, your subscription will activate automatically. 
-        Refresh this page in a moment or contact your administrator if it doesn't update.`;
-      resultBtn.textContent   = "Refresh Status";
-      resultBtn.onclick       = () => window.location.href = "/subscription.html";
+      resultTitle.textContent = "Payment Received — Awaiting Confirmation";
+      resultSub.innerHTML = `Your payment is being processed by ${provider}. This usually takes a few seconds.<br><br>Refresh this page in a moment if your subscription doesn't activate.`;
+      resultBtn.textContent = "Refresh";
+      resultBtn.onclick = () => window.location.href = "/subscription.html";
     }
   } catch (err) {
     resultSpinner.style.display = "none";
     resultIcon.textContent  = "❌";
-    resultTitle.textContent = "Could Not Verify Payment";
-    resultSub.textContent   = "We couldn't confirm your payment status. If you completed payment, your subscription will activate shortly. Please refresh or contact support.";
+    resultTitle.textContent = "Payment Verification Failed";
+    resultSub.textContent   = `We couldn't confirm your ${provider} payment. If you were charged, your subscription will activate shortly. Contact support if it doesn't.`;
     resultBtn.style.display = "inline-block";
     resultBtn.textContent   = "Back to Plans";
+    resultBtn.onclick = () => window.location.href = "/subscription.html";
   }
-
   return true;
 }
 
 // ── Load plans ────────────────────────────────────────────────────
 async function load() {
-  // First check if this is a Pesapal callback return
   const isCallback = await handleCallback();
   if (isCallback) return;
 
-  // Check current subscription
+  // Current subscription status
   const current = await subscriptions.me();
   const sub = current?.data;
   if (sub?.status === "active" || sub?.status === "trialing") {
     const end = new Date(sub.current_period_end).toLocaleDateString("en-KE", { day:"numeric", month:"long", year:"numeric" });
-    showAlert(`✅ ${sub.plan_name} plan active — renews ${end}`, "ok");
+    showAlert(`Your <strong>${esc(sub.plan_name)}</strong> plan is active until <strong>${end}</strong>.`, "ok");
   } else if (sub?.status === "past_due") {
-    showAlert("Your subscription has expired. Please renew to restore access.", "warn");
+    showAlert("Your subscription has expired. Renew below to restore staff access.", "warn");
   }
 
-  // Load plans
   const r = await subscriptions.plans();
   const plans = r?.data || [];
   if (!plans.length) {
-    plansEl.innerHTML = '<div class="card">No subscription plans are available yet. Contact your administrator.</div>';
+    plansEl.innerHTML = '<div class="card">No plans available yet. Contact your administrator.</div>';
     return;
   }
 
   plansEl.innerHTML = plans.map(p => `
     <section class="card">
       <div class="plan-name">${esc(p.name)}</div>
-      <div class="price">${esc(p.currency)} ${Number(p.amount).toLocaleString("en-KE")}</div>
+      <div class="price">KES ${Number(p.amount).toLocaleString("en-KE")}</div>
       <div class="muted">per ${esc(p.billing_interval)}</div>
       <div>
         <span class="chip">${p.student_limit ? `Up to ${esc(String(p.student_limit))} students` : "Unlimited students"}</span>
         <span class="chip">${p.ai_enabled ? "AI included" : "No AI"}</span>
       </div>
       ${canPay()
-        ? `<button class="btn btn-primary" data-plan="${esc(String(p.id))}" data-amount="${esc(String(p.amount))}" data-name="${esc(p.name)}">Pay with Pesapal</button>`
-        : `<button class="btn" disabled>Pay with Pesapal</button>
-           <p class="muted" style="margin-top:8px">Only a Principal or Deputy Principal can initiate payment.</p>`
+        ? `<button class="btn btn-primary" data-plan='${JSON.stringify({id:p.id,name:p.name,amount:p.amount,billing_interval:p.billing_interval})}'>Pay Now</button>`
+        : `<button class="btn" disabled>Pay Now</button>
+           <p class="muted" style="margin-top:8px;font-size:12px">Only a Principal or Deputy Principal can pay.</p>`
       }
     </section>
   `).join("");
 
-  plansEl.querySelectorAll("[data-plan]").forEach(btn => btn.addEventListener("click", async () => {
-    const planId   = Number(btn.dataset.plan);
-    const planName = btn.dataset.name;
-    const amount   = btn.dataset.amount;
-
-    btn.disabled    = true;
-    btn.textContent = "Starting checkout...";
-    statusEl.innerHTML = "";
-
-    const out = await subscriptions.checkout({ plan_id: planId });
-
-    if (out?.redirect_url) {
-      // Success — redirect to Pesapal payment page
-      showAlert(`Redirecting to Pesapal to pay KES ${Number(amount).toLocaleString("en-KE")} for ${planName}...`, "info");
-      setTimeout(() => { window.location.href = out.redirect_url; }, 800);
-      return;
-    }
-
-    // Failed — show real error
-    btn.disabled    = false;
-    btn.textContent = "Pay with Pesapal";
-
-    const msg = out?.message || "Could not start Pesapal checkout.";
-
-    // Give actionable guidance based on error
-    if (msg.includes("amount_exceeds") || msg.includes("exceeds limit")) {
-      showAlert("Payment limit exceeded on this Pesapal account. Please contact Pesapal support (merchantsupport@pesapal.com) to raise your transaction limit.", "warn");
-    } else if (msg.includes("credentials") || msg.includes("consumer")) {
-      showAlert("Pesapal credentials are misconfigured. Please contact your system administrator.", "err");
-    } else {
-      showAlert(msg, "err");
-    }
-  }));
+  plansEl.querySelectorAll("[data-plan]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const plan = JSON.parse(btn.dataset.plan);
+      btn.disabled = true;
+      btn.textContent = "Pay Now";
+      openModal(plan, btn);
+    });
+  });
 }
 
 document.getElementById("logoutBtn").addEventListener("click", logout);

@@ -490,4 +490,181 @@ router.get("/ipn", async (req, res) => {
   }
 });
 
+
+// ════════════════════════════════════════════════════════════════
+// PAYSTACK INTEGRATION
+// ════════════════════════════════════════════════════════════════
+
+function paystackBase() {
+  return "https://api.paystack.co";
+}
+
+async function paystackFetch(path, options = {}) {
+  const key = process.env.PAYSTACK_SECRET_KEY;
+  if (!key) throw new Error("PAYSTACK_SECRET_KEY is not configured.");
+  const url = `${paystackBase()}${path}`;
+  let res;
+  try {
+    res = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+        ...(options.headers || {}),
+      },
+    });
+  } catch (networkErr) {
+    throw new Error(`Paystack network error: ${networkErr.message}`);
+  }
+  const raw = await res.text().catch(() => "");
+  let data = {};
+  try { data = JSON.parse(raw); } catch { data = {}; }
+  console.log(`[Paystack] ${path} → HTTP ${res.status}`, raw.slice(0, 400));
+  if (!res.ok || data.status === false) {
+    throw new Error(data.message || `Paystack HTTP ${res.status}`);
+  }
+  return data;
+}
+
+// POST /api/subscriptions/paystack/checkout
+router.post("/paystack/checkout", auth, roleM(CHECKOUT_ROLES),
+  [body("plan_id").isInt({ min: 1 }), body("school_id").optional().isUUID()],
+  async (req, res) => {
+    const errs = validationResult(req);
+    if (!errs.isEmpty()) return res.status(400).json({ success: false, errors: errs.array() });
+    try {
+      const schoolId = req.user.role === "SUPER_ADMIN" ? req.body.school_id : req.user.school_id;
+      if (!schoolId) return res.status(400).json({ success: false, message: "school_id required." });
+
+      const [{ rows: schools }, { rows: plans }] = await Promise.all([
+        db.query("SELECT * FROM schools WHERE id=$1", [schoolId]),
+        db.query("SELECT * FROM payment_plans WHERE id=$1 AND is_active=TRUE", [req.body.plan_id]),
+      ]);
+      if (!schools.length) return res.status(404).json({ success: false, message: "School not found." });
+      if (!plans.length) return res.status(404).json({ success: false, message: "Plan not found." });
+
+      const school = schools[0];
+      const plan = plans[0];
+      const reference = `PS-${Date.now()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+      const callbackUrl = (process.env.PAYSTACK_CALLBACK_URL || `https://cbc-school-erp.pages.dev/subscription.html`)
+        .replace(/^https?:\/\/https?:\/\//, "https://")
+        .replace(/([^:])\/\/+/g, "$1/")
+        .replace(/\/$/, "");
+
+      // Paystack amount is in kobo (KES * 100)
+      const amountKobo = Math.round(Number(plan.amount) * 100);
+
+      const email = school.email || req.user.email || "school@cbcerp.co.ke";
+
+      const data = await paystackFetch("/transaction/initialize", {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          amount: amountKobo,
+          currency: plan.currency || "KES",
+          reference,
+          callback_url: callbackUrl,
+          metadata: {
+            school_id: schoolId,
+            plan_id: plan.id,
+            school_name: school.name,
+            plan_name: plan.name,
+            created_by: req.user.id,
+          },
+        }),
+      });
+
+      const redirectUrl = data.data?.authorization_url;
+      const accessCode  = data.data?.access_code;
+
+      // Save pending payment
+      const { rows } = await db.query(
+        `INSERT INTO subscription_payments
+         (school_id, plan_id, merchant_reference, order_tracking_id, amount, currency, status, checkout_url, created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,'pending',$7,$8)
+         RETURNING *`,
+        [schoolId, plan.id, reference, accessCode || null, plan.amount, plan.currency, redirectUrl, req.user.id]
+      );
+      await audit(req, "CREATE_PAYSTACK_CHECKOUT", "subscription_payments", rows[0].id, null, rows[0]);
+      return res.status(201).json({ success: true, data: rows[0], redirect_url: redirectUrl });
+    } catch (err) {
+      console.error("[Paystack] Checkout error:", err.message, err.stack);
+      return res.status(500).json({ success: false, message: err.message || "Unable to start Paystack checkout." });
+    }
+  }
+);
+
+// GET /api/subscriptions/paystack/callback?reference=xxx  (Paystack redirects here via callback_url)
+// Frontend hits this after Paystack redirects back — verifies and activates
+router.get("/paystack/verify/:reference", async (req, res) => {
+  try {
+    const { reference } = req.params;
+    if (!reference) return res.status(400).json({ success: false, message: "reference required." });
+
+    const data = await paystackFetch(`/transaction/verify/${encodeURIComponent(reference)}`);
+    const txn = data.data;
+    const paid = txn?.status === "success";
+
+    const { rows } = await db.query(
+      `UPDATE subscription_payments SET
+         status=$1, provider_payload=$2, updated_at=NOW()
+       WHERE merchant_reference=$3
+       RETURNING id`,
+      [paid ? "completed" : (txn?.status || "failed"), JSON.stringify(txn), reference]
+    );
+
+    if (paid && rows[0]?.id) await activateSubscription(rows[0].id);
+
+    return res.json({
+      success: true,
+      paid,
+      status: txn?.status,
+      amount: txn?.amount ? txn.amount / 100 : null,
+      currency: txn?.currency,
+      reference,
+    });
+  } catch (err) {
+    console.error("[Paystack] Verify error:", err.message);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// POST /api/subscriptions/paystack/webhook  (Paystack server-to-server webhook)
+router.post("/paystack/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+  try {
+    const secret = process.env.PAYSTACK_SECRET_KEY;
+    if (!secret) return res.status(500).end();
+
+    // Verify Paystack signature
+    const hash = crypto
+      .createHmac("sha512", secret)
+      .update(req.body)
+      .digest("hex");
+    if (hash !== req.headers["x-paystack-signature"]) {
+      console.warn("[Paystack] Webhook signature mismatch");
+      return res.status(400).end();
+    }
+
+    const event = JSON.parse(req.body.toString());
+    console.log("[Paystack] Webhook event:", event.event);
+
+    if (event.event === "charge.success") {
+      const reference = event.data?.reference;
+      const { rows } = await db.query(
+        `UPDATE subscription_payments SET
+           status='completed', provider_payload=$1, updated_at=NOW()
+         WHERE merchant_reference=$2
+         RETURNING id`,
+        [JSON.stringify(event.data), reference]
+      );
+      if (rows[0]?.id) await activateSubscription(rows[0].id);
+    }
+
+    return res.status(200).end();
+  } catch (err) {
+    console.error("[Paystack] Webhook error:", err.message);
+    return res.status(500).end();
+  }
+});
+
 module.exports = router;
