@@ -236,7 +236,10 @@ async function handleCallback() {
 
     if (paystackRef) {
       // Verify Paystack payment
-      const r = await fetch(`${base}/subscriptions/paystack/verify/${encodeURIComponent(paystackRef)}`);
+      const verifyToken = localStorage.getItem("cbc_erp_token") || sessionStorage.getItem("cbc_erp_token");
+      const r = await fetch(`${base}/subscriptions/paystack/verify/${encodeURIComponent(paystackRef)}`, {
+        headers: verifyToken ? { Authorization: `Bearer ${verifyToken}` } : {},
+      });
       const data = await r.json().catch(() => ({}));
       if (!data.paid) throw new Error(data.message || "Payment not completed.");
     } else {

@@ -143,6 +143,10 @@ router.put("/:id", auth, roleM(MANAGE), validateUUID("id"),
       if (ex[0].role === "SUPER_ADMIN")
         return res.status(403).json({ success: false, message: "Cannot modify SUPER_ADMIN." });
 
+      // PRINCIPAL cannot promote another user to PRINCIPAL (privilege escalation)
+      if (req.user.role === "PRINCIPAL" && req.body.role === "PRINCIPAL")
+        return res.status(403).json({ success: false, message: "PRINCIPAL cannot assign PRINCIPAL role." });
+
       const { name, phone, role, is_active } = req.body;
       const { rows } = await db.query(
         `UPDATE users SET
