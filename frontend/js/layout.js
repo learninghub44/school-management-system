@@ -6,7 +6,7 @@ import { esc, getUser, logout } from "/js/api.js";
 
 const CSS = `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Plus Jakarta Sans',sans-serif;background:#f1f5f9;color:#0f172a;min-height:100vh;display:flex}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:#f1f5f9;color:#0f172a;min-height:100vh}#app{display:flex;min-height:100vh}
 .sidebar{width:265px;background:#fff;display:flex;flex-direction:column;flex-shrink:0;height:100vh;position:sticky;top:0;border-right:1px solid #e2e8f0;overflow-y:auto}
 .sidebar-brand{padding:22px 20px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #f1f5f9}
 .brand-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:#4f46e5;flex-shrink:0}
@@ -91,9 +91,9 @@ tr:hover td{background:#fafbff}
 .sidebar-overlay.show{display:block}
 /* ── Responsive breakpoints ── */
 @media(max-width:768px){
-  body{flex-direction:column}
-  .sidebar{position:fixed;left:-280px;top:0;height:100vh;width:265px;z-index:200;transition:left .25s ease;box-shadow:none}
-  .sidebar.mob-open{left:0;box-shadow:4px 0 24px rgba(0,0,0,.15)}
+  #app{flex-direction:column}
+  .sidebar{position:fixed;left:-300px;top:0;height:100vh;width:265px;z-index:200;transition:left .25s ease;box-shadow:none;visibility:hidden}
+  .sidebar.mob-open{left:0;box-shadow:4px 0 24px rgba(0,0,0,.15);visibility:visible}
   .mob-menu-btn{display:flex;align-items:center;justify-content:center}
   .main{width:100%;min-height:100vh}
   .topbar{padding:12px 16px}
