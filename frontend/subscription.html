@@ -12,82 +12,215 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#0f172a;color:#e2e8f0
 .top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:28px}
 h1{font-size:28px;line-height:1.2}
 .muted{color:#94a3b8;font-size:14px;margin-top:6px}
-.btn{border:1px solid rgba(255,255,255,.14);background:#1e293b;color:#e2e8f0;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer}
+.btn{border:1px solid rgba(255,255,255,.14);background:#1e293b;color:#e2e8f0;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;transition:opacity .15s}
+.btn:disabled{opacity:.5;cursor:not-allowed}
 .btn-primary{background:#f59e0b;border-color:#f59e0b;color:#111827}
+.btn-primary:hover:not(:disabled){background:#d97706;border-color:#d97706}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
 .card{background:#111827;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:20px}
 .plan-name{font-size:17px;font-weight:800;margin-bottom:10px}
 .price{font-size:30px;font-weight:800;color:#fff;margin-bottom:4px}
 .chip{display:inline-flex;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 9px;font-size:11px;color:#cbd5e1;margin:8px 6px 16px 0}
-.alert{padding:12px 14px;border-radius:8px;margin-bottom:16px;font-size:13px}
-.err{background:#7f1d1d;color:#fecaca}.ok{background:#064e3b;color:#bbf7d0}
+.alert{padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;line-height:1.5;display:flex;gap:10px;align-items:flex-start}
+.alert-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.err{background:#7f1d1d;color:#fecaca;border:1px solid #991b1b}
+.ok{background:#064e3b;color:#bbf7d0;border:1px solid #065f46}
+.warn{background:#78350f;color:#fde68a;border:1px solid #92400e}
+.info{background:#1e3a5f;color:#bae6fd;border:1px solid #1d4ed8}
+
+/* Callback result screen */
+.result-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:20px}
+.result-screen.show{display:flex}
+.result-icon{font-size:64px;line-height:1}
+.result-title{font-size:26px;font-weight:800}
+.result-sub{color:#94a3b8;font-size:15px;max-width:420px;line-height:1.6}
+.spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,.1);border-top-color:#f59e0b;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.plans-section{display:block}
+.plans-section.hide{display:none}
 </style>
 </head>
 <body>
 <main class="wrap">
   <div class="top">
     <div>
-      <h1>Choose a subscription</h1>
+      <h1>Subscription</h1>
       <p class="muted">Your school needs an active plan before staff can use the ERP modules.</p>
     </div>
     <button class="btn" id="logoutBtn">Sign Out</button>
   </div>
-  <div id="status"></div>
-  <div class="grid" id="plans"><div class="card">Loading plans...</div></div>
+
+  <!-- Callback result screen (shown after returning from Pesapal) -->
+  <div class="result-screen" id="resultScreen">
+    <div class="result-icon" id="resultIcon">⏳</div>
+    <div class="result-title" id="resultTitle">Verifying payment...</div>
+    <div class="result-sub" id="resultSub">Please wait while we confirm your payment with Pesapal.</div>
+    <div class="spinner" id="resultSpinner"></div>
+    <button class="btn btn-primary" id="resultBtn" style="display:none" onclick="window.location.href='/subscription.html'">Back to Plans</button>
+  </div>
+
+  <!-- Plans section (hidden during callback processing) -->
+  <div class="plans-section" id="plansSection">
+    <div id="status"></div>
+    <div class="grid" id="plans"><div class="card">Loading plans...</div></div>
+  </div>
 </main>
 
 <script type="module">
-import { guardPage, subscriptions, logout, esc } from "/js/api.js";
+import { guardPage, subscriptions, logout, esc, apiFetch } from "/js/api.js";
 
 const user = guardPage(["PRINCIPAL","DEPUTY_PRINCIPAL","HOD","TEACHER","BURSAR"]);
-const plansEl = document.getElementById("plans");
-const statusEl = document.getElementById("status");
+const plansEl   = document.getElementById("plans");
+const statusEl  = document.getElementById("status");
+const resultScreen  = document.getElementById("resultScreen");
+const plansSection  = document.getElementById("plansSection");
+const resultIcon    = document.getElementById("resultIcon");
+const resultTitle   = document.getElementById("resultTitle");
+const resultSub     = document.getElementById("resultSub");
+const resultSpinner = document.getElementById("resultSpinner");
+const resultBtn     = document.getElementById("resultBtn");
 
-function show(msg, type = "err") {
-  statusEl.innerHTML = `<div class="alert ${type}">${esc(msg)}</div>`;
+function showAlert(msg, type = "err") {
+  const icons = { err: "⚠️", ok: "✅", warn: "⏳", info: "ℹ️" };
+  statusEl.innerHTML = `<div class="alert ${type}"><span class="alert-icon">${icons[type]||"ℹ️"}</span><span>${esc(msg)}</span></div>`;
 }
 
 function canPay() {
-  return ["PRINCIPAL", "DEPUTY_PRINCIPAL"].includes(user?.role);
+  return ["PRINCIPAL","DEPUTY_PRINCIPAL"].includes(user?.role);
 }
 
-async function load() {
-  const current = await subscriptions.me();
-  if (current?.data?.status && ["active","trialing"].includes(current.data.status)) {
-    show(`Subscription active: ${current.data.plan_name}.`, "ok");
+// ── Handle Pesapal callback (user returned from payment page) ─────
+async function handleCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const trackingId       = params.get("OrderTrackingId") || params.get("orderTrackingId");
+  const merchantRef      = params.get("OrderMerchantReference") || params.get("orderMerchantReference");
+  const orderNotifyId    = params.get("OrderNotificationType") || null;
+
+  if (!trackingId && !merchantRef) return false; // not a callback
+
+  // Show result screen, hide plans
+  resultScreen.classList.add("show");
+  plansSection.classList.add("hide");
+
+  // Clean URL without reloading
+  window.history.replaceState({}, "", window.location.pathname);
+
+  try {
+    // Ping our IPN endpoint to trigger status check & DB update
+    const qs = trackingId
+      ? `OrderTrackingId=${encodeURIComponent(trackingId)}`
+      : `OrderMerchantReference=${encodeURIComponent(merchantRef)}`;
+    const r = await fetch(`${window.API_BASE || "/api"}/subscriptions/ipn?${qs}`);
+    const data = await r.json().catch(() => ({}));
+
+    // Now check subscription status
+    const subRes = await subscriptions.me();
+    const sub = subRes?.data;
+
+    resultSpinner.style.display = "none";
+    resultBtn.style.display = "inline-block";
+
+    if (sub?.status === "active" || sub?.status === "trialing") {
+      resultIcon.textContent  = "🎉";
+      resultTitle.textContent = "Payment Successful!";
+      resultSub.textContent   = `Your school is now on the ${sub.plan_name} plan, active until ${new Date(sub.current_period_end).toLocaleDateString("en-KE", { day:"numeric", month:"long", year:"numeric" })}.`;
+      resultBtn.textContent   = "Go to Dashboard";
+      resultBtn.onclick       = () => window.location.href = "/index.html";
+    } else {
+      // Payment made but subscription not yet active — could be processing delay
+      resultIcon.textContent  = "⏳";
+      resultTitle.textContent = "Payment Received — Pending Confirmation";
+      resultSub.innerHTML     = `Your payment is being processed. This usually takes a few seconds.<br><br>
+        If you paid successfully, your subscription will activate automatically. 
+        Refresh this page in a moment or contact your administrator if it doesn't update.`;
+      resultBtn.textContent   = "Refresh Status";
+      resultBtn.onclick       = () => window.location.href = "/subscription.html";
+    }
+  } catch (err) {
+    resultSpinner.style.display = "none";
+    resultIcon.textContent  = "❌";
+    resultTitle.textContent = "Could Not Verify Payment";
+    resultSub.textContent   = "We couldn't confirm your payment status. If you completed payment, your subscription will activate shortly. Please refresh or contact support.";
+    resultBtn.style.display = "inline-block";
+    resultBtn.textContent   = "Back to Plans";
   }
 
+  return true;
+}
+
+// ── Load plans ────────────────────────────────────────────────────
+async function load() {
+  // First check if this is a Pesapal callback return
+  const isCallback = await handleCallback();
+  if (isCallback) return;
+
+  // Check current subscription
+  const current = await subscriptions.me();
+  const sub = current?.data;
+  if (sub?.status === "active" || sub?.status === "trialing") {
+    const end = new Date(sub.current_period_end).toLocaleDateString("en-KE", { day:"numeric", month:"long", year:"numeric" });
+    showAlert(`✅ ${sub.plan_name} plan active — renews ${end}`, "ok");
+  } else if (sub?.status === "past_due") {
+    showAlert("Your subscription has expired. Please renew to restore access.", "warn");
+  }
+
+  // Load plans
   const r = await subscriptions.plans();
   const plans = r?.data || [];
   if (!plans.length) {
-    plansEl.innerHTML = '<div class="card">No subscription plans are available yet.</div>';
+    plansEl.innerHTML = '<div class="card">No subscription plans are available yet. Contact your administrator.</div>';
     return;
   }
+
   plansEl.innerHTML = plans.map(p => `
     <section class="card">
       <div class="plan-name">${esc(p.name)}</div>
       <div class="price">${esc(p.currency)} ${Number(p.amount).toLocaleString("en-KE")}</div>
       <div class="muted">per ${esc(p.billing_interval)}</div>
       <div>
-        <span class="chip">${p.student_limit ? `${esc(p.student_limit)} students` : "Unlimited students"}</span>
-        <span class="chip">${p.ai_enabled ? "AI included" : "AI not included"}</span>
+        <span class="chip">${p.student_limit ? `Up to ${esc(String(p.student_limit))} students` : "Unlimited students"}</span>
+        <span class="chip">${p.ai_enabled ? "AI included" : "No AI"}</span>
       </div>
-      <button class="btn btn-primary" data-plan="${esc(p.id)}" ${canPay() ? "" : "disabled"}>Pay with Pesapal</button>
-      ${canPay() ? "" : '<p class="muted">Ask a Principal or Deputy Principal to renew.</p>'}
+      ${canPay()
+        ? `<button class="btn btn-primary" data-plan="${esc(String(p.id))}" data-amount="${esc(String(p.amount))}" data-name="${esc(p.name)}">Pay with Pesapal</button>`
+        : `<button class="btn" disabled>Pay with Pesapal</button>
+           <p class="muted" style="margin-top:8px">Only a Principal or Deputy Principal can initiate payment.</p>`
+      }
     </section>
   `).join("");
 
   plansEl.querySelectorAll("[data-plan]").forEach(btn => btn.addEventListener("click", async () => {
-    btn.disabled = true;
+    const planId   = Number(btn.dataset.plan);
+    const planName = btn.dataset.name;
+    const amount   = btn.dataset.amount;
+
+    btn.disabled    = true;
     btn.textContent = "Starting checkout...";
-    const out = await subscriptions.checkout({ plan_id: Number(btn.dataset.plan) });
+    statusEl.innerHTML = "";
+
+    const out = await subscriptions.checkout({ plan_id: planId });
+
     if (out?.redirect_url) {
-      window.location.href = out.redirect_url;
+      // Success — redirect to Pesapal payment page
+      showAlert(`Redirecting to Pesapal to pay KES ${Number(amount).toLocaleString("en-KE")} for ${planName}...`, "info");
+      setTimeout(() => { window.location.href = out.redirect_url; }, 800);
       return;
     }
-    btn.disabled = false;
+
+    // Failed — show real error
+    btn.disabled    = false;
     btn.textContent = "Pay with Pesapal";
-    show(out?.message || "Could not start Pesapal checkout.");
+
+    const msg = out?.message || "Could not start Pesapal checkout.";
+
+    // Give actionable guidance based on error
+    if (msg.includes("amount_exceeds") || msg.includes("exceeds limit")) {
+      showAlert("Payment limit exceeded on this Pesapal account. Please contact Pesapal support (merchantsupport@pesapal.com) to raise your transaction limit.", "warn");
+    } else if (msg.includes("credentials") || msg.includes("consumer")) {
+      showAlert("Pesapal credentials are misconfigured. Please contact your system administrator.", "err");
+    } else {
+      showAlert(msg, "err");
+    }
   }));
 }
 
