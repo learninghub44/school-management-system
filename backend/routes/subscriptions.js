@@ -15,19 +15,43 @@ const pesapalBase = () =>
   (process.env.PESAPAL_BASE_URL || "https://cybqa.pesapal.com/pesapalv3/api").replace(/\/$/, "");
 
 async function pesapalFetch(path, options = {}) {
-  const res = await fetch(`${pesapalBase()}${path}`, {
-    ...options,
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error?.message || data.message || `Pesapal HTTP ${res.status}`);
+  const url = `${pesapalBase()}${path}`;
+  let res;
+  try {
+    res = await fetch(url, {
+      ...options,
+      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    });
+  } catch (networkErr) {
+    console.error(`[Pesapal] Network error calling ${path}:`, networkErr.message);
+    throw new Error(`Pesapal network error: ${networkErr.message}`);
+  }
+
+  const raw = await res.text().catch(() => "");
+  let data = {};
+  try { data = JSON.parse(raw); } catch { data = {}; }
+
+  console.log(`[Pesapal] ${path} → HTTP ${res.status}`, raw.slice(0, 500));
+
+  if (!res.ok) {
+    const msg =
+      data.error?.message ||
+      data.message ||
+      data.error ||
+      data.error_description ||
+      (typeof data === "string" ? data : null) ||
+      `Pesapal HTTP ${res.status}`;
+    throw new Error(msg);
+  }
   return data;
 }
 
 async function getPesapalToken() {
   if (!process.env.PESAPAL_CONSUMER_KEY || !process.env.PESAPAL_CONSUMER_SECRET) {
-    throw new Error("Pesapal credentials are not configured.");
+    throw new Error("Pesapal credentials are not configured (missing PESAPAL_CONSUMER_KEY or PESAPAL_CONSUMER_SECRET).");
   }
+  console.log("[Pesapal] Requesting token with key:", process.env.PESAPAL_CONSUMER_KEY?.slice(0, 8) + "...");
+  console.log("[Pesapal] Base URL:", pesapalBase());
   const data = await pesapalFetch("/Auth/RequestToken", {
     method: "POST",
     body: JSON.stringify({
@@ -35,6 +59,11 @@ async function getPesapalToken() {
       consumer_secret: process.env.PESAPAL_CONSUMER_SECRET,
     }),
   });
+  if (!data.token) {
+    console.error("[Pesapal] Token response had no token field:", JSON.stringify(data));
+    throw new Error(`Pesapal did not return a token. Response: ${JSON.stringify(data)}`);
+  }
+  console.log("[Pesapal] Token obtained successfully");
   return data.token;
 }
 
@@ -268,8 +297,9 @@ router.post("/checkout", auth, roleM(CHECKOUT_ROLES),
       await audit(req, "CREATE_SUBSCRIPTION_CHECKOUT", "subscription_payments", rows[0].id, null, rows[0]);
       return res.status(201).json({ success: true, data: rows[0], redirect_url: redirectUrl });
     } catch (err) {
-      console.error("Pesapal checkout:", err.message);
-      return res.status(500).json({ success: false, message: err.message || "Unable to start checkout." });
+      console.error("[Pesapal] Checkout error:", err.message);
+      // Return actual Pesapal error to client so it's actionable
+      return res.status(500).json({ success: false, message: err.message || "Unable to start Pesapal checkout." });
     }
   }
 );
