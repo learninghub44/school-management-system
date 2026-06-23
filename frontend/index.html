@@ -176,15 +176,33 @@ h1 .accent{
 .hero-3d-wrap{
   position:relative;
   display:flex;align-items:center;justify-content:center;
+  perspective:900px;
+  cursor:grab;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.hero-3d-wrap:active{cursor:grabbing}
+.hero-3d-inner{
+  transform-style:preserve-3d;
   animation:float3d 7s ease-in-out infinite;
+  transition:transform 0.08s ease-out;
   filter:drop-shadow(0 40px 80px rgba(74,222,128,0.18)) drop-shadow(0 0 60px rgba(74,222,128,0.10));
+  will-change:transform;
+}
+.hero-3d-wrap.interacting .hero-3d-inner{
+  animation:none;
+  transition:transform 0.05s ease-out;
 }
 @keyframes float3d{
-  0%,100%{transform:translateY(0) rotate3d(0.3,1,0,0deg)}
-  33%{transform:translateY(-14px) rotate3d(0.3,1,0,3deg)}
-  66%{transform:translateY(-6px) rotate3d(0.3,1,0,-2deg)}
+  0%,100%{transform:translateY(0px) rotateX(2deg) rotateY(0deg)}
+  33%{transform:translateY(-14px) rotateX(4deg) rotateY(6deg)}
+  66%{transform:translateY(-6px) rotateX(1deg) rotateY(-4deg)}
 }
-.hero-3d-wrap svg{width:100%;max-width:520px;height:auto}
+.hero-3d-wrap svg{width:100%;max-width:520px;height:auto;display:block}
+/* glow pulse on hover */
+.hero-3d-wrap:hover .hero-3d-inner{
+  filter:drop-shadow(0 40px 80px rgba(74,222,128,0.28)) drop-shadow(0 0 80px rgba(74,222,128,0.18));
+}
 
 /* ── ADVANTAGES BAND ── */
 .adv-band{
@@ -462,7 +480,8 @@ footer{
 
     <!-- LIVE DASHBOARD MOCKUP -->
     <div class="hero-right fade-up" style="transition-delay:.2s">
-      <div class="hero-3d-wrap">
+      <div class="hero-3d-wrap" id="tilt3d">
+        <div class="hero-3d-inner" id="tilt3dInner">
         <svg viewBox="0 0 520 480" xmlns="http://www.w3.org/2000/svg" fill="none">
           <defs>
             <linearGradient id="gGreen" x1="0" y1="0" x2="1" y2="1">
@@ -641,6 +660,7 @@ footer{
           <line x1="360" y1="122" x2="318" y2="155" stroke="rgba(74,222,128,0.2)" stroke-width="0.8" stroke-dasharray="3,3"/>
           <line x1="106" y1="231" x2="90" y2="235" stroke="rgba(74,222,128,0.15)" stroke-width="0.8" stroke-dasharray="3,3"/>
         </svg>
+        </div><!-- /hero-3d-inner -->
       </div>
     </div>
   </div>
@@ -870,6 +890,78 @@ footer{
 </footer>
 
 <script>
+// ── 3D Tilt Interaction ──
+(function(){
+  const wrap = document.getElementById('tilt3d');
+  const inner = document.getElementById('tilt3dInner');
+  if(!wrap || !inner) return;
+
+  const MAX_TILT = 22;
+  let animating = false;
+  let currentX = 0, currentY = 0;
+  let targetX = 0, targetY = 0;
+  let interacting = false;
+  let resetTimer;
+
+  function lerp(a, b, t){ return a + (b - a) * t; }
+
+  function applyTilt(){
+    currentX = lerp(currentX, targetX, 0.12);
+    currentY = lerp(currentY, targetY, 0.12);
+    inner.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg) scale3d(1.04,1.04,1.04)`;
+    if(Math.abs(currentX - targetX) > 0.05 || Math.abs(currentY - targetY) > 0.05){
+      requestAnimationFrame(applyTilt);
+    } else {
+      animating = false;
+    }
+  }
+
+  function startAnim(){
+    if(!animating){ animating = true; requestAnimationFrame(applyTilt); }
+  }
+
+  function onMove(x, y){
+    const rect = wrap.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = (x - cx) / (rect.width / 2);
+    const dy = (y - cy) / (rect.height / 2);
+    targetY = dx * MAX_TILT;
+    targetX = -dy * MAX_TILT;
+    startAnim();
+  }
+
+  function onEnter(){
+    interacting = true;
+    wrap.classList.add('interacting');
+    clearTimeout(resetTimer);
+  }
+
+  function onLeave(){
+    clearTimeout(resetTimer);
+    resetTimer = setTimeout(()=>{
+      interacting = false;
+      wrap.classList.remove('interacting');
+      targetX = 0; targetY = 0;
+      startAnim();
+    }, 200);
+  }
+
+  // Mouse
+  wrap.addEventListener('mousemove', e => { onEnter(); onMove(e.clientX, e.clientY); });
+  wrap.addEventListener('mouseleave', onLeave);
+
+  // Touch
+  wrap.addEventListener('touchstart', e => { onEnter(); e.preventDefault(); }, {passive:false});
+  wrap.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const t = e.touches[0];
+    onMove(t.clientX, t.clientY);
+  }, {passive:false});
+  wrap.addEventListener('touchend', onLeave);
+  wrap.addEventListener('touchcancel', onLeave);
+})();
+
 // ── Animate mockup counters ──
 function animateCounter(el, target, suffix, duration){
   const start = performance.now();
