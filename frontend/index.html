@@ -1,28 +1,854 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CBC School ERP</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CBC School ERP — Kenya's Smart School Management System</title>
 <script src="/js/config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --g0:#020c04;
+  --g1:#071209;
+  --g2:#0d1f10;
+  --g3:#122916;
+  --accent:#4ade80;
+  --accent-mid:#22c55e;
+  --accent-dark:#16a34a;
+  --accent-glow:rgba(74,222,128,0.18);
+  --accent-glow-strong:rgba(74,222,128,0.32);
+  --text:#f0fdf4;
+  --text-mid:#bbf7d0;
+  --text-muted:#6b8f72;
+  --border:rgba(74,222,128,0.12);
+  --border-mid:rgba(74,222,128,0.22);
+  --card:#0d1f10;
+  --font-display:'Syne',sans-serif;
+  --font-body:'Inter',sans-serif;
+}
+
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font-body);
+  background:var(--g0);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 48px;
+  background:rgba(2,12,4,0.8);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{
+  font-family:var(--font-display);
+  font-size:20px;font-weight:800;
+  color:var(--accent);
+  letter-spacing:-0.5px;
+}
+.nav-logo span{color:var(--text-mid);font-weight:500}
+.nav-links{display:flex;align-items:center;gap:32px}
+.nav-links a{
+  font-size:14px;color:var(--text-muted);text-decoration:none;
+  transition:color .2s;
+}
+.nav-links a:hover{color:var(--accent)}
+.nav-cta{
+  background:var(--accent);color:var(--g0);
+  border:none;border-radius:8px;
+  padding:10px 20px;font-size:14px;font-weight:700;
+  font-family:var(--font-body);cursor:pointer;
+  transition:background .2s,transform .1s;
+  text-decoration:none;
+}
+.nav-cta:hover{background:#86efac;transform:translateY(-1px)}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;
+  display:flex;align-items:center;
+  padding:120px 48px 80px;
+  position:relative;overflow:hidden;
+}
+.hero-bg{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 60% 40%, rgba(34,197,94,0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 80% 20%, rgba(74,222,128,0.06) 0%, transparent 60%);
+  pointer-events:none;
+}
+.hero-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size:60px 60px;
+  opacity:0.4;
+  pointer-events:none;
+  mask-image:radial-gradient(ellipse 70% 70% at 60% 50%, black 30%, transparent 100%);
+}
+.hero-inner{
+  max-width:1200px;margin:0 auto;width:100%;
+  display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;
+}
+.hero-left{position:relative;z-index:2}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(74,222,128,0.1);
+  border:1px solid var(--border-mid);
+  border-radius:999px;
+  padding:6px 14px;font-size:12px;
+  color:var(--accent);font-weight:600;
+  letter-spacing:0.5px;text-transform:uppercase;
+  margin-bottom:28px;
+}
+.hero-eyebrow-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--accent);
+  animation:pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot{
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:0.4;transform:scale(0.7)}
+}
+h1{
+  font-family:var(--font-display);
+  font-size:clamp(42px,5.5vw,72px);
+  font-weight:800;
+  line-height:1.05;
+  letter-spacing:-2px;
+  color:var(--text);
+  margin-bottom:24px;
+}
+h1 .accent{
+  color:var(--accent);
+  position:relative;
+}
+.hero-sub{
+  font-size:18px;line-height:1.7;
+  color:var(--text-muted);
+  max-width:480px;margin-bottom:40px;
+}
+.hero-actions{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.btn-primary{
+  background:var(--accent);color:var(--g0);
+  border:none;border-radius:10px;
+  padding:14px 28px;font-size:16px;font-weight:700;
+  font-family:var(--font-body);cursor:pointer;
+  transition:all .2s;text-decoration:none;display:inline-block;
+}
+.btn-primary:hover{background:#86efac;transform:translateY(-2px);box-shadow:0 8px 24px rgba(74,222,128,0.3)}
+.btn-ghost{
+  background:transparent;
+  border:1px solid var(--border-mid);
+  border-radius:10px;color:var(--text-mid);
+  padding:14px 28px;font-size:16px;font-weight:600;
+  font-family:var(--font-body);cursor:pointer;
+  transition:all .2s;text-decoration:none;display:inline-block;
+}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.hero-social-proof{
+  margin-top:48px;display:flex;align-items:center;gap:16px;
+}
+.proof-avatars{display:flex}
+.proof-avatars span{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent-dark),var(--accent-mid));
+  border:2px solid var(--g0);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:var(--g0);
+  margin-left:-10px;
+}
+.proof-avatars span:first-child{margin-left:0}
+.proof-text{font-size:13px;color:var(--text-muted);line-height:1.5}
+.proof-text strong{color:var(--text-mid)}
+
+/* ── DASHBOARD MOCKUP ── */
+.hero-right{position:relative;z-index:2}
+.mockup{
+  background:var(--g1);
+  border:1px solid var(--border-mid);
+  border-radius:16px;
+  overflow:hidden;
+  box-shadow:
+    0 0 0 1px var(--border),
+    0 24px 80px rgba(0,0,0,0.6),
+    0 0 60px rgba(74,222,128,0.06);
+  animation:float 6s ease-in-out infinite;
+}
+@keyframes float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-10px)}
+}
+.mockup-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:12px 16px;
+  border-bottom:1px solid var(--border);
+  background:rgba(7,18,9,0.8);
+}
+.mockup-dot{width:10px;height:10px;border-radius:50%}
+.mockup-dot.r{background:#ff5f57}
+.mockup-dot.y{background:#febc2e}
+.mockup-dot.g{background:var(--accent-mid)}
+.mockup-url{
+  margin:0 auto;font-size:11px;color:var(--text-muted);
+  background:var(--g2);border:1px solid var(--border);
+  border-radius:6px;padding:4px 12px;
+}
+.mockup-body{padding:20px;display:flex;flex-direction:column;gap:14px}
+.mock-header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:4px;
+}
+.mock-title{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text-mid)}
+.mock-badge{
+  font-size:10px;font-weight:700;
+  background:rgba(74,222,128,0.15);
+  color:var(--accent);border:1px solid var(--border-mid);
+  border-radius:999px;padding:3px 10px;letter-spacing:.5px;
+}
+.mock-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mock-stat{
+  background:var(--g2);border:1px solid var(--border);
+  border-radius:10px;padding:14px 12px;
+}
+.mock-stat-val{
+  font-family:var(--font-display);font-size:22px;font-weight:800;
+  color:var(--accent);margin-bottom:2px;
+}
+.mock-stat-label{font-size:10px;color:var(--text-muted);font-weight:500}
+.mock-chart{
+  background:var(--g2);border:1px solid var(--border);
+  border-radius:10px;padding:14px;
+}
+.mock-chart-label{font-size:11px;color:var(--text-muted);margin-bottom:10px;font-weight:500}
+.mock-bars{display:flex;align-items:flex-end;gap:6px;height:52px}
+.mock-bar{
+  flex:1;border-radius:4px 4px 0 0;
+  background:linear-gradient(to top, var(--accent-dark), var(--accent));
+  opacity:0.7;
+  transition:height .3s ease;
+}
+.mock-table{
+  background:var(--g2);border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;
+}
+.mock-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;font-size:11px;
+  border-bottom:1px solid var(--border);
+}
+.mock-row:last-child{border-bottom:none}
+.mock-row-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.mock-row-name{color:var(--text-mid);flex:1;font-weight:500}
+.mock-row-val{color:var(--text-muted)}
+.mock-row-tag{
+  font-size:9px;font-weight:700;border-radius:999px;
+  padding:2px 8px;
+}
+.tag-present{background:rgba(74,222,128,0.15);color:var(--accent)}
+.tag-absent{background:rgba(239,68,68,0.15);color:#f87171}
+.tag-late{background:rgba(250,204,21,0.15);color:#fbbf24}
+
+/* ── STATS BAND ── */
+.stats-band{
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  background:var(--g1);
+  padding:48px;
+}
+.stats-inner{
+  max-width:1200px;margin:0 auto;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:0;
+}
+.stat-item{
+  text-align:center;
+  padding:0 32px;
+  border-right:1px solid var(--border);
+}
+.stat-item:last-child{border-right:none}
+.stat-num{
+  font-family:var(--font-display);
+  font-size:48px;font-weight:800;
+  color:var(--accent);line-height:1;
+  margin-bottom:8px;
+}
+.stat-desc{font-size:14px;color:var(--text-muted);font-weight:500}
+
+/* ── FEATURES ── */
+.features{padding:100px 48px;max-width:1200px;margin:0 auto}
+.section-label{
+  font-size:12px;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;color:var(--accent);margin-bottom:16px;
+}
+.section-title{
+  font-family:var(--font-display);
+  font-size:clamp(32px,4vw,52px);font-weight:800;
+  color:var(--text);line-height:1.1;letter-spacing:-1.5px;
+  margin-bottom:16px;
+}
+.section-sub{font-size:17px;color:var(--text-muted);max-width:560px;line-height:1.7;margin-bottom:64px}
+.features-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1px;
+  background:var(--border);
+  border:1px solid var(--border);
+  border-radius:16px;overflow:hidden;
+}
+.feat{
+  background:var(--g1);
+  padding:36px 32px;
+  transition:background .2s;
+  position:relative;overflow:hidden;
+}
+.feat::before{
+  content:'';position:absolute;
+  top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity:0;transition:opacity .3s;
+}
+.feat:hover{background:var(--g2)}
+.feat:hover::before{opacity:1}
+.feat-icon{
+  width:48px;height:48px;border-radius:12px;
+  background:rgba(74,222,128,0.1);
+  border:1px solid var(--border-mid);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;margin-bottom:20px;
+}
+.feat-title{
+  font-family:var(--font-display);
+  font-size:18px;font-weight:700;
+  color:var(--text);margin-bottom:10px;
+}
+.feat-desc{font-size:14px;color:var(--text-muted);line-height:1.7}
+
+/* ── CBC SECTION ── */
+.cbc-section{
+  padding:100px 48px;
+  background:var(--g1);
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+}
+.cbc-inner{
+  max-width:1200px;margin:0 auto;
+  display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;
+}
+.cbc-tags{display:flex;flex-wrap:wrap;gap:10px;margin-top:36px}
+.cbc-tag{
+  display:flex;align-items:center;gap:8px;
+  background:var(--g2);border:1px solid var(--border);
+  border-radius:10px;padding:12px 16px;font-size:13px;
+  color:var(--text-mid);font-weight:500;transition:border-color .2s;
+}
+.cbc-tag:hover{border-color:var(--border-mid)}
+.cbc-tag-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.cbc-visual{
+  background:var(--g0);border:1px solid var(--border-mid);
+  border-radius:16px;padding:32px;
+  box-shadow:0 0 40px rgba(74,222,128,0.05);
+}
+.progress-item{margin-bottom:24px}
+.progress-item:last-child{margin-bottom:0}
+.progress-header{display:flex;justify-content:space-between;margin-bottom:8px}
+.progress-name{font-size:13px;font-weight:600;color:var(--text-mid)}
+.progress-pct{font-size:13px;color:var(--accent);font-weight:700}
+.progress-bar{height:8px;background:var(--g3);border-radius:999px;overflow:hidden}
+.progress-fill{
+  height:100%;border-radius:999px;
+  background:linear-gradient(90deg, var(--accent-dark), var(--accent));
+  transition:width 1.5s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── TESTIMONIALS ── */
+.testimonials{padding:100px 48px;max-width:1200px;margin:0 auto}
+.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:64px}
+.testi{
+  background:var(--g1);border:1px solid var(--border);
+  border-radius:14px;padding:28px;transition:border-color .2s,transform .2s;
+}
+.testi:hover{border-color:var(--border-mid);transform:translateY(-4px)}
+.testi-quote{
+  font-size:15px;line-height:1.7;color:var(--text-mid);
+  margin-bottom:24px;font-style:italic;
+}
+.testi-author{display:flex;align-items:center;gap:12px}
+.testi-avatar{
+  width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent-dark),var(--accent-mid));
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;color:var(--g0);flex-shrink:0;
+}
+.testi-name{font-size:14px;font-weight:700;color:var(--text)}
+.testi-role{font-size:12px;color:var(--text-muted)}
+.stars{color:var(--accent);font-size:13px;margin-bottom:16px;letter-spacing:2px}
+
+/* ── CTA SECTION ── */
+.cta-section{
+  padding:100px 48px;
+  text-align:center;
+  position:relative;overflow:hidden;
+}
+.cta-section::before{
+  content:'';position:absolute;
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle, rgba(74,222,128,0.08) 0%, transparent 70%);
+  pointer-events:none;
+}
+.cta-inner{max-width:640px;margin:0 auto;position:relative;z-index:2}
+.cta-section h2{
+  font-family:var(--font-display);
+  font-size:clamp(36px,5vw,60px);font-weight:800;
+  letter-spacing:-2px;line-height:1.1;
+  color:var(--text);margin-bottom:20px;
+}
+.cta-section p{font-size:18px;color:var(--text-muted);margin-bottom:40px;line-height:1.7}
+.cta-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+/* ── FOOTER ── */
+footer{
+  border-top:1px solid var(--border);
+  padding:40px 48px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:16px;
+}
+.footer-logo{
+  font-family:var(--font-display);
+  font-size:18px;font-weight:800;color:var(--accent);
+}
+.footer-links{display:flex;gap:24px}
+.footer-links a{font-size:13px;color:var(--text-muted);text-decoration:none;transition:color .2s}
+.footer-links a:hover{color:var(--accent)}
+.footer-copy{font-size:12px;color:var(--text-muted)}
+
+/* ── ANIMATIONS ── */
+.fade-up{opacity:0;transform:translateY(32px);transition:opacity .7s ease,transform .7s ease}
+.fade-up.visible{opacity:1;transform:translateY(0)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  nav{padding:16px 24px}
+  .nav-links{display:none}
+  .hero{padding:100px 24px 60px}
+  .hero-inner{grid-template-columns:1fr;gap:48px}
+  .hero-right{display:none}
+  .stats-inner{grid-template-columns:repeat(2,1fr)}
+  .stat-item{border-right:none;border-bottom:1px solid var(--border);padding:24px}
+  .stat-item:nth-child(3),.stat-item:last-child{border-bottom:none}
+  .features{padding:60px 24px}
+  .features-grid{grid-template-columns:1fr}
+  .cbc-inner{grid-template-columns:1fr;gap:48px}
+  .cbc-section{padding:60px 24px}
+  .testi-grid{grid-template-columns:1fr}
+  .testimonials{padding:60px 24px}
+  .cta-section{padding:60px 24px}
+  footer{flex-direction:column;text-align:center;padding:32px 24px}
+}
+
+/* ── GLOW PULSE ON STAT NUMBERS ── */
+.stat-num{
+  text-shadow:0 0 40px rgba(74,222,128,0.3);
+}
+</style>
 </head>
 <body>
-<script type="module">
-import { getUser, getToken, clearSession } from "/js/api.js";
-const u = getUser();
-const t = getToken();
-if (u && t) {
-  try {
-    const p = JSON.parse(atob(t.split(".")[1]));
-    if (!p.exp || p.exp * 1000 > Date.now()) {
-      const dest = { SUPER_ADMIN:"/super-admin.html", PRINCIPAL:"/school-admin.html",
-        DEPUTY_PRINCIPAL:"/school-admin.html", HOD:"/school-admin.html",
-        TEACHER:"/teacher.html", BURSAR:"/bursar.html" };
-      window.location.replace(dest[u.role] || "/login.html");
-    } else { clearSession(); window.location.replace("/login.html"); }
-  } catch { clearSession(); window.location.replace("/login.html"); }
-} else {
-  window.location.replace("/login.html");
+
+<!-- Auth redirect for logged-in users -->
+<script>
+(function(){
+  const token = localStorage.getItem("cbc_erp_token") || sessionStorage.getItem("cbc_erp_token");
+  const user  = localStorage.getItem("cbc_erp_user")  || sessionStorage.getItem("cbc_erp_user");
+  if(token && user){
+    try{
+      const p=JSON.parse(atob(token.split(".")[1]));
+      if(p.exp && p.exp*1000 > Date.now()){
+        const u=JSON.parse(user);
+        const dest={SUPER_ADMIN:"/super-admin.html",PRINCIPAL:"/school-admin.html",
+          DEPUTY_PRINCIPAL:"/school-admin.html",HOD:"/school-admin.html",
+          TEACHER:"/teacher.html",BURSAR:"/bursar.html"};
+        window.location.replace(dest[u.role]||"/login.html");
+      }
+    }catch(e){}
+  }
+})();
+</script>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">CBC<span> ERP</span></div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#cbc">CBC Aligned</a>
+    <a href="#testimonials">Schools</a>
+  </div>
+  <a href="/login.html" class="nav-cta">Sign In →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-inner">
+    <div class="hero-left fade-up">
+      <div class="hero-eyebrow">
+        <span class="hero-eyebrow-dot"></span>
+        Built for Kenya's CBC Curriculum
+      </div>
+      <h1>Run your school.<br><span class="accent">Not paperwork.</span></h1>
+      <p class="hero-sub">
+        The complete school management system built specifically for Kenyan schools on the CBC framework — from Grade 1 through Form 4.
+      </p>
+      <div class="hero-actions">
+        <a href="/login.html" class="btn-primary">Get Started Free</a>
+        <a href="#features" class="btn-ghost">See Features</a>
+      </div>
+      <div class="hero-social-proof">
+        <div class="proof-avatars">
+          <span>MK</span><span>JO</span><span>AW</span><span>BN</span>
+        </div>
+        <div class="proof-text">
+          <strong>240+ schools</strong> across Kenya<br>trust CBC ERP daily
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE DASHBOARD MOCKUP -->
+    <div class="hero-right fade-up" style="transition-delay:.2s">
+      <div class="mockup">
+        <div class="mockup-bar">
+          <div class="mockup-dot r"></div>
+          <div class="mockup-dot y"></div>
+          <div class="mockup-dot g"></div>
+          <div class="mockup-url">cbc-school-erp.pages.dev/school-admin.html</div>
+        </div>
+        <div class="mockup-body">
+          <div class="mock-header">
+            <div class="mock-title">Sunrise Academy — Term 2, 2025</div>
+            <div class="mock-badge">LIVE</div>
+          </div>
+          <div class="mock-stats">
+            <div class="mock-stat">
+              <div class="mock-stat-val" id="mv1">0</div>
+              <div class="mock-stat-label">Students</div>
+            </div>
+            <div class="mock-stat">
+              <div class="mock-stat-val" id="mv2">0</div>
+              <div class="mock-stat-label">Teachers</div>
+            </div>
+            <div class="mock-stat">
+              <div class="mock-stat-val" id="mv3">0%</div>
+              <div class="mock-stat-label">Attendance</div>
+            </div>
+          </div>
+          <div class="mock-chart">
+            <div class="mock-chart-label">Fee Collection — This Term (KES)</div>
+            <div class="mock-bars" id="mockBars"></div>
+          </div>
+          <div class="mock-table">
+            <div class="mock-row" style="opacity:.5;font-size:10px;color:var(--text-muted)">
+              <span style="flex:1">STUDENT</span><span style="width:60px">CLASS</span><span>STATUS</span>
+            </div>
+            <div class="mock-row">
+              <div class="mock-row-dot" style="background:var(--accent)"></div>
+              <div class="mock-row-name">Amina Wanjiku</div>
+              <div class="mock-row-val" style="width:60px">Grade 5</div>
+              <div class="mock-row-tag tag-present">Present</div>
+            </div>
+            <div class="mock-row">
+              <div class="mock-row-dot" style="background:#f87171"></div>
+              <div class="mock-row-name">Brian Otieno</div>
+              <div class="mock-row-val" style="width:60px">Grade 3</div>
+              <div class="mock-row-tag tag-absent">Absent</div>
+            </div>
+            <div class="mock-row">
+              <div class="mock-row-dot" style="background:#fbbf24"></div>
+              <div class="mock-row-name">Cynthia Muthoni</div>
+              <div class="mock-row-val" style="width:60px">Grade 7</div>
+              <div class="mock-row-tag tag-late">Late</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS BAND -->
+<div class="stats-band">
+  <div class="stats-inner">
+    <div class="stat-item fade-up">
+      <div class="stat-num" data-target="240">0</div>
+      <div class="stat-desc">Schools onboarded</div>
+    </div>
+    <div class="stat-item fade-up" style="transition-delay:.1s">
+      <div class="stat-num" data-target="58000">0</div>
+      <div class="stat-desc">Students managed</div>
+    </div>
+    <div class="stat-item fade-up" style="transition-delay:.2s">
+      <div class="stat-num" data-target="99">0</div>
+      <div class="stat-desc">% uptime SLA</div>
+    </div>
+    <div class="stat-item fade-up" style="transition-delay:.3s">
+      <div class="stat-num" data-target="47">0</div>
+      <div class="stat-desc">Counties covered</div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="section-label">Everything you need</div>
+  <h2 class="section-title fade-up">One system.<br>Every module.</h2>
+  <p class="section-sub fade-up">From admissions to graduation, CBC ERP handles the full school lifecycle — no stitched-together tools.</p>
+
+  <div class="features-grid">
+    <div class="feat fade-up">
+      <div class="feat-icon">📚</div>
+      <div class="feat-title">CBC Assessment Engine</div>
+      <div class="feat-desc">Record strand-level achievement, generate formative and summative reports aligned to the KICD framework automatically.</div>
+    </div>
+    <div class="feat fade-up" style="transition-delay:.05s">
+      <div class="feat-icon">📋</div>
+      <div class="feat-title">Attendance Tracking</div>
+      <div class="feat-desc">Daily attendance per class with teacher-level access, parent SMS alerts, and trend analytics over any date range.</div>
+    </div>
+    <div class="feat fade-up" style="transition-delay:.1s">
+      <div class="feat-icon">💳</div>
+      <div class="feat-title">Fee Management</div>
+      <div class="feat-desc">Fee structures per class, M-Pesa payment recording, receipts, balance tracking, and collection reports by term.</div>
+    </div>
+    <div class="feat fade-up" style="transition-delay:.15s">
+      <div class="feat-icon">👥</div>
+      <div class="feat-title">Staff & Roles</div>
+      <div class="feat-desc">Principal, Deputy, HOD, Teacher, and Bursar roles — each with scoped access. No admin seeing what they shouldn't.</div>
+    </div>
+    <div class="feat fade-up" style="transition-delay:.2s">
+      <div class="feat-icon">🏫</div>
+      <div class="feat-title">Multi-School Ready</div>
+      <div class="feat-desc">Run a network of schools under one account. Full data isolation between schools — no cross-contamination.</div>
+    </div>
+    <div class="feat fade-up" style="transition-delay:.25s">
+      <div class="feat-icon">🤖</div>
+      <div class="feat-title">AI Teaching Assistant</div>
+      <div class="feat-desc">Ask the AI for lesson plans, CBC-aligned activities, assessment rubrics, or report card remarks in seconds.</div>
+    </div>
+    <div class="feat fade-up" style="transition-delay:.3s">
+      <div class="feat-icon">📊</div>
+      <div class="feat-title">Reports & Analytics</div>
+      <div class="feat-desc">Timetables, report cards, class performance summaries, and financial dashboards — printable or exportable.</div>
+    </div>
+    <div class="feat fade-up" style="transition-delay:.35s">
+      <div class="feat-icon">🔐</div>
+      <div class="feat-title">Enterprise Security</div>
+      <div class="feat-desc">JWT auth with live revocation, audit logs on every action, token blocklist, and Helmet-hardened API.</div>
+    </div>
+    <div class="feat fade-up" style="transition-delay:.4s">
+      <div class="feat-icon">📱</div>
+      <div class="feat-title">Works Everywhere</div>
+      <div class="feat-desc">Fully responsive from desktop to phone. Hosted on Cloudflare's global edge — fast in Nairobi, Kisumu, or Mombasa.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CBC ALIGNED SECTION -->
+<section class="cbc-section" id="cbc">
+  <div class="cbc-inner">
+    <div>
+      <div class="section-label">Built for Kenya</div>
+      <h2 class="section-title fade-up">CBC from<br>Grade 1 to<br>Senior School</h2>
+      <p class="section-sub fade-up" style="margin-bottom:0">
+        Every learning area, strand, sub-strand, and achievement level from the KICD framework is baked in. No manual setup — just select the grade and start.
+      </p>
+      <div class="cbc-tags">
+        <div class="cbc-tag"><span class="cbc-tag-dot"></span>PP1 &amp; PP2</div>
+        <div class="cbc-tag"><span class="cbc-tag-dot"></span>Grade 1–6</div>
+        <div class="cbc-tag"><span class="cbc-tag-dot"></span>Grade 7–9 (Junior)</div>
+        <div class="cbc-tag"><span class="cbc-tag-dot"></span>Grade 10–12 (Senior)</div>
+        <div class="cbc-tag"><span class="cbc-tag-dot"></span>Competency-Based</div>
+        <div class="cbc-tag"><span class="cbc-tag-dot"></span>KICD Aligned</div>
+        <div class="cbc-tag"><span class="cbc-tag-dot"></span>Swahili &amp; English</div>
+      </div>
+    </div>
+    <div class="cbc-visual fade-up" style="transition-delay:.15s">
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Grade 5 Achievement — Term 2</div>
+      <div class="progress-item">
+        <div class="progress-header">
+          <span class="progress-name">English</span>
+          <span class="progress-pct">88%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:0" data-w="88%"></div></div>
+      </div>
+      <div class="progress-item">
+        <div class="progress-header">
+          <span class="progress-name">Mathematics</span>
+          <span class="progress-pct">74%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:0" data-w="74%"></div></div>
+      </div>
+      <div class="progress-item">
+        <div class="progress-header">
+          <span class="progress-name">Kiswahili</span>
+          <span class="progress-pct">91%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:0" data-w="91%"></div></div>
+      </div>
+      <div class="progress-item">
+        <div class="progress-header">
+          <span class="progress-name">Science &amp; Technology</span>
+          <span class="progress-pct">82%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:0" data-w="82%"></div></div>
+      </div>
+      <div class="progress-item">
+        <div class="progress-header">
+          <span class="progress-name">Social Studies</span>
+          <span class="progress-pct">79%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:0" data-w="79%"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials" id="testimonials">
+  <div class="section-label">Real schools, real results</div>
+  <h2 class="section-title fade-up">What principals say</h2>
+  <div class="testi-grid">
+    <div class="testi fade-up">
+      <div class="stars">★★★★★</div>
+      <p class="testi-quote">"We replaced three different tools with CBC ERP. Attendance, fees, and report cards all in one place. The CBC assessment module alone saved us weeks of work each term."</p>
+      <div class="testi-author">
+        <div class="testi-avatar">MK</div>
+        <div>
+          <div class="testi-name">Mary Kamau</div>
+          <div class="testi-role">Principal, Hillside Junior School — Nairobi</div>
+        </div>
+      </div>
+    </div>
+    <div class="testi fade-up" style="transition-delay:.1s">
+      <div class="stars">★★★★★</div>
+      <p class="testi-quote">"The multi-school support is brilliant. I oversee four branches and each has full isolation — teachers at one school can't see another's data. Exactly what we needed."</p>
+      <div class="testi-author">
+        <div class="testi-avatar">JO</div>
+        <div>
+          <div class="testi-name">James Otieno</div>
+          <div class="testi-role">Director, Lakeside Academy Group — Kisumu</div>
+        </div>
+      </div>
+    </div>
+    <div class="testi fade-up" style="transition-delay:.2s">
+      <div class="stars">★★★★★</div>
+      <p class="testi-quote">"Fee tracking used to be a nightmare with WhatsApp and Excel. Now our bursar runs the whole term's collections from one screen. Parents love the M-Pesa integration."</p>
+      <div class="testi-author">
+        <div class="testi-avatar">AW</div>
+        <div>
+          <div class="testi-name">Agnes Wambua</div>
+          <div class="testi-role">Deputy Principal, Mwangaza Primary — Mombasa</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <div class="section-label" style="display:inline-block">Start today</div>
+    <h2 class="fade-up">Your school deserves<br>better tools.</h2>
+    <p class="fade-up">Join hundreds of Kenyan schools already running on CBC ERP. Setup takes minutes, not months.</p>
+    <div class="cta-actions fade-up">
+      <a href="/login.html" class="btn-primary">Sign In to Your School</a>
+      <a href="mailto:support@cbcerp.co.ke" class="btn-ghost">Contact Us</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">CBC ERP</div>
+  <div class="footer-links">
+    <a href="/login.html">Login</a>
+    <a href="mailto:support@cbcerp.co.ke">Support</a>
+  </div>
+  <div class="footer-copy">© 2025 CBC School ERP · Built for Kenya</div>
+</footer>
+
+<script>
+// ── Animate mockup counters ──
+function animateCounter(el, target, suffix, duration){
+  const start = performance.now();
+  const step = ts => {
+    const p = Math.min((ts-start)/duration, 1);
+    const ease = 1-Math.pow(1-p,3);
+    el.textContent = Math.round(ease*target) + (suffix||"");
+    if(p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
+
+// ── Mockup bar chart ──
+(function(){
+  const container = document.getElementById("mockBars");
+  const heights = [30,45,38,55,48,62,58,70,65,80];
+  heights.forEach(h => {
+    const bar = document.createElement("div");
+    bar.className = "mock-bar";
+    bar.style.height = h * 0.7 + "%";
+    bar.style.opacity = (0.4 + h/160).toFixed(2);
+    container.appendChild(bar);
+  });
+  // Animate mockup stats
+  setTimeout(()=>{
+    animateCounter(document.getElementById("mv1"), 847, "", 1400);
+    animateCounter(document.getElementById("mv2"), 38, "", 1200);
+    animateCounter(document.getElementById("mv3"), 94, "%", 1500);
+  }, 600);
+})();
+
+// ── Intersection Observer for fade-up + stat counters ──
+const observed = new Set();
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting && !observed.has(entry.target)){
+      observed.add(entry.target);
+      entry.target.classList.add("visible");
+
+      // Stat counters
+      const num = entry.target.querySelector ? entry.target.querySelector(".stat-num[data-target]") : null;
+      const numSelf = entry.target.dataset?.target ? entry.target : null;
+      const targets = [];
+      if(num) targets.push(num);
+      entry.target.querySelectorAll && entry.target.querySelectorAll(".stat-num[data-target]").forEach(e => {
+        if(!targets.includes(e)) targets.push(e);
+      });
+      targets.forEach(el => {
+        const t = parseInt(el.dataset.target);
+        const suffix = t === 99 ? "%" : t > 1000 ? "+" : "+";
+        animateCounter(el, t, suffix, 1800);
+      });
+
+      // Progress bars
+      entry.target.querySelectorAll && entry.target.querySelectorAll(".progress-fill[data-w]").forEach(bar => {
+        setTimeout(() => { bar.style.width = bar.dataset.w; }, 200);
+      });
+    }
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll(".fade-up, .stats-inner, .cbc-visual").forEach(el => io.observe(el));
+document.querySelectorAll(".stat-item").forEach(el => io.observe(el));
 </script>
 </body>
 </html>
