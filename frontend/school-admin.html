@@ -204,12 +204,93 @@
   </div>
 </div></div>
 
+<!-- ADD TIMETABLE SLOT -->
+<div class="modal-bg" id="modal-timetable">
+<div class="modal">
+  <div class="modal-hdr"><h3>Add Timetable Slot</h3><button class="modal-close" data-close="modal-timetable">×</button></div>
+  <div class="fg-row">
+    <div class="fg"><label>Class *</label><select id="tt-class"><option value="">Select Class</option></select></div>
+    <div class="fg"><label>Subject *</label><select id="tt-subject"><option value="">Select Subject</option></select></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label>Day *</label>
+      <select id="tt-day"><option value="">Select Day</option>
+        <option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option>
+      </select>
+    </div>
+    <div class="fg"><label>Teacher</label><select id="tt-teacher"><option value="">None</option></select></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label>Start Time *</label><input id="tt-start" type="time"></div>
+    <div class="fg"><label>End Time *</label><input id="tt-end" type="time"></div>
+  </div>
+  <div class="fg"><label>Academic Year *</label><input id="tt-year" maxlength="4" placeholder="e.g. 2025"></div>
+  <div id="tt-alert"></div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" data-close="modal-timetable">Cancel</button>
+    <button class="btn btn-primary" id="btnSubmitTimetable">Add Slot</button>
+  </div>
+</div></div>
+
+<!-- GENERATE REPORT CARD -->
+<div class="modal-bg" id="modal-reportcard">
+<div class="modal">
+  <div class="modal-hdr"><h3>Generate Report Card</h3><button class="modal-close" data-close="modal-reportcard">×</button></div>
+  <div class="fg"><label>Student *</label><select id="rc-student"><option value="">Select Student</option></select></div>
+  <div class="fg-row">
+    <div class="fg"><label>Class *</label><select id="rc-class"><option value="">Select Class</option></select></div>
+    <div class="fg"><label>Term *</label>
+      <select id="rc-term"><option value="">Select Term</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+    </div>
+  </div>
+  <div class="fg"><label>Academic Year *</label><input id="rc-year" maxlength="4" placeholder="e.g. 2025"></div>
+  <div class="fg"><label>Class Teacher Remark</label><textarea id="rc-teacher-remark" maxlength="1000" placeholder="Optional remark from class teacher..."></textarea></div>
+  <div class="fg"><label>Principal Remark</label><textarea id="rc-principal-remark" maxlength="1000" placeholder="Optional remark from principal..."></textarea></div>
+  <div id="rc-alert"></div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" data-close="modal-reportcard">Cancel</button>
+    <button class="btn btn-primary" id="btnSubmitReportCard">Generate</button>
+  </div>
+</div></div>
+
+<!-- SCHEDULE EXAM -->
+<div class="modal-bg" id="modal-exam">
+<div class="modal">
+  <div class="modal-hdr"><h3>Schedule Exam</h3><button class="modal-close" data-close="modal-exam">×</button></div>
+  <div class="fg"><label>Exam Title *</label><input id="ex-title" maxlength="200" placeholder="e.g. End of Term 2 Mathematics"></div>
+  <div class="fg-row">
+    <div class="fg"><label>Date *</label><input id="ex-date" type="date"></div>
+    <div class="fg"><label>Venue</label><input id="ex-venue" maxlength="150" placeholder="e.g. Main Hall"></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label>Start Time *</label><input id="ex-start" type="time"></div>
+    <div class="fg"><label>End Time *</label><input id="ex-end" type="time"></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label>Term *</label>
+      <select id="ex-term"><option value="">Select</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+    </div>
+    <div class="fg"><label>Academic Year *</label><input id="ex-year" maxlength="4" placeholder="e.g. 2025"></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label>Class</label><select id="ex-class"><option value="">All Classes</option></select></div>
+    <div class="fg"><label>Subject</label><select id="ex-subject"><option value="">All Subjects</option></select></div>
+  </div>
+  <div class="fg"><label>Invigilator</label><select id="ex-invigilator"><option value="">None assigned</option></select></div>
+  <div class="fg"><label>Notes</label><textarea id="ex-notes" maxlength="500"></textarea></div>
+  <div id="ex-alert"></div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" data-close="modal-exam">Cancel</button>
+    <button class="btn btn-primary" id="btnSubmitExam">Schedule Exam</button>
+  </div>
+</div></div>
+
 <script type="module">
 // ── Imports — clearSession NOW INCLUDED ───────────────────────────
 import {
   guardPage, esc, logout, apiFetch, clearSession,
   users, teachers, classes, students, departments,
-  assignments, attendance, assessments, reports, schools, verifySession
+  assignments, attendance, assessments, reports, schools, verifySession, exams, finance
 } from "/js/api.js";
 import { buildSidebar, setupNav,
   openModal, closeModal, resetModal,
@@ -242,6 +323,10 @@ const NAV = [
   { panel: "attendance",  icon: "attendance", label: "Attendance"    },
   { panel: "assessments", icon: "assessment", label: "Assessments"   },
   { panel: "staff",       icon: "user",       label: "Staff Accounts" },
+  { panel: "timetable",   icon: "calendar",   label: "Timetable"     },
+  { panel: "reportcards", icon: "clipboard",  label: "Report Cards"  },
+  { panel: "exams",       icon: "assessment", label: "Exam Schedule"  },
+  { panel: "backup",      icon: "chart",      label: "Data Backup"   },
 ];
 
 // ── Render shell ──────────────────────────────────────────────────
@@ -362,6 +447,106 @@ document.getElementById("app").innerHTML =
       </div>
     </div>
 
+    <!-- TIMETABLE -->
+    <div class="panel" id="panel-timetable">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Timetable</h4>
+          <button class="btn btn-primary" id="btnAddTimetable">+ Add Slot</button>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <select id="filterTTClass"><option value="">All Classes</option></select>
+            <input id="filterTTYear" maxlength="4" placeholder="Year e.g. 2025" style="width:120px">
+            <button class="btn btn-ghost" id="btnLoadTimetable">Load</button>
+          </div>
+          <div class="table-wrap" id="timetableTbl"><div class="empty">Select a class and year, then click Load.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORT CARDS -->
+    <div class="panel" id="panel-reportcards">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Report Cards</h4>
+          <button class="btn btn-primary" id="btnGenerateCard">+ Generate Card</button>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <select id="filterRCClass"><option value="">All Classes</option></select>
+            <select id="filterRCTerm"><option value="">All Terms</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+            <input id="filterRCYear" maxlength="4" placeholder="Year e.g. 2025" style="width:110px">
+            <button class="btn btn-ghost" id="btnLoadCards">Load</button>
+          </div>
+          <div class="table-wrap" id="reportCardsTbl"><div class="empty">Select filters and click Load.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXAM SCHEDULE -->
+    <div class="panel" id="panel-exams">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Exam Schedule</h4>
+          <button class="btn btn-primary" id="btnAddExam">+ Schedule Exam</button>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <select id="filterExamTerm"><option value="">All Terms</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+            <input id="filterExamYear" maxlength="4" placeholder="Year e.g. 2025" style="width:110px">
+            <button class="btn btn-ghost" id="btnLoadExams">Load</button>
+          </div>
+          <div class="table-wrap" id="examsTbl"><div class="empty">Select term/year and click Load.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DATA BACKUP -->
+    <div class="panel" id="panel-backup">
+      <div class="card">
+        <div class="card-hdr"><h4>Data Backup &amp; Export</h4></div>
+        <div class="card-body">
+          <p style="color:var(--muted);margin-bottom:24px;font-size:14px">
+            Export your school data as CSV files. All data is continuously backed up to Supabase cloud — these exports are for your own records.
+          </p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px" id="backupGrid">
+            <div class="stat-card" style="cursor:pointer;text-align:left;padding:20px" id="exportStudents">
+              <div style="font-weight:700;margin-bottom:6px">Students</div>
+              <div style="font-size:13px;color:var(--muted)">Full student roster with class, parent contacts</div>
+              <div style="margin-top:12px"><button class="btn btn-ghost btn-sm">Export CSV</button></div>
+            </div>
+            <div class="stat-card" style="cursor:pointer;text-align:left;padding:20px" id="exportTeachers">
+              <div style="font-weight:700;margin-bottom:6px">Teachers</div>
+              <div style="font-size:13px;color:var(--muted)">Staff list with TSC numbers and departments</div>
+              <div style="margin-top:12px"><button class="btn btn-ghost btn-sm">Export CSV</button></div>
+            </div>
+            <div class="stat-card" style="cursor:pointer;text-align:left;padding:20px" id="exportAttendance">
+              <div style="font-weight:700;margin-bottom:6px">Attendance</div>
+              <div style="font-size:13px;color:var(--muted)">Last 30 days attendance records per student</div>
+              <div style="margin-top:12px"><button class="btn btn-ghost btn-sm">Export CSV</button></div>
+            </div>
+            <div class="stat-card" style="cursor:pointer;text-align:left;padding:20px" id="exportFinance">
+              <div style="font-weight:700;margin-bottom:6px">Fee Payments</div>
+              <div style="font-size:13px;color:var(--muted)">All payment records with balances for this year</div>
+              <div style="margin-top:12px"><button class="btn btn-ghost btn-sm">Export CSV</button></div>
+            </div>
+            <div class="stat-card" style="cursor:pointer;text-align:left;padding:20px" id="exportAssessments">
+              <div style="font-weight:700;margin-bottom:6px">Assessments</div>
+              <div style="font-size:13px;color:var(--muted)">CBC strand-level assessment results</div>
+              <div style="margin-top:12px"><button class="btn btn-ghost btn-sm">Export CSV</button></div>
+            </div>
+            <div class="stat-card" style="cursor:pointer;text-align:left;padding:20px" id="exportExams">
+              <div style="font-weight:700;margin-bottom:6px">Exam Schedule</div>
+              <div style="font-size:13px;color:var(--muted)">All scheduled exams with venues and invigilators</div>
+              <div style="margin-top:12px"><button class="btn btn-ghost btn-sm">Export CSV</button></div>
+            </div>
+          </div>
+          <div id="backupStatus" style="margin-top:16px"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>`;
 
@@ -379,6 +564,10 @@ const loaders = {
   attendance:  () => {},       // triggered by filter
   assessments: loadAssessments,
   staff:       loadStaff,
+  timetable:   () => {},       // triggered by filter
+  reportcards: () => {},       // triggered by filter
+  exams:       () => {},       // triggered by filter
+  backup:      () => {},       // manual export only
 };
 setupNav(loaders);
 
@@ -396,7 +585,8 @@ async function fetchClasses() {
   const opts = allClasses.map(c =>
     `<option value="${esc(String(c.id))}">${esc(c.name || c.grade_level)}</option>`).join("");
   ["s-class","cl-teacher","att-class","filterStudentClass","filterAttClass",
-   "filterAssessClass","as-class","asc-class"].forEach(id => {
+   "filterAssessClass","as-class","asc-class",
+   "tt-class","filterTTClass","rc-class","filterRCClass","ex-class"].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const prefix = id.startsWith("filter") ? '<option value="">All Classes</option>'
@@ -412,7 +602,7 @@ async function fetchTeachers() {
   allTeachers = r?.data || [];
   const opts = allTeachers.map(t =>
     `<option value="${esc(String(t.id))}">${esc(t.name || (t.first_name + " " + t.last_name))}</option>`).join("");
-  ["cl-teacher","as-teacher"].forEach(id => {
+  ["cl-teacher","as-teacher","tt-teacher","ex-invigilator"].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.innerHTML = `<option value="">None</option>` + opts;
@@ -433,10 +623,16 @@ async function fetchLearningAreas() {
   const r  = await schools.learningAreas({ school_id: me.school_id });
   const el = document.getElementById("as-subject");
   const asc = document.getElementById("asc-subject");
+  const tts = document.getElementById("tt-subject");
+  const exs = document.getElementById("ex-subject");
   const opts = '<option value="">Select Subject</option>' +
+    (r?.data || []).map(s => `<option value="${esc(s.id || s.name)}">${esc(s.name)}</option>`).join("");
+  const optsAll = '<option value="">All Subjects</option>' +
     (r?.data || []).map(s => `<option value="${esc(s.id || s.name)}">${esc(s.name)}</option>`).join("");
   if (el)  el.innerHTML  = opts;
   if (asc) asc.innerHTML = opts;
+  if (tts) tts.innerHTML = opts;
+  if (exs) exs.innerHTML = optsAll;
 }
 
 await Promise.all([fetchClasses(), fetchTeachers(), fetchDepts(), fetchLearningAreas()]);
@@ -444,13 +640,38 @@ await Promise.all([fetchClasses(), fetchTeachers(), fetchDepts(), fetchLearningA
 // ── Overview ──────────────────────────────────────────────────────
 async function loadOverview() {
   // api.js: reports.dashboard(params) → GET /reports/dashboard
-  const r = await reports.dashboard({ school_id: me.school_id });
-  const d = r?.data || {};
+  const [rDash, rFin, rExams] = await Promise.all([
+    reports.dashboard({ school_id: me.school_id }),
+    finance?.summary?.({ school_id: me.school_id, academic_year: new Date().getFullYear().toString() }).catch(()=>null),
+    exams?.list?.({ school_id: me.school_id, academic_year: new Date().getFullYear().toString() }).catch(()=>null),
+  ]);
+  const d  = rDash?.data || {};
+  const f  = rFin?.data  || {};
+  const ex = rExams?.data || [];
+  const att = d.attendance_week || {};
+  const attRate = att.total > 0 ? Math.round(att.present / att.total * 100) : null;
+  const collectedKES = f.collected ? `KES ${Number(f.collected).toLocaleString("en-KE")}` : "–";
+  const balanceKES   = f.balance   ? `KES ${Number(f.balance).toLocaleString("en-KE")}`   : "–";
+  // Next exam
+  const now = new Date(); now.setHours(0,0,0,0);
+  const nextExam = ex.filter(e => new Date(e.exam_date) >= now).sort((a,b) => new Date(a.exam_date)-new Date(b.exam_date))[0];
+  const nextExamLabel = nextExam
+    ? `${nextExam.title.slice(0,22)}… – ${new Date(nextExam.exam_date).toLocaleDateString("en-KE",{day:"2-digit",month:"short"})}`
+    : "None scheduled";
+
   document.getElementById("statsGrid").innerHTML = `
-    <div class="stat-card"><div class="val">${d.student_count  ?? 0}</div><div class="lbl">Students</div></div>
-    <div class="stat-card"><div class="val">${d.teacher_count  ?? 0}</div><div class="lbl">Teachers</div></div>
-    <div class="stat-card"><div class="val">${d.class_count    ?? 0}</div><div class="lbl">Classes</div></div>
-    <div class="stat-card"><div class="val">${d.present_today  ?? "–"}</div><div class="lbl">Present Today</div><div class="sub">Attendance</div></div>`;
+    <div class="stat-card"><div class="val">${d.students?.total ?? d.student_count ?? 0}</div><div class="lbl">Students</div>
+      <div class="sub">${d.students?.male ?? "–"}M / ${d.students?.female ?? "–"}F</div></div>
+    <div class="stat-card"><div class="val">${d.teachers?.total ?? d.teacher_count ?? 0}</div><div class="lbl">Teachers</div></div>
+    <div class="stat-card"><div class="val">${d.classes?.total ?? d.class_count ?? 0}</div><div class="lbl">Classes</div></div>
+    <div class="stat-card"><div class="val">${attRate !== null ? attRate+"%" : "–"}</div><div class="lbl">Attendance</div>
+      <div class="sub">Last 7 days</div></div>
+    <div class="stat-card"><div class="val" style="font-size:18px">${collectedKES}</div><div class="lbl">Fees Collected</div>
+      <div class="sub">${new Date().getFullYear()} academic year</div></div>
+    <div class="stat-card"><div class="val" style="font-size:18px;color:#f87171">${balanceKES}</div><div class="lbl">Outstanding Balance</div>
+      <div class="sub">Pending payments</div></div>
+    <div class="stat-card" style="grid-column:span 2"><div class="lbl" style="margin-bottom:6px">Next Exam</div>
+      <div style="font-weight:700;font-size:15px">${nextExamLabel}</div></div>`;
 }
 
 // ── Students ──────────────────────────────────────────────────────
@@ -897,8 +1118,310 @@ document.getElementById("btnSubmitStaff")?.addEventListener("click", async () =>
   } else showAlert(alertEl, r?.message || "Failed to create account.");
 });
 
+
+// ── TIMETABLE ─────────────────────────────────────────────────────
+async function loadTimetable() {
+  const classId = document.getElementById("filterTTClass")?.value;
+  const year    = document.getElementById("filterTTYear")?.value.trim();
+  const tbl     = document.getElementById("timetableTbl");
+  if (!tbl) return;
+  tbl.innerHTML = '<div class="empty">Loading…</div>';
+  const r = await reports.timetable({ school_id: me.school_id, class_id: classId || undefined, academic_year: year || undefined });
+  const data = r?.data || [];
+  if (!data.length) { tbl.innerHTML = '<div class="empty">No timetable slots found.</div>'; return; }
+  const days = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+  const byDay = {};
+  days.forEach(d => byDay[d] = []);
+  data.forEach(s => { if (byDay[s.day]) byDay[s.day].push(s); });
+  tbl.innerHTML = `<table><thead><tr><th>Day</th><th>Time</th><th>Subject</th><th>Class</th><th>Teacher</th><th>Actions</th></tr></thead><tbody>
+    ${days.flatMap(day => byDay[day].map(s => `<tr>
+      <td><strong>${esc(day)}</strong></td>
+      <td>${esc(s.start_time?.slice(0,5))} – ${esc(s.end_time?.slice(0,5))}</td>
+      <td>${esc(s.subject_name || "–")}</td>
+      <td>${esc(s.class_label || "–")}</td>
+      <td>${esc(s.teacher_name || "–")}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="deleteTimetableSlot(${s.id})">Remove</button></td>
+    </tr>`)).join("")}
+  </tbody></table>`;
+}
+
+window.deleteTimetableSlot = async (id) => {
+  if (!confirm("Remove this timetable slot?")) return;
+  const r = await reports.deleteSlot(id);
+  if (r?.success) loadTimetable();
+};
+
+document.getElementById("btnLoadTimetable")?.addEventListener("click", loadTimetable);
+document.getElementById("btnAddTimetable")?.addEventListener("click", () => {
+  document.getElementById("tt-year").value = new Date().getFullYear();
+  openModal("modal-timetable");
+});
+document.getElementById("btnSubmitTimetable")?.addEventListener("click", async () => {
+  const alertEl = document.getElementById("tt-alert");
+  const classId  = document.getElementById("tt-class").value;
+  const subjectId= document.getElementById("tt-subject").value;
+  const day      = document.getElementById("tt-day").value;
+  const start    = document.getElementById("tt-start").value;
+  const end      = document.getElementById("tt-end").value;
+  const year     = document.getElementById("tt-year").value.trim();
+  if (!classId || !subjectId || !day || !start || !end || !year)
+    return showAlert(alertEl, "All required fields must be filled.");
+  const teacherId = document.getElementById("tt-teacher").value;
+  setLoading("btnSubmitTimetable", true);
+  const r = await reports.createSlot({
+    class_id: parseInt(classId), learning_area_id: parseInt(subjectId),
+    teacher_id: teacherId ? parseInt(teacherId) : null,
+    day, start_time: start, end_time: end, academic_year: year, school_id: me.school_id
+  });
+  setLoading("btnSubmitTimetable", false);
+  if (r?.success) {
+    showAlert(alertEl, "Slot added.", "ok");
+    setTimeout(() => { closeModal("modal-timetable"); loadTimetable(); }, 1000);
+  } else showAlert(alertEl, r?.message || "Failed to add slot.");
+});
+
+// ── REPORT CARDS ──────────────────────────────────────────────────
+async function loadReportCards() {
+  const classId = document.getElementById("filterRCClass")?.value;
+  const term    = document.getElementById("filterRCTerm")?.value;
+  const year    = document.getElementById("filterRCYear")?.value.trim();
+  const tbl     = document.getElementById("reportCardsTbl");
+  if (!tbl) return;
+  tbl.innerHTML = '<div class="empty">Loading…</div>';
+  const r = await reports.reportCards({ school_id: me.school_id, class_id: classId || undefined, term: term || undefined, academic_year: year || undefined });
+  const data = r?.data || [];
+  if (!data.length) { tbl.innerHTML = '<div class="empty">No report cards found.</div>'; return; }
+  tbl.innerHTML = `<table><thead><tr>
+    <th>Student</th><th>Adm No</th><th>Class</th><th>Term</th><th>Year</th><th>Generated</th><th>Status</th><th>Actions</th>
+  </tr></thead><tbody>
+    ${data.map(rc => `<tr>
+      <td><strong>${esc(rc.student_name || "–")}</strong></td>
+      <td>${esc(rc.admission_number || "–")}</td>
+      <td>${esc(rc.class_label || "–")}</td>
+      <td>Term ${esc(String(rc.term))}</td>
+      <td>${esc(rc.academic_year)}</td>
+      <td>${rc.generated_date ? new Date(rc.generated_date).toLocaleDateString("en-KE") : "–"}</td>
+      <td><span class="badge ${rc.is_published ? "badge-green" : "badge-muted"}">${rc.is_published ? "Published" : "Draft"}</span></td>
+      <td>
+        ${!rc.is_published ? `<button class="btn btn-ghost btn-sm" onclick="publishCard('${rc.id}')">Publish</button>` : ""}
+        <button class="btn btn-ghost btn-sm" onclick="printCard(${JSON.stringify(rc).replace(/"/g,'&quot;')})">Print</button>
+      </td>
+    </tr>`).join("")}
+  </tbody></table>`;
+}
+
+window.publishCard = async (id) => {
+  if (!confirm("Publish this report card? Students and parents will be able to view it.")) return;
+  const r = await reports.publishCard(id);
+  if (r?.success) loadReportCards();
+};
+
+window.printCard = (rc) => {
+  const win = window.open("", "_blank");
+  win.document.write(`<!DOCTYPE html><html><head><title>Report Card — ${rc.student_name}</title>
+  <style>body{font-family:sans-serif;padding:40px;max-width:700px;margin:0 auto}
+  h1{font-size:22px;margin-bottom:4px}.meta{color:#666;font-size:14px;margin-bottom:24px}
+  .remark{background:#f5f5f5;padding:16px;border-radius:8px;margin-bottom:12px}
+  .remark h4{margin:0 0 8px;font-size:14px;color:#333}
+  .remark p{margin:0;font-size:14px;color:#555;line-height:1.6}
+  @media print{body{padding:0}}</style></head><body>
+  <h1>${rc.student_name}</h1>
+  <div class="meta">Admission No: ${rc.admission_number} &nbsp;|&nbsp; Class: ${rc.class_label} &nbsp;|&nbsp; Term ${rc.term}, ${rc.academic_year}</div>
+  ${rc.class_teacher_remark ? `<div class="remark"><h4>Class Teacher Remark</h4><p>${rc.class_teacher_remark}</p></div>` : ""}
+  ${rc.principal_remark ? `<div class="remark"><h4>Principal Remark</h4><p>${rc.principal_remark}</p></div>` : ""}
+  <script>window.print();window.close();<\/script></body></html>`);
+  win.document.close();
+};
+
+document.getElementById("btnLoadCards")?.addEventListener("click", loadReportCards);
+document.getElementById("btnGenerateCard")?.addEventListener("click", async () => {
+  document.getElementById("rc-year").value = new Date().getFullYear();
+  // Populate student select
+  const r = await students.list({ school_id: me.school_id });
+  const sl = document.getElementById("rc-student");
+  if (sl) sl.innerHTML = '<option value="">Select Student</option>' +
+    (r?.data || []).map(s => `<option value="${esc(s.id)}">${esc(s.first_name + " " + s.last_name)} (${esc(s.admission_no || "")})</option>`).join("");
+  openModal("modal-reportcard");
+});
+document.getElementById("btnSubmitReportCard")?.addEventListener("click", async () => {
+  const alertEl = document.getElementById("rc-alert");
+  const studentId = document.getElementById("rc-student").value;
+  const classId   = document.getElementById("rc-class").value;
+  const term      = document.getElementById("rc-term").value;
+  const year      = document.getElementById("rc-year").value.trim();
+  if (!studentId || !classId || !term || !year)
+    return showAlert(alertEl, "Student, class, term and year are required.");
+  setLoading("btnSubmitReportCard", true);
+  const r = await reports.generateCard({
+    student_id: studentId, class_id: parseInt(classId),
+    term: parseInt(term), academic_year: year,
+    class_teacher_remark: document.getElementById("rc-teacher-remark").value.trim() || null,
+    principal_remark:     document.getElementById("rc-principal-remark").value.trim() || null,
+    school_id: me.school_id,
+  });
+  setLoading("btnSubmitReportCard", false);
+  if (r?.success) {
+    showAlert(alertEl, "Report card generated.", "ok");
+    setTimeout(() => { closeModal("modal-reportcard"); loadReportCards(); }, 1200);
+  } else showAlert(alertEl, r?.message || "Failed to generate report card.");
+});
+
+// ── EXAM SCHEDULE ─────────────────────────────────────────────────
+async function loadExams() {
+  const term = document.getElementById("filterExamTerm")?.value;
+  const year = document.getElementById("filterExamYear")?.value.trim();
+  const tbl  = document.getElementById("examsTbl");
+  if (!tbl) return;
+  tbl.innerHTML = '<div class="empty">Loading…</div>';
+  const r = await exams.list({ school_id: me.school_id, term: term || undefined, academic_year: year || undefined });
+  const data = r?.data || [];
+  if (!data.length) { tbl.innerHTML = '<div class="empty">No exams scheduled.</div>'; return; }
+  tbl.innerHTML = `<table><thead><tr>
+    <th>Title</th><th>Date</th><th>Time</th><th>Class</th><th>Subject</th><th>Invigilator</th><th>Venue</th><th>Actions</th>
+  </tr></thead><tbody>
+    ${data.map(e => `<tr>
+      <td><strong>${esc(e.title)}</strong></td>
+      <td>${new Date(e.exam_date).toLocaleDateString("en-KE", {day:"2-digit",month:"short",year:"numeric"})}</td>
+      <td>${esc(e.start_time?.slice(0,5))} – ${esc(e.end_time?.slice(0,5))}</td>
+      <td>${esc(e.class_label || "All")}</td>
+      <td>${esc(e.subject_name || "All")}</td>
+      <td>${esc(e.invigilator_name || "–")}</td>
+      <td>${esc(e.venue || "–")}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="deleteExam(${e.id})">Remove</button></td>
+    </tr>`).join("")}
+  </tbody></table>`;
+}
+
+window.deleteExam = async (id) => {
+  if (!confirm("Delete this exam?")) return;
+  const r = await exams.delete(id);
+  if (r?.success) loadExams();
+};
+
+document.getElementById("btnLoadExams")?.addEventListener("click", loadExams);
+document.getElementById("btnAddExam")?.addEventListener("click", () => {
+  document.getElementById("ex-year").value = new Date().getFullYear();
+  openModal("modal-exam");
+});
+document.getElementById("btnSubmitExam")?.addEventListener("click", async () => {
+  const alertEl = document.getElementById("ex-alert");
+  const title = document.getElementById("ex-title").value.trim();
+  const date  = document.getElementById("ex-date").value;
+  const start = document.getElementById("ex-start").value;
+  const end   = document.getElementById("ex-end").value;
+  const term  = document.getElementById("ex-term").value;
+  const year  = document.getElementById("ex-year").value.trim();
+  if (!title || !date || !start || !end || !term || !year)
+    return showAlert(alertEl, "Title, date, times, term and year are required.");
+  setLoading("btnSubmitExam", true);
+  const r = await exams.create({
+    title, exam_date: date, start_time: start, end_time: end,
+    term: parseInt(term), academic_year: year,
+    class_id:         document.getElementById("ex-class").value     ? parseInt(document.getElementById("ex-class").value)       : null,
+    learning_area_id: document.getElementById("ex-subject").value   ? parseInt(document.getElementById("ex-subject").value)     : null,
+    invigilator_id:   document.getElementById("ex-invigilator").value ? parseInt(document.getElementById("ex-invigilator").value) : null,
+    venue: document.getElementById("ex-venue").value.trim() || null,
+    notes: document.getElementById("ex-notes").value.trim() || null,
+    school_id: me.school_id,
+  });
+  setLoading("btnSubmitExam", false);
+  if (r?.success) {
+    showAlert(alertEl, "Exam scheduled.", "ok");
+    setTimeout(() => { closeModal("modal-exam"); loadExams(); }, 1100);
+  } else showAlert(alertEl, r?.message || "Failed to schedule exam.");
+});
+
+// ── DATA BACKUP / EXPORT ──────────────────────────────────────────
+function downloadCSV(filename, rows) {
+  const csv = rows.map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  a.download = filename; a.click();
+}
+
+document.getElementById("exportStudents")?.addEventListener("click", async () => {
+  const status = document.getElementById("backupStatus");
+  status.innerHTML = '<div class="empty">Exporting students…</div>';
+  const r = await students.list({ school_id: me.school_id });
+  const data = r?.data || [];
+  downloadCSV(`students_${new Date().toISOString().slice(0,10)}.csv`, [
+    ["Name","Admission No","UPI No","Gender","DOB","Class","Parent","Parent Phone","Status"],
+    ...data.map(s => [s.first_name+" "+s.last_name, s.admission_no, s.upi_no||"", s.gender||"",
+      s.date_of_birth||"", s.class_name||"", s.parent_name||"", s.parent_phone||"", s.is_active?"Active":"Inactive"])
+  ]);
+  status.innerHTML = `<div style="color:var(--green);font-size:14px">✓ ${data.length} students exported.</div>`;
+});
+
+document.getElementById("exportTeachers")?.addEventListener("click", async () => {
+  const status = document.getElementById("backupStatus");
+  status.innerHTML = '<div class="empty">Exporting teachers…</div>';
+  const r = await teachers.list({ school_id: me.school_id });
+  const data = r?.data || [];
+  downloadCSV(`teachers_${new Date().toISOString().slice(0,10)}.csv`, [
+    ["Name","TSC Number","Phone","Email","Department","Designation","Status"],
+    ...data.map(t => [t.first_name+" "+t.last_name, t.tsc_number||"", t.phone||"",
+      t.email||"", t.department_name||"", t.designation||"", t.is_active?"Active":"Inactive"])
+  ]);
+  status.innerHTML = `<div style="color:var(--green);font-size:14px">✓ ${data.length} teachers exported.</div>`;
+});
+
+document.getElementById("exportAttendance")?.addEventListener("click", async () => {
+  const status = document.getElementById("backupStatus");
+  status.innerHTML = '<div class="empty">Exporting attendance…</div>';
+  const r = await attendance?.listAll?.({ school_id: me.school_id }) || { data: [] };
+  const data = r?.data || [];
+  downloadCSV(`attendance_${new Date().toISOString().slice(0,10)}.csv`, [
+    ["Student","Admission No","Class","Date","Status","Remarks"],
+    ...data.map(a => [a.student_name||"", a.admission_number||"", a.class_label||"",
+      a.date||"", a.status||"", a.remarks||""])
+  ]);
+  status.innerHTML = `<div style="color:var(--green);font-size:14px">✓ ${data.length} attendance records exported.</div>`;
+});
+
+document.getElementById("exportFinance")?.addEventListener("click", async () => {
+  const status = document.getElementById("backupStatus");
+  status.innerHTML = '<div class="empty">Exporting payments…</div>';
+  const r = await finance?.payments?.({ school_id: me.school_id, academic_year: new Date().getFullYear().toString() }) || { data: [] };
+  const data = r?.data || [];
+  downloadCSV(`payments_${new Date().toISOString().slice(0,10)}.csv`, [
+    ["Student","Admission No","Amount Paid","Balance","Term","Year","Method","Date","Receipt No"],
+    ...data.map(p => [p.student_name||"", p.admission_number||"", p.amount_paid||0,
+      p.balance||0, p.term||"", p.academic_year||"", p.payment_method||"", p.payment_date||"", p.receipt_number||""])
+  ]);
+  status.innerHTML = `<div style="color:var(--green);font-size:14px">✓ ${data.length} payment records exported.</div>`;
+});
+
+document.getElementById("exportAssessments")?.addEventListener("click", async () => {
+  const status = document.getElementById("backupStatus");
+  status.innerHTML = '<div class="empty">Exporting assessments…</div>';
+  const r = await assessments.list({ school_id: me.school_id });
+  const data = r?.data || [];
+  downloadCSV(`assessments_${new Date().toISOString().slice(0,10)}.csv`, [
+    ["Student","Admission No","Class","Subject","Strand","Sub-Strand","Level","Term","Year","Teacher Comment"],
+    ...data.map(a => [a.student_name||"", a.admission_number||"", a.class_label||"",
+      a.subject_name||"", a.strand||"", a.sub_strand||"", a.achievement_level||"",
+      a.term||"", a.academic_year||"", a.teacher_comment||""])
+  ]);
+  status.innerHTML = `<div style="color:var(--green);font-size:14px">✓ ${data.length} assessment records exported.</div>`;
+});
+
+document.getElementById("exportExams")?.addEventListener("click", async () => {
+  const status = document.getElementById("backupStatus");
+  status.innerHTML = '<div class="empty">Exporting exam schedule…</div>';
+  const r = await exams.list({ school_id: me.school_id });
+  const data = r?.data || [];
+  downloadCSV(`exams_${new Date().toISOString().slice(0,10)}.csv`, [
+    ["Title","Date","Start","End","Class","Subject","Invigilator","Venue","Term","Year","Notes"],
+    ...data.map(e => [e.title, e.exam_date||"", e.start_time||"", e.end_time||"",
+      e.class_label||"All", e.subject_name||"All", e.invigilator_name||"", e.venue||"",
+      e.term||"", e.academic_year||"", e.notes||""])
+  ]);
+  status.innerHTML = `<div style="color:var(--green);font-size:14px">✓ ${data.length} exams exported.</div>`;
+});
+
 // ── Initial load ──────────────────────────────────────────────────
 loadOverview();
+
 </script>
 </body>
 </html>
