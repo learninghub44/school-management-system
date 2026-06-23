@@ -526,6 +526,27 @@ async function paystackFetch(path, options = {}) {
   return data;
 }
 
+// GET /api/subscriptions/debug-paystack — verify key mode and connectivity
+router.get("/debug-paystack", async (req, res) => {
+  const key = process.env.PAYSTACK_SECRET_KEY || "";
+  const mode = !key ? "missing" : key.startsWith("sk_live_") ? "live" : key.startsWith("sk_test_") ? "test" : "unknown";
+  const info = {
+    PAYSTACK_SECRET_KEY: key ? key.slice(0, 12) + "..." : "(NOT SET)",
+    key_mode: mode,
+    PAYSTACK_CALLBACK_URL: process.env.PAYSTACK_CALLBACK_URL || "(not set — using default)",
+    NODE_ENV: process.env.NODE_ENV,
+  };
+  if (!key) return res.status(500).json({ success: false, config: info, error: "PAYSTACK_SECRET_KEY not set" });
+
+  try {
+    // Ping Paystack — list banks (lightweight, no side effects)
+    const data = await paystackFetch("/bank?country=kenya&perPage=1");
+    return res.json({ success: true, config: info, connectivity: "OK", sample: data?.data?.[0] || null });
+  } catch (err) {
+    return res.status(500).json({ success: false, config: info, connectivity: "FAILED", error: err.message });
+  }
+});
+
 // POST /api/subscriptions/paystack/checkout
 router.post("/paystack/checkout", auth, roleM(CHECKOUT_ROLES),
   [body("plan_id").isInt({ min: 1 }), body("school_id").optional().isUUID()],

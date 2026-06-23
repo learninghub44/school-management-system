@@ -23,6 +23,23 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
+// ── Payment key checks (warn, don't abort) ────────────────────────
+const paystackKey = process.env.PAYSTACK_SECRET_KEY || "";
+if (!paystackKey) {
+  console.warn("WARN: PAYSTACK_SECRET_KEY is not set — Paystack checkout will fail.");
+} else if (paystackKey.startsWith("sk_test_")) {
+  console.warn("WARN: PAYSTACK_SECRET_KEY is a TEST key (sk_test_...). Use sk_live_... in production.");
+} else if (paystackKey.startsWith("sk_live_")) {
+  console.log("[Paystack] Live key detected ✓");
+}
+
+const pesapalBase = process.env.PESAPAL_BASE_URL || "";
+if (pesapalBase.includes("cybqa")) {
+  console.warn("WARN: PESAPAL_BASE_URL points to the sandbox (cybqa). Use https://pay.pesapal.com/v3/api in production.");
+} else if (pesapalBase.includes("pay.pesapal.com")) {
+  console.log("[Pesapal] Live endpoint detected ✓");
+}
+
 const app = express();
 
 // ── Trust proxy (for Render / Cloudflare) ────────────────────────
