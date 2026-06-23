@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS exams (
   academic_year    CHAR(4) NOT NULL,
   class_id         INTEGER REFERENCES classes(id) ON DELETE SET NULL,
   learning_area_id INTEGER REFERENCES learning_areas(id) ON DELETE SET NULL,
-  invigilator_id   INTEGER REFERENCES teachers(id) ON DELETE SET NULL,
+  invigilator_id   UUID REFERENCES teachers(id) ON DELETE SET NULL,
   venue            VARCHAR(150),
   notes            TEXT,
   created_by       UUID REFERENCES users(id) ON DELETE SET NULL,

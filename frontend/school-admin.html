@@ -1319,7 +1319,7 @@ document.getElementById("btnSubmitExam")?.addEventListener("click", async () => 
     term: parseInt(term), academic_year: year,
     class_id:         document.getElementById("ex-class").value     ? parseInt(document.getElementById("ex-class").value)       : null,
     learning_area_id: document.getElementById("ex-subject").value   ? parseInt(document.getElementById("ex-subject").value)     : null,
-    invigilator_id:   document.getElementById("ex-invigilator").value ? parseInt(document.getElementById("ex-invigilator").value) : null,
+    invigilator_id:   document.getElementById("ex-invigilator").value || null,
     venue: document.getElementById("ex-venue").value.trim() || null,
     notes: document.getElementById("ex-notes").value.trim() || null,
     school_id: me.school_id,
