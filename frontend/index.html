@@ -173,116 +173,51 @@ h1 .accent{
 
 /* ── DASHBOARD MOCKUP ── */
 .hero-right{position:relative;z-index:2}
-.mockup{
-  background:var(--g1);
-  border:1px solid var(--border-mid);
-  border-radius:16px;
-  overflow:hidden;
-  box-shadow:
-    0 0 0 1px var(--border),
-    0 24px 80px rgba(0,0,0,0.6),
-    0 0 60px rgba(74,222,128,0.06);
-  animation:float 6s ease-in-out infinite;
+.hero-3d-wrap{
+  position:relative;
+  display:flex;align-items:center;justify-content:center;
+  animation:float3d 7s ease-in-out infinite;
+  filter:drop-shadow(0 40px 80px rgba(74,222,128,0.18)) drop-shadow(0 0 60px rgba(74,222,128,0.10));
 }
-@keyframes float{
-  0%,100%{transform:translateY(0)}
-  50%{transform:translateY(-10px)}
+@keyframes float3d{
+  0%,100%{transform:translateY(0) rotate3d(0.3,1,0,0deg)}
+  33%{transform:translateY(-14px) rotate3d(0.3,1,0,3deg)}
+  66%{transform:translateY(-6px) rotate3d(0.3,1,0,-2deg)}
 }
-.mockup-bar{
-  display:flex;align-items:center;gap:8px;
-  padding:12px 16px;
-  border-bottom:1px solid var(--border);
-  background:rgba(7,18,9,0.8);
-}
-.mockup-dot{width:10px;height:10px;border-radius:50%}
-.mockup-dot.r{background:#ff5f57}
-.mockup-dot.y{background:#febc2e}
-.mockup-dot.g{background:var(--accent-mid)}
-.mockup-url{
-  margin:0 auto;font-size:11px;color:var(--text-muted);
-  background:var(--g2);border:1px solid var(--border);
-  border-radius:6px;padding:4px 12px;
-}
-.mockup-body{padding:20px;display:flex;flex-direction:column;gap:14px}
-.mock-header{
-  display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:4px;
-}
-.mock-title{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text-mid)}
-.mock-badge{
-  font-size:10px;font-weight:700;
-  background:rgba(74,222,128,0.15);
-  color:var(--accent);border:1px solid var(--border-mid);
-  border-radius:999px;padding:3px 10px;letter-spacing:.5px;
-}
-.mock-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.mock-stat{
-  background:var(--g2);border:1px solid var(--border);
-  border-radius:10px;padding:14px 12px;
-}
-.mock-stat-val{
-  font-family:var(--font-display);font-size:22px;font-weight:800;
-  color:var(--accent);margin-bottom:2px;
-}
-.mock-stat-label{font-size:10px;color:var(--text-muted);font-weight:500}
-.mock-chart{
-  background:var(--g2);border:1px solid var(--border);
-  border-radius:10px;padding:14px;
-}
-.mock-chart-label{font-size:11px;color:var(--text-muted);margin-bottom:10px;font-weight:500}
-.mock-bars{display:flex;align-items:flex-end;gap:6px;height:52px}
-.mock-bar{
-  flex:1;border-radius:4px 4px 0 0;
-  background:linear-gradient(to top, var(--accent-dark), var(--accent));
-  opacity:0.7;
-  transition:height .3s ease;
-}
-.mock-table{
-  background:var(--g2);border:1px solid var(--border);
-  border-radius:10px;overflow:hidden;
-}
-.mock-row{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 14px;font-size:11px;
-  border-bottom:1px solid var(--border);
-}
-.mock-row:last-child{border-bottom:none}
-.mock-row-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.mock-row-name{color:var(--text-mid);flex:1;font-weight:500}
-.mock-row-val{color:var(--text-muted)}
-.mock-row-tag{
-  font-size:9px;font-weight:700;border-radius:999px;
-  padding:2px 8px;
-}
-.tag-present{background:rgba(74,222,128,0.15);color:var(--accent)}
-.tag-absent{background:rgba(239,68,68,0.15);color:#f87171}
-.tag-late{background:rgba(250,204,21,0.15);color:#fbbf24}
+.hero-3d-wrap svg{width:100%;max-width:520px;height:auto}
 
-/* ── STATS BAND ── */
-.stats-band{
+/* ── ADVANTAGES BAND ── */
+.adv-band{
   border-top:1px solid var(--border);
   border-bottom:1px solid var(--border);
   background:var(--g1);
-  padding:48px;
+  padding:60px 48px;
 }
-.stats-inner{
+.adv-inner{
   max-width:1200px;margin:0 auto;
   display:grid;grid-template-columns:repeat(4,1fr);
   gap:0;
 }
-.stat-item{
+.adv-item{
   text-align:center;
-  padding:0 32px;
+  padding:0 28px;
   border-right:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;gap:12px;
 }
-.stat-item:last-child{border-right:none}
-.stat-num{
+.adv-item:last-child{border-right:none}
+.adv-icon{
+  width:52px;height:52px;border-radius:14px;
+  background:rgba(74,222,128,0.10);
+  border:1px solid var(--border-mid);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;
+}
+.adv-title{
   font-family:var(--font-display);
-  font-size:48px;font-weight:800;
-  color:var(--accent);line-height:1;
-  margin-bottom:8px;
+  font-size:16px;font-weight:700;
+  color:var(--text);line-height:1.2;
 }
-.stat-desc{font-size:14px;color:var(--text-muted);font-weight:500}
+.adv-desc{font-size:13px;color:var(--text-muted);font-weight:400;line-height:1.5}
 
 /* ── FEATURES ── */
 .features{padding:100px 48px;max-width:1200px;margin:0 auto}
@@ -442,10 +377,11 @@ footer{
   .nav-links{display:none}
   .hero{padding:100px 24px 60px}
   .hero-inner{grid-template-columns:1fr;gap:48px}
-  .hero-right{display:none}
-  .stats-inner{grid-template-columns:repeat(2,1fr)}
-  .stat-item{border-right:none;border-bottom:1px solid var(--border);padding:24px}
-  .stat-item:nth-child(3),.stat-item:last-child{border-bottom:none}
+  .hero-right{display:flex;justify-content:center}
+  .hero-3d-wrap svg{max-width:340px}
+  .adv-inner{grid-template-columns:repeat(2,1fr)}
+  .adv-item{border-right:none;border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:4px}
+  .adv-item:nth-child(3),.adv-item:last-child{border-bottom:none}
   .features{padding:60px 24px}
   .features-grid{grid-template-columns:1fr}
   .cbc-inner{grid-template-columns:1fr;gap:48px}
@@ -454,11 +390,6 @@ footer{
   .testimonials{padding:60px 24px}
   .cta-section{padding:60px 24px}
   footer{flex-direction:column;text-align:center;padding:32px 24px}
-}
-
-/* ── GLOW PULSE ON STAT NUMBERS ── */
-.stat-num{
-  text-shadow:0 0 40px rgba(74,222,128,0.3);
 }
 </style>
 </head>
@@ -505,83 +436,209 @@ footer{
 
     <!-- LIVE DASHBOARD MOCKUP -->
     <div class="hero-right fade-up" style="transition-delay:.2s">
-      <div class="mockup">
-        <div class="mockup-bar">
-          <div class="mockup-dot r"></div>
-          <div class="mockup-dot y"></div>
-          <div class="mockup-dot g"></div>
-          <div class="mockup-url">cbc-school-erp.pages.dev/school-admin.html</div>
-        </div>
-        <div class="mockup-body">
-          <div class="mock-header">
-            <div class="mock-title">Sunrise Academy — Term 2, 2025</div>
-            <div class="mock-badge">LIVE</div>
-          </div>
-          <div class="mock-stats">
-            <div class="mock-stat">
-              <div class="mock-stat-val" id="mv1">0</div>
-              <div class="mock-stat-label">Students</div>
-            </div>
-            <div class="mock-stat">
-              <div class="mock-stat-val" id="mv2">0</div>
-              <div class="mock-stat-label">Teachers</div>
-            </div>
-            <div class="mock-stat">
-              <div class="mock-stat-val" id="mv3">0%</div>
-              <div class="mock-stat-label">Attendance</div>
-            </div>
-          </div>
-          <div class="mock-chart">
-            <div class="mock-chart-label">Fee Collection — This Term (KES)</div>
-            <div class="mock-bars" id="mockBars"></div>
-          </div>
-          <div class="mock-table">
-            <div class="mock-row" style="opacity:.5;font-size:10px;color:var(--text-muted)">
-              <span style="flex:1">STUDENT</span><span style="width:60px">CLASS</span><span>STATUS</span>
-            </div>
-            <div class="mock-row">
-              <div class="mock-row-dot" style="background:var(--accent)"></div>
-              <div class="mock-row-name">Amina Wanjiku</div>
-              <div class="mock-row-val" style="width:60px">Grade 5</div>
-              <div class="mock-row-tag tag-present">Present</div>
-            </div>
-            <div class="mock-row">
-              <div class="mock-row-dot" style="background:#f87171"></div>
-              <div class="mock-row-name">Brian Otieno</div>
-              <div class="mock-row-val" style="width:60px">Grade 3</div>
-              <div class="mock-row-tag tag-absent">Absent</div>
-            </div>
-            <div class="mock-row">
-              <div class="mock-row-dot" style="background:#fbbf24"></div>
-              <div class="mock-row-name">Cynthia Muthoni</div>
-              <div class="mock-row-val" style="width:60px">Grade 7</div>
-              <div class="mock-row-tag tag-late">Late</div>
-            </div>
-          </div>
-        </div>
+      <div class="hero-3d-wrap">
+        <svg viewBox="0 0 520 480" xmlns="http://www.w3.org/2000/svg" fill="none">
+          <defs>
+            <linearGradient id="gGreen" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#4ade80"/>
+              <stop offset="100%" stop-color="#16a34a"/>
+            </linearGradient>
+            <linearGradient id="gDark" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0d1f10"/>
+              <stop offset="100%" stop-color="#071209"/>
+            </linearGradient>
+            <linearGradient id="gSide" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#0a1a0c"/>
+              <stop offset="100%" stop-color="#071209"/>
+            </linearGradient>
+            <linearGradient id="gCard" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#122916"/>
+              <stop offset="100%" stop-color="#0d1f10"/>
+            </linearGradient>
+            <linearGradient id="gGlow" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#4ade80" stop-opacity="0.25"/>
+              <stop offset="100%" stop-color="#4ade80" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="gBar1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#4ade80"/>
+              <stop offset="100%" stop-color="#16a34a"/>
+            </linearGradient>
+            <linearGradient id="gBar2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#22c55e"/>
+              <stop offset="100%" stop-color="#15803d"/>
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="shadow">
+              <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000" flood-opacity="0.5"/>
+            </filter>
+          </defs>
+
+          <!-- Ground glow -->
+          <ellipse cx="260" cy="440" rx="180" ry="28" fill="url(#gGlow)"/>
+
+          <!-- ── MAIN 3D LAPTOP / TABLET BODY ── -->
+          <!-- Base bottom face (3D bottom) -->
+          <path d="M80 340 L260 390 L440 340 L440 300 L260 350 L80 300 Z" fill="url(#gSide)" stroke="rgba(74,222,128,0.15)" stroke-width="1"/>
+          <!-- Left side face -->
+          <path d="M80 140 L80 300 L260 350 L260 190 Z" fill="#071209" stroke="rgba(74,222,128,0.12)" stroke-width="1"/>
+          <!-- Right side face -->
+          <path d="M440 140 L440 300 L260 350 L260 190 Z" fill="#0a1a0c" stroke="rgba(74,222,128,0.10)" stroke-width="1"/>
+          <!-- Top screen face -->
+          <path d="M80 140 L260 190 L440 140 L260 90 Z" fill="url(#gDark)" stroke="rgba(74,222,128,0.25)" stroke-width="1.5" filter="url(#shadow)"/>
+
+          <!-- Screen bezel -->
+          <path d="M95 143 L260 188 L425 143 L260 98 Z" fill="#071209" stroke="rgba(74,222,128,0.18)" stroke-width="1"/>
+
+          <!-- Screen content area -->
+          <path d="M108 145 L260 186 L412 145 L260 104 Z" fill="#0d1f10"/>
+
+          <!-- Screen glow overlay -->
+          <path d="M108 145 L260 186 L412 145 L260 104 Z" fill="rgba(74,222,128,0.03)"/>
+
+          <!-- ── SCREEN UI CONTENT ── -->
+          <!-- Top bar -->
+          <path d="M108 145 L412 145 L412 158 L260 162 L108 158 Z" fill="rgba(7,18,9,0.9)"/>
+          <!-- Logo dot -->
+          <circle cx="122" cy="151" r="4" fill="#4ade80"/>
+          <!-- Nav dots -->
+          <rect x="140" y="148" width="28" height="5" rx="2.5" fill="rgba(74,222,128,0.3)"/>
+          <rect x="176" y="148" width="20" height="5" rx="2.5" fill="rgba(74,222,128,0.2)"/>
+          <rect x="204" y="148" width="22" height="5" rx="2.5" fill="rgba(74,222,128,0.2)"/>
+          <!-- Avatar circle top right -->
+          <circle cx="400" cy="151" r="5" fill="rgba(74,222,128,0.4)" stroke="#4ade80" stroke-width="1"/>
+
+          <!-- Dashboard title -->
+          <text x="118" y="173" font-family="monospace" font-size="7" fill="#bbf7d0" font-weight="bold">Sunrise Academy — Term 2</text>
+          <rect x="330" y="167" width="30" height="8" rx="4" fill="rgba(74,222,128,0.2)" stroke="rgba(74,222,128,0.4)" stroke-width="0.5"/>
+          <text x="338" y="173" font-family="monospace" font-size="5.5" fill="#4ade80">LIVE</text>
+
+          <!-- KPI cards row (3 cards) -->
+          <!-- Card 1 -->
+          <path d="M118 178 L178 191 L178 208 L118 195 Z" fill="url(#gCard)" stroke="rgba(74,222,128,0.2)" stroke-width="0.8" rx="4"/>
+          <text x="124" y="189" font-family="monospace" font-size="9" fill="#4ade80" font-weight="bold" filter="url(#glow)">1,240</text>
+          <text x="124" y="196" font-family="monospace" font-size="5" fill="#6b8f72">Students</text>
+
+          <!-- Card 2 -->
+          <path d="M183 185 L243 198 L243 215 L183 202 Z" fill="url(#gCard)" stroke="rgba(74,222,128,0.2)" stroke-width="0.8"/>
+          <text x="189" y="196" font-family="monospace" font-size="9" fill="#4ade80" font-weight="bold" filter="url(#glow)">86</text>
+          <text x="189" y="203" font-family="monospace" font-size="5" fill="#6b8f72">Teachers</text>
+
+          <!-- Card 3 -->
+          <path d="M248 191 L308 204 L308 221 L248 208 Z" fill="url(#gCard)" stroke="rgba(74,222,128,0.2)" stroke-width="0.8"/>
+          <text x="254" y="202" font-family="monospace" font-size="9" fill="#4ade80" font-weight="bold" filter="url(#glow)">97%</text>
+          <text x="254" y="209" font-family="monospace" font-size="5" fill="#6b8f72">Attend.</text>
+
+          <!-- Bar chart area -->
+          <path d="M118 215 L310 237 L310 275 L118 253 Z" fill="rgba(13,31,16,0.8)" stroke="rgba(74,222,128,0.15)" stroke-width="0.8"/>
+          <text x="122" y="223" font-family="monospace" font-size="5" fill="#6b8f72">Fee Collection — KES</text>
+          <!-- Bars -->
+          <rect x="130" y="236" width="14" height="14" rx="2" fill="url(#gBar2)" opacity="0.7"/>
+          <rect x="150" y="230" width="14" height="20" rx="2" fill="url(#gBar1)" opacity="0.85"/>
+          <rect x="170" y="234" width="14" height="16" rx="2" fill="url(#gBar2)" opacity="0.7"/>
+          <rect x="190" y="228" width="14" height="22" rx="2" fill="url(#gBar1)"/>
+          <rect x="210" y="231" width="14" height="19" rx="2" fill="url(#gBar2)" opacity="0.8"/>
+          <rect x="230" y="225" width="14" height="25" rx="2" fill="url(#gBar1)" opacity="0.9"/>
+          <rect x="250" y="223" width="14" height="27" rx="2" fill="url(#gBar1)" filter="url(#glow)"/>
+          <!-- X labels -->
+          <text x="130" y="254" font-family="monospace" font-size="4.5" fill="#6b8f72">Jan</text>
+          <text x="150" y="254" font-family="monospace" font-size="4.5" fill="#6b8f72">Feb</text>
+          <text x="170" y="254" font-family="monospace" font-size="4.5" fill="#6b8f72">Mar</text>
+          <text x="190" y="254" font-family="monospace" font-size="4.5" fill="#6b8f72">Apr</text>
+          <text x="210" y="254" font-family="monospace" font-size="4.5" fill="#6b8f72">May</text>
+          <text x="230" y="254" font-family="monospace" font-size="4.5" fill="#6b8f72">Jun</text>
+          <text x="250" y="254" font-family="monospace" font-size="4.5" fill="#4ade80">Jul</text>
+
+          <!-- Table rows -->
+          <path d="M118 278 L310 300 L310 305 L118 283 Z" fill="rgba(74,222,128,0.05)"/>
+          <text x="122" y="283" font-family="monospace" font-size="4.5" fill="#6b8f72">STUDENT</text>
+          <text x="220" y="283" font-family="monospace" font-size="4.5" fill="#6b8f72">CLASS</text>
+          <text x="270" y="283" font-family="monospace" font-size="4.5" fill="#6b8f72">STATUS</text>
+
+          <line x1="118" y1="285" x2="310" y2="305" stroke="rgba(74,222,128,0.08)" stroke-width="0.5"/>
+          <!-- Row 1 -->
+          <circle cx="124" cy="293" r="2.5" fill="#4ade80"/>
+          <text x="130" y="296" font-family="monospace" font-size="5" fill="#bbf7d0">Amina Wanjiku</text>
+          <text x="222" y="296" font-family="monospace" font-size="5" fill="#6b8f72">Gr.5</text>
+          <rect x="266" y="290" width="26" height="7" rx="3.5" fill="rgba(74,222,128,0.15)"/>
+          <text x="270" y="295.5" font-family="monospace" font-size="4.5" fill="#4ade80">Present</text>
+          <line x1="118" y1="299" x2="310" y2="309" stroke="rgba(74,222,128,0.06)" stroke-width="0.5"/>
+          <!-- Row 2 -->
+          <circle cx="125" cy="305" r="2.5" fill="#f87171"/>
+          <text x="131" y="308" font-family="monospace" font-size="5" fill="#bbf7d0">Brian Otieno</text>
+          <text x="223" y="308" font-family="monospace" font-size="5" fill="#6b8f72">Gr.3</text>
+          <rect x="267" y="302" width="22" height="7" rx="3.5" fill="rgba(239,68,68,0.15)"/>
+          <text x="271" y="307.5" font-family="monospace" font-size="4.5" fill="#f87171">Absent</text>
+
+          <!-- ── FLOATING CARDS (3D offset) ── -->
+          <!-- M-Pesa badge floating top-right -->
+          <g transform="translate(360,100)">
+            <rect x="0" y="0" width="90" height="44" rx="10" fill="#0d1f10" stroke="rgba(74,222,128,0.35)" stroke-width="1.2"/>
+            <!-- 3D bottom edge -->
+            <path d="M4 44 L4 48 L86 48 L90 44 Z" fill="#071209" stroke="rgba(74,222,128,0.1)" stroke-width="0.8"/>
+            <path d="M90 44 L90 48 L86 48 Z" fill="#061508"/>
+            <text x="12" y="18" font-family="sans-serif" font-size="8" fill="#4ade80" font-weight="bold">💳 M-Pesa</text>
+            <text x="12" y="30" font-family="monospace" font-size="7" fill="#bbf7d0">KES 142,500</text>
+            <text x="12" y="39" font-family="monospace" font-size="5.5" fill="#6b8f72">collected today</text>
+          </g>
+
+          <!-- CBC badge floating left -->
+          <g transform="translate(28,210)">
+            <rect x="0" y="0" width="78" height="42" rx="9" fill="#0d1f10" stroke="rgba(74,222,128,0.3)" stroke-width="1.2"/>
+            <path d="M3 42 L3 46 L75 46 L78 42 Z" fill="#071209" stroke="rgba(74,222,128,0.08)" stroke-width="0.8"/>
+            <text x="10" y="17" font-family="sans-serif" font-size="7.5" fill="#4ade80" font-weight="bold">📋 CBC</text>
+            <text x="10" y="28" font-family="monospace" font-size="6.5" fill="#bbf7d0">Assessments</text>
+            <text x="10" y="38" font-family="monospace" font-size="5.5" fill="#6b8f72">KICD Aligned ✓</text>
+          </g>
+
+          <!-- Alert/notification badge bottom right -->
+          <g transform="translate(355,270)">
+            <rect x="0" y="0" width="82" height="38" rx="9" fill="#0d1f10" stroke="rgba(74,222,128,0.25)" stroke-width="1"/>
+            <path d="M3 38 L3 42 L79 42 L82 38 Z" fill="#071209"/>
+            <text x="10" y="15" font-family="sans-serif" font-size="7" fill="#fbbf24" font-weight="bold">🔔 Alerts</text>
+            <text x="10" y="26" font-family="monospace" font-size="6" fill="#bbf7d0">3 fee defaults</text>
+            <text x="10" y="34" font-family="monospace" font-size="5" fill="#6b8f72">auto-notified</text>
+          </g>
+
+          <!-- Orbiting glow dots -->
+          <circle cx="355" cy="180" r="3.5" fill="#4ade80" opacity="0.7" filter="url(#glow)"/>
+          <circle cx="90" cy="175" r="2.5" fill="#22c55e" opacity="0.6" filter="url(#glow)"/>
+          <circle cx="420" cy="260" r="2" fill="#4ade80" opacity="0.5"/>
+          <circle cx="60" cy="310" r="3" fill="#16a34a" opacity="0.5" filter="url(#glow)"/>
+
+          <!-- Connecting lines from badges to screen -->
+          <line x1="360" y1="122" x2="318" y2="155" stroke="rgba(74,222,128,0.2)" stroke-width="0.8" stroke-dasharray="3,3"/>
+          <line x1="106" y1="231" x2="90" y2="235" stroke="rgba(74,222,128,0.15)" stroke-width="0.8" stroke-dasharray="3,3"/>
+        </svg>
       </div>
     </div>
   </div>
 </section>
 
-<!-- STATS BAND -->
-<div class="stats-band">
-  <div class="stats-inner">
-    <div class="stat-item fade-up">
-      <div class="stat-num" data-target="240">0</div>
-      <div class="stat-desc">Schools onboarded</div>
+<!-- ADVANTAGES BAND -->
+<div class="adv-band">
+  <div class="adv-inner">
+    <div class="adv-item fade-up">
+      <div class="adv-icon">🇰🇪</div>
+      <div class="adv-title">Built for Kenya</div>
+      <div class="adv-desc">CBC curriculum, M-Pesa payments, KES fees, and KICD-aligned reports — not a generic system retrofitted.</div>
     </div>
-    <div class="stat-item fade-up" style="transition-delay:.1s">
-      <div class="stat-num" data-target="58000">0</div>
-      <div class="stat-desc">Students managed</div>
+    <div class="adv-item fade-up" style="transition-delay:.1s">
+      <div class="adv-icon">⚡</div>
+      <div class="adv-title">Deploy in a Day</div>
+      <div class="adv-desc">No IT team needed. Create your school, add staff, import students, and go live in under 24 hours.</div>
     </div>
-    <div class="stat-item fade-up" style="transition-delay:.2s">
-      <div class="stat-num" data-target="99">0</div>
-      <div class="stat-desc">% uptime SLA</div>
+    <div class="adv-item fade-up" style="transition-delay:.2s">
+      <div class="adv-icon">🔒</div>
+      <div class="adv-title">Role-Based Access</div>
+      <div class="adv-desc">Principals, teachers, bursars, and HODs each see only what they need. Secure, scoped, and auditable.</div>
     </div>
-    <div class="stat-item fade-up" style="transition-delay:.3s">
-      <div class="stat-num" data-target="47">0</div>
-      <div class="stat-desc">Counties covered</div>
+    <div class="adv-item fade-up" style="transition-delay:.3s">
+      <div class="adv-icon">📱</div>
+      <div class="adv-title">Works on Any Device</div>
+      <div class="adv-desc">Fully responsive — teachers can take attendance on a phone, bursars track fees on a tablet or laptop.</div>
     </div>
   </div>
 </div>
@@ -778,46 +835,13 @@ function animateCounter(el, target, suffix, duration){
   requestAnimationFrame(step);
 }
 
-// ── Mockup bar chart ──
-(function(){
-  const container = document.getElementById("mockBars");
-  const heights = [30,45,38,55,48,62,58,70,65,80];
-  heights.forEach(h => {
-    const bar = document.createElement("div");
-    bar.className = "mock-bar";
-    bar.style.height = h * 0.7 + "%";
-    bar.style.opacity = (0.4 + h/160).toFixed(2);
-    container.appendChild(bar);
-  });
-  // Animate mockup stats
-  setTimeout(()=>{
-    animateCounter(document.getElementById("mv1"), 847, "", 1400);
-    animateCounter(document.getElementById("mv2"), 38, "", 1200);
-    animateCounter(document.getElementById("mv3"), 94, "%", 1500);
-  }, 600);
-})();
-
-// ── Intersection Observer for fade-up + stat counters ──
+// ── Intersection Observer for fade-up ──
 const observed = new Set();
 const io = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if(entry.isIntersecting && !observed.has(entry.target)){
       observed.add(entry.target);
       entry.target.classList.add("visible");
-
-      // Stat counters
-      const num = entry.target.querySelector ? entry.target.querySelector(".stat-num[data-target]") : null;
-      const numSelf = entry.target.dataset?.target ? entry.target : null;
-      const targets = [];
-      if(num) targets.push(num);
-      entry.target.querySelectorAll && entry.target.querySelectorAll(".stat-num[data-target]").forEach(e => {
-        if(!targets.includes(e)) targets.push(e);
-      });
-      targets.forEach(el => {
-        const t = parseInt(el.dataset.target);
-        const suffix = t === 99 ? "%" : t > 1000 ? "+" : "+";
-        animateCounter(el, t, suffix, 1800);
-      });
 
       // Progress bars
       entry.target.querySelectorAll && entry.target.querySelectorAll(".progress-fill[data-w]").forEach(bar => {
@@ -827,8 +851,8 @@ const io = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.15 });
 
-document.querySelectorAll(".fade-up, .stats-inner, .cbc-visual").forEach(el => io.observe(el));
-document.querySelectorAll(".stat-item").forEach(el => io.observe(el));
+document.querySelectorAll(".fade-up, .adv-inner, .cbc-visual").forEach(el => io.observe(el));
+document.querySelectorAll(".adv-item").forEach(el => io.observe(el));
 </script>
 </body>
 </html>
