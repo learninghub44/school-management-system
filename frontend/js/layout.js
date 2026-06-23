@@ -68,7 +68,7 @@ tr:hover td{background:#fafbff}
 .bpurple{background:#f3e8ff;color:#7e22ce}.bgray{background:#f1f5f9;color:#64748b}
 .bteal{background:#ccfbf1;color:#0f766e}
 /* ── Modals — perfectly centred on every screen ── */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.modal-bg{display:none;position:fixed!important;inset:0!important;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
 .modal-bg.open{display:flex}
 .modal{background:#fff;border-radius:18px;padding:28px;width:100%;max-width:540px;box-shadow:0 24px 48px rgba(0,0,0,.18);margin:auto;position:relative;max-height:calc(100vh - 32px);overflow-y:auto}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
@@ -143,6 +143,12 @@ export function injectStyles() {
   style.id = "cbc-shared-css";
   style.textContent = CSS;
   document.head.appendChild(style);
+  // Hoist modals out of flex containers as soon as DOM is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", hoistModals);
+  } else {
+    hoistModals();
+  }
 }
 
 // Keep SHARED_CSS export for backward compat (some pages assign to <style> tag)
@@ -248,8 +254,29 @@ export function setupNav(loaders) {
 }
 
 // ── Modal helpers ─────────────────────────────────────────────────
-export function openModal(id)  { document.getElementById(id)?.classList.add("open"); }
-export function closeModal(id) { document.getElementById(id)?.classList.remove("open"); }
+// Move all .modal-bg elements to end of <body> so they are never
+// trapped inside a flex/grid container, which breaks fixed positioning.
+export function hoistModals() {
+  document.querySelectorAll(".modal-bg").forEach(el => document.body.appendChild(el));
+}
+
+export function openModal(id)  {
+  const el = document.getElementById(id);
+  if (!el) return;
+  // Ensure it's a direct body child every time (safe to call repeatedly)
+  document.body.appendChild(el);
+  el.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+export function closeModal(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove("open");
+  // Only restore scroll if no other modal is open
+  if (!document.querySelector(".modal-bg.open")) {
+    document.body.style.overflow = "";
+  }
+}
 export function resetModal(id) {
   document.querySelectorAll(`#${id} input,#${id} textarea`).forEach(el => el.value = "");
   document.querySelectorAll(`#${id} select`).forEach(el => el.selectedIndex = 0);
