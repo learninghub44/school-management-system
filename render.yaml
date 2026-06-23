@@ -18,3 +18,21 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false
+      # Paystack (live keys — set in Render dashboard)
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_CALLBACK_URL
+        value: https://cbc-school-erp.pages.dev/subscription.html
+      # Pesapal (live — set in Render dashboard)
+      - key: PESAPAL_BASE_URL
+        value: https://pay.pesapal.com/v3/api
+      - key: PESAPAL_CONSUMER_KEY
+        sync: false
+      - key: PESAPAL_CONSUMER_SECRET
+        sync: false
+      - key: PESAPAL_CALLBACK_URL
+        value: https://cbc-school-erp.pages.dev/subscription.html
+      - key: PESAPAL_IPN_URL
+        value: https://cbc-school-erp-api.onrender.com/api/subscriptions/ipn
+      - key: PESAPAL_IPN_ID
+        sync: false
