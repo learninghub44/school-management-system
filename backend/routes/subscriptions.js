@@ -182,24 +182,83 @@ async function activateSubscription(paymentId) {
 
 // ── TEMP DEBUG: remove after fixing payment ───────────────────────
 router.get("/debug-pesapal", async (req, res) => {
+  const rawCallback = process.env.PESAPAL_CALLBACK_URL || "https://cbc-school-erp.pages.dev/subscription.html";
+  const callbackUrl = rawCallback.replace(/^https?:\/\/https?:\/\//, "https://").replace(/([^:])\/\/+/g, "$1/").replace(/\/$/, "");
+
   const info = {
     PESAPAL_BASE_URL: process.env.PESAPAL_BASE_URL || "(not set, using sandbox default)",
-    PESAPAL_CONSUMER_KEY: process.env.PESAPAL_CONSUMER_KEY
-      ? process.env.PESAPAL_CONSUMER_KEY.slice(0, 8) + "..."
-      : "(NOT SET)",
-    PESAPAL_CONSUMER_SECRET: process.env.PESAPAL_CONSUMER_SECRET
-      ? process.env.PESAPAL_CONSUMER_SECRET.slice(0, 4) + "..."
-      : "(NOT SET)",
+    PESAPAL_CONSUMER_KEY: process.env.PESAPAL_CONSUMER_KEY ? process.env.PESAPAL_CONSUMER_KEY.slice(0, 8) + "..." : "(NOT SET)",
+    PESAPAL_CONSUMER_SECRET: process.env.PESAPAL_CONSUMER_SECRET ? process.env.PESAPAL_CONSUMER_SECRET.slice(0, 4) + "..." : "(NOT SET)",
     PESAPAL_IPN_ID: process.env.PESAPAL_IPN_ID || "(not set)",
     PESAPAL_IPN_URL: process.env.PESAPAL_IPN_URL || "(not set)",
-    PESAPAL_CALLBACK_URL: process.env.PESAPAL_CALLBACK_URL || "(not set)",
+    PESAPAL_CALLBACK_URL_RAW: rawCallback,
+    PESAPAL_CALLBACK_URL_SANITIZED: callbackUrl,
     NODE_ENV: process.env.NODE_ENV,
   };
+
+  const steps = {};
   try {
+    // Step 1: Get token
     const token = await getPesapalToken();
-    return res.json({ success: true, config: info, token_preview: token.slice(0, 20) + "..." });
+    steps.token = "OK";
+
+    // Step 2: Get/register IPN
+    let ipnId;
+    try {
+      ipnId = await getNotificationId(token);
+      steps.ipn_id = ipnId || "EMPTY - this is the problem";
+    } catch (e) {
+      steps.ipn_id = "FAILED: " + e.message;
+      return res.status(500).json({ success: false, config: info, steps });
+    }
+
+    if (!ipnId) {
+      steps.ipn_id = "NULL/UNDEFINED - Pesapal returned no ipn_id";
+      return res.status(500).json({ success: false, config: info, steps });
+    }
+
+    // Step 3: Try submitting a dummy order
+    const dummyOrder = {
+      id: "TEST-" + Date.now(),
+      currency: "KES",
+      amount: 1,
+      description: "Test order",
+      callback_url: callbackUrl,
+      notification_id: ipnId,
+      billing_address: {
+        email_address: "test@school.com",
+        phone_number: "254700000000",
+        country_code: "KE",
+        first_name: "Test",
+        middle_name: "",
+        last_name: "School",
+        line_1: "Nairobi",
+        line_2: "",
+        city: "Nairobi",
+        state: "Nairobi",
+        postal_code: "",
+        zip_code: "",
+      },
+      account_number: "TEST001",
+    };
+
+    try {
+      const order = await pesapalFetch("/Transactions/SubmitOrderRequest", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(dummyOrder),
+      });
+      steps.order_submission = "OK";
+      steps.redirect_url = order.redirect_url || order.redirectUrl || "(none)";
+      return res.json({ success: true, config: info, steps });
+    } catch (e) {
+      steps.order_submission = "FAILED: " + e.message;
+      return res.status(500).json({ success: false, config: info, steps });
+    }
+
   } catch (err) {
-    return res.status(500).json({ success: false, config: info, error: err.message });
+    steps.token = "FAILED: " + err.message;
+    return res.status(500).json({ success: false, config: info, steps });
   }
 });
 // ── END DEBUG ─────────────────────────────────────────────────────
