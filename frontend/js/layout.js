@@ -216,13 +216,11 @@ export function buildSidebar(navItems, activePanel) {
 
 // ── Mobile sidebar helpers ────────────────────────────────────────
 function openSidebar() {
-  document.getElementById("mainSidebar")?.classList.add("mob-open");
-  document.getElementById("sidebarOverlay")?.classList.add("show");
+  document.body.classList.add("sidebar-open");
   document.body.style.overflow = "hidden";
 }
 function closeSidebar() {
-  document.getElementById("mainSidebar")?.classList.remove("mob-open");
-  document.getElementById("sidebarOverlay")?.classList.remove("show");
+  document.body.classList.remove("sidebar-open");
   document.body.style.overflow = "";
 }
 
