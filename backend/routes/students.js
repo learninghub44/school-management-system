@@ -63,6 +63,37 @@ router.get("/", auth, roleM(READ), async (req, res) => {
   }
 });
 
+// ── GET /api/students/next-admission ─────────────────────────────
+// Returns the next available admission number for the school
+// Format: {SCHOOL_CODE}/{YEAR}/{SEQUENCE} e.g. GEN001/2026/0042
+router.get("/next-admission", auth, roleM(READ), async (req, res) => {
+  try {
+    const sid = getSchoolId(req);
+    if (!sid) return res.status(400).json({ success: false, message: "school_id required." });
+
+    // Get school code
+    const { rows: schoolRows } = await db.query(
+      "SELECT school_code FROM schools WHERE id=$1", [sid]
+    );
+    const schoolCode = schoolRows[0]?.school_code || "SCH";
+    const year = new Date().getFullYear();
+
+    // Count existing students for this school this year
+    const { rows } = await db.query(
+      `SELECT COUNT(*) AS total FROM students
+       WHERE school_id=$1 AND EXTRACT(YEAR FROM created_at)=$2`,
+      [sid, year]
+    );
+    const next = parseInt(rows[0].total || 0) + 1;
+    const seq  = String(next).padStart(4, "0");
+    const admission_no = `${schoolCode}/${year}/${seq}`;
+
+    return res.json({ success: true, admission_no });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
 // ── GET /api/students/:id ─────────────────────────────────────────
 router.get("/:id", auth, roleM(READ), validateUUID("id"), async (req, res) => {
   try {
@@ -86,7 +117,7 @@ router.post("/", auth, roleM(MANAGE),
     body("first_name").trim().notEmpty().isLength({ max: 80 }),
     body("last_name").trim().notEmpty().isLength({ max: 80 }),
     body("middle_name").optional().trim().isLength({ max: 80 }),
-    body("admission_number").trim().notEmpty().isLength({ max: 30 }),
+    body("admission_number").optional().trim().isLength({ max: 30 }),
     body("upi_number").optional().trim().isLength({ max: 30 }),
     body("gender").isIn(["Male", "Female"]),
     body("class_id").notEmpty().isInt({ min: 1 }),
@@ -114,10 +145,24 @@ router.post("/", auth, roleM(MANAGE),
         return res.status(403).json({ success: false, message: "Class does not belong to your school." });
 
       const {
-        first_name, middle_name, last_name, admission_number, upi_number,
+        first_name, middle_name, last_name, upi_number,
         gender, date_of_birth, class_id, admission_date,
         parent_name, parent_phone, address
       } = req.body;
+
+      // Auto-generate admission number if not supplied
+      let admission_number = req.body.admission_number?.trim();
+      if (!admission_number) {
+        const { rows: sc } = await db.query("SELECT school_code FROM schools WHERE id=$1", [cls[0].school_id]);
+        const code = sc[0]?.school_code || "SCH";
+        const year = new Date().getFullYear();
+        const { rows: cnt } = await db.query(
+          "SELECT COUNT(*) AS total FROM students WHERE school_id=$1 AND EXTRACT(YEAR FROM created_at)=$2",
+          [cls[0].school_id, year]
+        );
+        const seq = String(parseInt(cnt[0].total || 0) + 1).padStart(4, "0");
+        admission_number = `${code}/${year}/${seq}`;
+      }
 
       const { rows } = await db.query(
         `INSERT INTO students

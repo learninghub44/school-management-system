@@ -46,7 +46,7 @@
   </div>
   <div class="fg"><label>Middle Name</label><input id="s-mname" maxlength="80"></div>
   <div class="fg-row">
-    <div class="fg"><label>Admission No *</label><input id="s-adm" maxlength="30"></div>
+    <div class="fg"><label>Admission No (auto-generated)</label><input id="s-adm" maxlength="30" placeholder="Loading…" style="background:#f8fafc;color:#64748b;font-weight:600"></div>
     <div class="fg"><label>UPI No</label><input id="s-upi" maxlength="30"></div>
   </div>
   <div class="fg-row">
@@ -383,8 +383,7 @@ document.getElementById("app").innerHTML =
         </div>
         <div class="card-body">
           <div class="filter-bar">
-            <select id="filterStudentClass"><option value="">All Classes</option></select>
-            <input type="text" id="filterStudentQ" placeholder="Search name or admission no…" style="flex:1">
+            <input type="text" id="filterStudentQ" placeholder="Search by name or admission no…" style="flex:1;max-width:360px">
           </div>
           <div class="table-wrap" id="studentsTbl"><div class="empty">Loading…</div></div>
         </div>
@@ -614,7 +613,7 @@ async function fetchClasses() {
   allClasses = r?.data || [];
   const opts = allClasses.map(c =>
     `<option value="${esc(String(c.id))}">${esc(c.name || c.grade_level)}</option>`).join("");
-  ["s-class","cl-teacher","att-class","filterStudentClass","filterAttClass",
+  ["s-class","cl-teacher","att-class","filterAttClass",
    "filterAssessClass","as-class","asc-class",
    "tt-class","filterTTClass","rc-class","filterRCClass","ex-class"].forEach(id => {
     const el = document.getElementById(id);
@@ -707,10 +706,8 @@ async function loadOverview() {
 // ── Students ──────────────────────────────────────────────────────
 async function loadStudents() {
   document.getElementById("studentsTbl").innerHTML = '<div class="empty">Loading…</div>';
-  const classId = document.getElementById("filterStudentClass").value;
-  const q       = document.getElementById("filterStudentQ").value.trim();
-  // api.js: students.list(params) → GET /students
-  const r    = await students.list({ school_id: me.school_id, class_id: classId || undefined, search: q || undefined });
+  const q = document.getElementById("filterStudentQ").value.trim();
+  const r    = await students.list({ school_id: me.school_id, search: q || undefined });
   const data = r?.data || [];
   if (!data.length) { document.getElementById("studentsTbl").innerHTML = '<div class="empty">No students found</div>'; return; }
   document.getElementById("studentsTbl").innerHTML = `<table><thead><tr>
@@ -718,8 +715,8 @@ async function loadStudents() {
   </tr></thead><tbody>
     ${data.map(s => `<tr>
       <td><strong>${esc(s.full_name || (s.first_name + " " + s.last_name))}</strong></td>
-      <td>${esc(s.admission_no)}</td>
-      <td>${esc(s.class_name || "–")}</td>
+      <td>${esc(s.admission_no || s.admission_number || "–")}</td>
+      <td>${esc(s.class_label || s.class_name || "–")}</td>
       <td>${esc(s.gender || "–")}</td>
       <td>${esc(s.parent_name || "–")}<br><span style="font-size:11px;color:#64748b">${esc(s.parent_phone || "")}</span></td>
       <td><span class="badge ${s.is_active !== false ? "bg" : "br"}">${s.is_active !== false ? "Active" : "Inactive"}</span></td>
@@ -727,10 +724,22 @@ async function loadStudents() {
     </tr>`).join("")}
   </tbody></table>`;
 }
-document.getElementById("filterStudentClass")?.addEventListener("change", loadStudents);
-document.getElementById("filterStudentQ")?.addEventListener("input",  loadStudents);
+document.getElementById("filterStudentQ")?.addEventListener("input", loadStudents);
 
-document.getElementById("btnAddStudent")?.addEventListener("click", () => { resetModal("modal-student"); openModal("modal-student"); });
+document.getElementById("btnAddStudent")?.addEventListener("click", async () => {
+  resetModal("modal-student");
+  openModal("modal-student");
+  // Auto-generate admission number
+  const admEl = document.getElementById("s-adm");
+  admEl.value = "Generating…";
+  admEl.disabled = true;
+  try {
+    const r = await apiFetch("/students/next-admission");
+    admEl.value = r?.admission_no || "";
+  } catch(e) { admEl.value = ""; }
+  admEl.disabled = false;
+});
+
 document.getElementById("btnSubmitStudent")?.addEventListener("click", async () => {
   const fname   = document.getElementById("s-fname").value.trim();
   const lname   = document.getElementById("s-lname").value.trim();
@@ -738,24 +747,23 @@ document.getElementById("btnSubmitStudent")?.addEventListener("click", async () 
   const gender  = document.getElementById("s-gender").value;
   const classId = document.getElementById("s-class").value;
   const alertEl = document.getElementById("s-alert");
-  if (!fname || !lname || !adm || !gender || !classId)
-    return showAlert(alertEl, "First name, last name, admission number, gender and class are required.");
+  if (!fname || !lname || !gender || !classId)
+    return showAlert(alertEl, "First name, last name, gender and class are required.");
   setLoading("btnSubmitStudent", true);
-  // api.js: students.create(d) → POST /students
   const r = await students.create({
-    first_name:    fname,
-    last_name:     lname,
-    middle_name:   document.getElementById("s-mname").value.trim()   || null,
-    admission_no:  adm,
-    upi_no:        document.getElementById("s-upi").value.trim()     || null,
+    first_name:     fname,
+    last_name:      lname,
+    middle_name:    document.getElementById("s-mname").value.trim()   || null,
+    admission_number: adm || undefined,
+    upi_number:     document.getElementById("s-upi").value.trim()     || null,
     gender,
-    dob:           document.getElementById("s-dob").value            || null,
-    class_id:      classId,
-    admission_date:document.getElementById("s-admdate").value        || null,
-    parent_name:   document.getElementById("s-parent").value.trim()  || null,
-    parent_phone:  document.getElementById("s-pphone").value.trim()  || null,
-    address:       document.getElementById("s-addr").value.trim()    || null,
-    school_id:     me.school_id,
+    date_of_birth:  document.getElementById("s-dob").value            || null,
+    class_id:       classId,
+    admission_date: document.getElementById("s-admdate").value        || null,
+    parent_name:    document.getElementById("s-parent").value.trim()  || null,
+    parent_phone:   document.getElementById("s-pphone").value.trim()  || null,
+    address:        document.getElementById("s-addr").value.trim()    || null,
+    school_id:      me.school_id,
   });
   setLoading("btnSubmitStudent", false);
   if (r?.success) {
