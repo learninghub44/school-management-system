@@ -261,6 +261,31 @@ router.get("/debug-pesapal", async (req, res) => {
     return res.status(500).json({ success: false, config: info, steps });
   }
 });
+// ── DB CHECK DEBUG ───────────────────────────────────────────────
+router.get("/debug-db", async (req, res) => {
+  try {
+    const tables = await db.query(`
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema = 'public'
+      AND table_name IN ('payment_plans','school_subscriptions','subscription_payments','schools','users')
+      ORDER BY table_name
+    `);
+    const existing = tables.rows.map(r => r.table_name);
+    const required = ['payment_plans','school_subscriptions','subscription_payments'];
+    const missing = required.filter(t => !existing.includes(t));
+
+    // Check payment_plans has data
+    let plans = [];
+    if (existing.includes('payment_plans')) {
+      const r = await db.query('SELECT id, name, amount, is_active FROM payment_plans LIMIT 10');
+      plans = r.rows;
+    }
+
+    return res.json({ existing_tables: existing, missing_tables: missing, payment_plans: plans });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
 // ── END DEBUG ─────────────────────────────────────────────────────
 
 router.get("/plans", auth, async (req, res) => {
