@@ -130,8 +130,8 @@ app.use(express.static(path.join(__dirname, "../frontend"), {
 
 // ── API routes ────────────────────────────────────────────────────
 app.use("/api/auth",        require("./routes/auth"));
-app.use("/api/schools",     require("./routes/schools"));
-app.use("/api/subscriptions", require("./routes/subscriptions"));
+app.use("/api/schools",     require("./routes/schools"));   // auth applied per-route (learning-areas is public-ish)
+app.use("/api/subscriptions", require("./routes/subscriptions")); // auth applied per-route (IPN + webhook are public)
 
 const requireSubscription = require("./middleware/subscriptionMiddleware");
 const authMiddleware = require("./middleware/authMiddleware");
@@ -145,7 +145,7 @@ app.use("/api/attendance",  authMiddleware, requireSubscription, require("./rout
 app.use("/api/assessments", authMiddleware, requireSubscription, require("./routes/assessments"));
 app.use("/api/finance",     authMiddleware, requireSubscription, require("./routes/finance"));
 app.use("/api/reports",     authMiddleware, requireSubscription, require("./routes/reports"));
-app.use("/api/ai",          require("./routes/ai"));
+app.use("/api/ai",          authMiddleware, requireSubscription, require("./routes/ai"));
 
 // ── Health check ─────────────────────────────────────────────────
 app.get("/api/health", (req, res) =>

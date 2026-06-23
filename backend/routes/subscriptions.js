@@ -183,8 +183,8 @@ async function activateSubscription(paymentId) {
   return rows[0];
 }
 
-// ── TEMP DEBUG: remove after fixing payment ───────────────────────
-router.get("/debug-pesapal", async (req, res) => {
+// ── TEMP DEBUG: SUPER_ADMIN only ──────────────────────────────────
+router.get("/debug-pesapal", auth, roleM(["SUPER_ADMIN"]), async (req, res) => {
   const rawCallback = process.env.PESAPAL_CALLBACK_URL || "https://cbc-school-erp.pages.dev/subscription.html";
   const callbackUrl = rawCallback.replace(/^https?:\/\/https?:\/\//, "https://").replace(/([^:])\/\/+/g, "$1/").replace(/\/$/, "");
 
@@ -265,7 +265,7 @@ router.get("/debug-pesapal", async (req, res) => {
   }
 });
 // ── DB CHECK DEBUG ───────────────────────────────────────────────
-router.get("/debug-db", async (req, res) => {
+router.get("/debug-db", auth, roleM(["SUPER_ADMIN"]), async (req, res) => {
   try {
     const tables = await db.query(`
       SELECT table_name FROM information_schema.tables
@@ -460,7 +460,14 @@ router.post("/payments/:id/activate", auth, roleM(PLAN_ROLES), async (req, res) 
   }
 });
 
-router.get("/ipn", async (req, res) => {
+// IPN is unauthenticated (called by payment provider) — rate-limited to prevent abuse
+const ipnLimiter = require("express-rate-limit")({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+router.get("/ipn", ipnLimiter, async (req, res) => {
   try {
     const trackingId = req.query.OrderTrackingId || req.query.orderTrackingId;
     const merchantReference = req.query.OrderMerchantReference || req.query.orderMerchantReference;
@@ -526,8 +533,8 @@ async function paystackFetch(path, options = {}) {
   return data;
 }
 
-// GET /api/subscriptions/debug-paystack — verify key mode and connectivity
-router.get("/debug-paystack", async (req, res) => {
+// GET /api/subscriptions/debug-paystack — verify key mode and connectivity (SUPER_ADMIN only)
+router.get("/debug-paystack", auth, roleM(["SUPER_ADMIN"]), async (req, res) => {
   const key = process.env.PAYSTACK_SECRET_KEY || "";
   const mode = !key ? "missing" : key.startsWith("sk_live_") ? "live" : key.startsWith("sk_test_") ? "test" : "unknown";
   const info = {
@@ -617,7 +624,7 @@ router.post("/paystack/checkout", auth, roleM(CHECKOUT_ROLES),
 
 // GET /api/subscriptions/paystack/callback?reference=xxx  (Paystack redirects here via callback_url)
 // Frontend hits this after Paystack redirects back — verifies and activates
-router.get("/paystack/verify/:reference", async (req, res) => {
+router.get("/paystack/verify/:reference", auth, async (req, res) => {
   try {
     const { reference } = req.params;
     if (!reference) return res.status(400).json({ success: false, message: "reference required." });
