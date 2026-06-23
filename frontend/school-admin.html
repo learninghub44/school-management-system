@@ -132,9 +132,20 @@
         <option>Grade 1</option><option>Grade 2</option><option>Grade 3</option>
         <option>Grade 4</option><option>Grade 5</option><option>Grade 6</option>
         <option>Grade 7</option><option>Grade 8</option><option>Grade 9</option>
+        <option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
       </select>
     </div>
     <div class="fg"><label>Stream</label><input id="cl-stream" maxlength="20" placeholder="East, A, Blue…"></div>
+  </div>
+  <div class="fg-row" id="cl-pathway-row" style="display:none">
+    <div class="fg"><label>Pathway * <span style="color:#64748b;font-weight:400">(Senior School)</span></label>
+      <select id="cl-pathway">
+        <option value="">Select Pathway</option>
+        <option>STEM</option>
+        <option>Social Sciences</option>
+        <option>Arts &amp; Sports</option>
+      </select>
+    </div>
   </div>
   <div class="fg-row">
     <div class="fg"><label>Academic Year *</label><input id="cl-year" maxlength="4" placeholder="2025"></div>
@@ -611,8 +622,9 @@ async function fetchClasses() {
   // api.js: classes.list(params) → GET /classes
   const r = await classes.list({ school_id: me.school_id });
   allClasses = r?.data || [];
+  const classLabel = c => c.grade + (c.pathway ? ` (${c.pathway})` : "") + (c.stream ? ` – ${c.stream}` : "");
   const opts = allClasses.map(c =>
-    `<option value="${esc(String(c.id))}">${esc(c.name || c.grade_level)}</option>`).join("");
+    `<option value="${esc(String(c.id))}">${esc(classLabel(c))}</option>`).join("");
   ["s-class","cl-teacher","att-class","filterAttClass",
    "filterAssessClass","as-class","asc-class",
    "tt-class","filterTTClass","rc-class","filterRCClass","ex-class"].forEach(id => {
@@ -842,14 +854,14 @@ async function loadClasses() {
     <th>Class</th><th>Academic Year</th><th>Capacity</th><th>Students</th><th>Class Teacher</th><th>Actions</th>
   </tr></thead><tbody>
     ${data.map(c => `<tr>
-      <td><strong>${esc(c.name || c.grade_level)}${c.stream ? " – " + esc(c.stream) : ""}</strong></td>
+      <td><strong>${esc(c.grade)}${c.pathway ? " (" + esc(c.pathway) + ")" : ""}${c.stream ? " – " + esc(c.stream) : ""}</strong></td>
       <td>${esc(String(c.academic_year || "–"))}</td>
       <td>${c.capacity || "–"}</td>
       <td>${c.student_count ?? 0}</td>
       <td>${esc(c.class_teacher_name || "Not assigned")}</td>
       <td><div class="action-btns">
         <button class="btn btn-sm btn-ghost" data-act="view-class" data-id="${esc(String(c.id))}">Students</button>
-        <button class="btn btn-sm btn-danger" data-act="del-class" data-id="${esc(String(c.id))}" data-name="${esc(c.name || c.grade_level)}">Delete</button>
+        <button class="btn btn-sm btn-danger" data-act="del-class" data-id="${esc(String(c.id))}" data-name="${esc(c.grade)}${c.pathway ? ' (' + esc(c.pathway) + ')' : ''}">Delete</button>
       </div></td>
     </tr>`).join("")}
   </tbody></table>`;
@@ -863,16 +875,33 @@ async function loadClasses() {
     }));
 }
 
-document.getElementById("btnAddClass")?.addEventListener("click", () => { resetModal("modal-class"); openModal("modal-class"); });
+document.getElementById("btnAddClass")?.addEventListener("click", () => {
+  resetModal("modal-class");
+  document.getElementById("cl-pathway-row").style.display = "none";
+  openModal("modal-class");
+});
+
+const SENIOR_GRADES_UI = ["Grade 10", "Grade 11", "Grade 12"];
+document.getElementById("cl-grade")?.addEventListener("change", function () {
+  const row = document.getElementById("cl-pathway-row");
+  const isSenior = SENIOR_GRADES_UI.includes(this.value);
+  row.style.display = isSenior ? "" : "none";
+  if (!isSenior) document.getElementById("cl-pathway").value = "";
+});
+
 document.getElementById("btnSubmitClass")?.addEventListener("click", async () => {
   const grade   = document.getElementById("cl-grade").value;
   const year    = document.getElementById("cl-year").value.trim();
+  const pathway = document.getElementById("cl-pathway").value;
   const alertEl = document.getElementById("cl-alert");
   if (!grade || !year) return showAlert(alertEl, "Grade and academic year are required.");
+  if (SENIOR_GRADES_UI.includes(grade) && !pathway)
+    return showAlert(alertEl, "Pathway is required for Grade 10-12 (STEM, Social Sciences, or Arts & Sports).");
   setLoading("btnSubmitClass", true);
   // api.js: classes.create(d) → POST /classes
   const r = await classes.create({
-    grade_level:       grade,
+    grade:             grade,
+    pathway:           SENIOR_GRADES_UI.includes(grade) ? pathway : null,
     stream:            document.getElementById("cl-stream").value.trim() || null,
     academic_year:     year,
     capacity:          parseInt(document.getElementById("cl-cap").value) || 40,

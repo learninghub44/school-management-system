@@ -248,8 +248,9 @@ async function fetchClasses() {
   // api.js: classes.list(params) → GET /classes
   const r = await classes.list({ school_id: me.school_id });
   allClasses = r?.data || [];
+  const classLabel = c => c.grade + (c.pathway ? ` (${c.pathway})` : "") + (c.stream ? ` – ${c.stream}` : "");
   const opts = allClasses.map(c =>
-    `<option value="${esc(String(c.id))}">${esc(c.name || c.grade_level)}</option>`).join("");
+    `<option value="${esc(String(c.id))}">${esc(classLabel(c))}</option>`).join("");
   [
     "py-class","fee-class","bal-class",
     "filterPayClass","filterFeeClass","filterBalClass","filterBalClass"

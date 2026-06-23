@@ -30,6 +30,7 @@ router.get("/", auth, roleM(READ), async (req, res) => {
     if (sid) { p.push(sid); q += ` AND t.school_id=$${p.length}`; }
     if (req.query.is_active !== undefined) { p.push(req.query.is_active === "true"); q += ` AND t.is_active=$${p.length}`; }
     if (req.query.department_id) { p.push(req.query.department_id); q += ` AND t.department_id=$${p.length}`; }
+    if (req.query.user_id) { p.push(req.query.user_id); q += ` AND t.user_id=$${p.length}`; }
     q += " ORDER BY t.last_name, t.first_name";
     const { rows } = await db.query(q, p);
     return res.json({ success: true, data: rows, count: rows.length });

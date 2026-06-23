@@ -195,50 +195,188 @@ subjects: [
 
 /* =========================
    SENIOR SCHOOL (10–12)
+   Core subjects (all pathways): English, Kiswahili/KSL, Mathematics,
+   Community Service Learning, Physical Education, Religious Education.
+   Each pathway adds its own specialised electives.
 ========================= */
 
 {
 id: "G10_STEM",
-grade: "Grade 10 STEM",
+grade: "Grade 10",
 level: "Senior School",
 pathway: "STEM",
 cycle: "SSS",
 subjects: [
+{ id: "ENG_S10_STEM", name: "English" },
+{ id: "KIS_S10_STEM", name: "Kiswahili" },
+{ id: "CSL_S10_STEM", name: "Community Service Learning" },
+{ id: "PE_S10_STEM", name: "Physical Education" },
 { id: "MAT_S10", name: "Advanced Mathematics" },
 { id: "PHY_S10", name: "Physics" },
 { id: "CHE_S10", name: "Chemistry" },
 { id: "BIO_S10", name: "Biology" },
-{ id: "ICT_S10", name: "Computer Science" }
+{ id: "ICT_S10", name: "Computer Science" },
+{ id: "AGR_S10", name: "Agriculture" }
+]
+},
+
+{
+id: "G10_SOCIAL",
+grade: "Grade 10",
+level: "Senior School",
+pathway: "Social Sciences",
+cycle: "SSS",
+subjects: [
+{ id: "ENG_S10_SOC", name: "English" },
+{ id: "KIS_S10_SOC", name: "Kiswahili" },
+{ id: "CSL_S10_SOC", name: "Community Service Learning" },
+{ id: "PE_S10_SOC", name: "Physical Education" },
+{ id: "HIS_S10", name: "History & Citizenship" },
+{ id: "GEO_S10", name: "Geography" },
+{ id: "CRE_S10_SOC", name: "Christian Religious Education" },
+{ id: "BUS_S10", name: "Business Studies" },
+{ id: "ECO_S10", name: "Economics" },
+{ id: "LIT_S10", name: "Literature" }
+]
+},
+
+{
+id: "G10_ARTS",
+grade: "Grade 10",
+level: "Senior School",
+pathway: "Arts & Sports",
+cycle: "SSS",
+subjects: [
+{ id: "ENG_S10_ART", name: "English" },
+{ id: "KIS_S10_ART", name: "Kiswahili" },
+{ id: "CSL_S10_ART", name: "Community Service Learning" },
+{ id: "PE_S10_ART", name: "Physical Education" },
+{ id: "MUS_S10", name: "Music & Dance" },
+{ id: "VIS_S10", name: "Visual & Applied Arts" },
+{ id: "PER_S10", name: "Performing Arts" },
+{ id: "SCI_S10_ART", name: "Sports Science" },
+{ id: "FAS_S10", name: "Fashion & Design" },
+{ id: "FIL_S10", name: "Film & Theatre" }
 ]
 },
 
 {
 id: "G11_STEM",
-grade: "Grade 11 STEM",
+grade: "Grade 11",
 level: "Senior School",
 pathway: "STEM",
 cycle: "SSS",
 subjects: [
+{ id: "ENG_S11_STEM", name: "English" },
+{ id: "KIS_S11_STEM", name: "Kiswahili" },
+{ id: "CSL_S11_STEM", name: "Community Service Learning" },
+{ id: "PE_S11_STEM", name: "Physical Education" },
 { id: "MAT_S11", name: "Advanced Mathematics" },
 { id: "PHY_S11", name: "Physics" },
 { id: "CHE_S11", name: "Chemistry" },
 { id: "BIO_S11", name: "Biology" },
-{ id: "ICT_S11", name: "Computer Science" }
+{ id: "ICT_S11", name: "Computer Science" },
+{ id: "AGR_S11", name: "Agriculture" }
+]
+},
+
+{
+id: "G11_SOCIAL",
+grade: "Grade 11",
+level: "Senior School",
+pathway: "Social Sciences",
+cycle: "SSS",
+subjects: [
+{ id: "ENG_S11_SOC", name: "English" },
+{ id: "KIS_S11_SOC", name: "Kiswahili" },
+{ id: "CSL_S11_SOC", name: "Community Service Learning" },
+{ id: "PE_S11_SOC", name: "Physical Education" },
+{ id: "HIS_S11", name: "History & Citizenship" },
+{ id: "GEO_S11", name: "Geography" },
+{ id: "CRE_S11_SOC", name: "Christian Religious Education" },
+{ id: "BUS_S11", name: "Business Studies" },
+{ id: "ECO_S11", name: "Economics" },
+{ id: "LIT_S11", name: "Literature" }
+]
+},
+
+{
+id: "G11_ARTS",
+grade: "Grade 11",
+level: "Senior School",
+pathway: "Arts & Sports",
+cycle: "SSS",
+subjects: [
+{ id: "ENG_S11_ART", name: "English" },
+{ id: "KIS_S11_ART", name: "Kiswahili" },
+{ id: "CSL_S11_ART", name: "Community Service Learning" },
+{ id: "PE_S11_ART", name: "Physical Education" },
+{ id: "MUS_S11", name: "Music & Dance" },
+{ id: "VIS_S11", name: "Visual & Applied Arts" },
+{ id: "PER_S11", name: "Performing Arts" },
+{ id: "SCI_S11_ART", name: "Sports Science" },
+{ id: "FAS_S11", name: "Fashion & Design" },
+{ id: "FIL_S11", name: "Film & Theatre" }
 ]
 },
 
 {
 id: "G12_STEM",
-grade: "Grade 12 STEM",
+grade: "Grade 12",
 level: "Senior School",
 pathway: "STEM",
 cycle: "SSS",
 subjects: [
+{ id: "ENG_S12_STEM", name: "English" },
+{ id: "KIS_S12_STEM", name: "Kiswahili" },
+{ id: "CSL_S12_STEM", name: "Community Service Learning" },
+{ id: "PE_S12_STEM", name: "Physical Education" },
 { id: "MAT_S12", name: "Advanced Mathematics" },
 { id: "PHY_S12", name: "Physics" },
 { id: "CHE_S12", name: "Chemistry" },
 { id: "BIO_S12", name: "Biology" },
-{ id: "ICT_S12", name: "Computer Science" }
+{ id: "ICT_S12", name: "Computer Science" },
+{ id: "AGR_S12", name: "Agriculture" }
+]
+},
+
+{
+id: "G12_SOCIAL",
+grade: "Grade 12",
+level: "Senior School",
+pathway: "Social Sciences",
+cycle: "SSS",
+subjects: [
+{ id: "ENG_S12_SOC", name: "English" },
+{ id: "KIS_S12_SOC", name: "Kiswahili" },
+{ id: "CSL_S12_SOC", name: "Community Service Learning" },
+{ id: "PE_S12_SOC", name: "Physical Education" },
+{ id: "HIS_S12", name: "History & Citizenship" },
+{ id: "GEO_S12", name: "Geography" },
+{ id: "CRE_S12_SOC", name: "Christian Religious Education" },
+{ id: "BUS_S12", name: "Business Studies" },
+{ id: "ECO_S12", name: "Economics" },
+{ id: "LIT_S12", name: "Literature" }
+]
+},
+
+{
+id: "G12_ARTS",
+grade: "Grade 12",
+level: "Senior School",
+pathway: "Arts & Sports",
+cycle: "SSS",
+subjects: [
+{ id: "ENG_S12_ART", name: "English" },
+{ id: "KIS_S12_ART", name: "Kiswahili" },
+{ id: "CSL_S12_ART", name: "Community Service Learning" },
+{ id: "PE_S12_ART", name: "Physical Education" },
+{ id: "MUS_S12", name: "Music & Dance" },
+{ id: "VIS_S12", name: "Visual & Applied Arts" },
+{ id: "PER_S12", name: "Performing Arts" },
+{ id: "SCI_S12_ART", name: "Sports Science" },
+{ id: "FAS_S12", name: "Fashion & Design" },
+{ id: "FIL_S12", name: "Film & Theatre" }
 ]
 }
 
@@ -268,11 +406,28 @@ export function getGradeByLevel(level) {
 return CBC_GRADES.filter(g => g.level === level);
 }
 
+// For Senior School (Grade 10-12), looks up the entry matching both grade and pathway.
+// For PP1-Grade 9, pathway is ignored since it doesn't apply.
+export function getGradeEntry(gradeLabel, pathway) {
+return CBC_GRADES.find(g =>
+g.grade === gradeLabel && (g.pathway === "CBC_CORE" || g.pathway === pathway)
+);
+}
+
+export function getPathwaysForGrade(gradeLabel) {
+return [...new Set(CBC_GRADES.filter(g => g.grade === gradeLabel).map(g => g.pathway))]
+.filter(p => p !== "CBC_CORE");
+}
+
 export function getAllGrades() {
-return CBC_GRADES.map(g => ({
-id: g.id,
-grade: g.grade
-}));
+const seen = new Set();
+const out = [];
+for (const g of CBC_GRADES) {
+if (seen.has(g.grade)) continue;
+seen.add(g.grade);
+out.push({ id: g.id, grade: g.grade });
+}
+return out;
 }
 
 export function getPerformance(score) {

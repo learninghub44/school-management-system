@@ -52,6 +52,7 @@
 <div class="modal-bg" id="modal-assess">
 <div class="modal">
   <div class="modal-hdr"><h3>Record Assessment</h3><button class="modal-close" data-close="modal-assess">×</button></div>
+  <div class="fg"><label>Class *</label><select id="asc-class"><option value="">Select Class</option></select></div>
   <div class="fg"><label>Student *</label><select id="asc-student"><option value="">Select Student</option></select></div>
   <div class="fg"><label>Learning Area *</label><select id="asc-subject"><option value="">Select</option></select></div>
   <div class="fg-row">
@@ -82,7 +83,7 @@
 </div></div>
 
 <script type="module">
-import { guardPage, esc, apiFetch, attendance, assessments, classes, schools, verifySession, clearSession, logout} from "/js/api.js";
+import { guardPage, esc, apiFetch, attendance, assessments, classes, schools, teachers, assignments, students, verifySession, clearSession, logout} from "/js/api.js";
 import { buildSidebar, setupNav, openModal, closeModal, resetModal, showAlert, setLoading, injectStyles } from "/js/layout.js";
 injectStyles();
 
@@ -95,3 +96,280 @@ if (!vRes.ok && vRes.reason !== "network") {
   throw new Error("Redirecting");
 }
 if (vRes.ok) me = vRes.user;
+
+// ── Nav ───────────────────────────────────────────────────────────
+const NAV = [
+  { panel: "overview", icon: "chart",     label: "Dashboard"   },
+  { panel: "classes",  icon: "clipboard", label: "My Classes"  },
+];
+
+// ── Render shell ──────────────────────────────────────────────────
+document.getElementById("app").innerHTML =
+  buildSidebar(NAV, "overview") + `
+<div class="main">
+  <header class="topbar">
+    <button class="mob-menu-btn" id="mobMenuBtn" aria-label="Open menu"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    <h3 id="pageTitle">Dashboard</h3>
+    <div class="topbar-right">${esc(me.school_name || "")} · Teacher</div>
+  </header>
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div class="panel active" id="panel-overview">
+      <div class="stat-grid" id="statsGrid"><div class="empty">Loading…</div></div>
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Quick Actions</h4>
+        </div>
+        <div class="card-body" style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="btnQuickAtt">+ Record Attendance</button>
+          <button class="btn btn-primary" id="btnQuickAssess">+ Record Assessment</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MY CLASSES -->
+    <div class="panel" id="panel-classes">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>My Classes &amp; Subjects</h4>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-ghost" id="btnAddAtt">+ Record Attendance</button>
+            <button class="btn btn-primary" id="btnAddAssess">+ Record Assessment</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap" id="myClassesTbl"><div class="empty">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>`;
+
+// ── State ─────────────────────────────────────────────────────────
+let myTeacherId   = null;
+let myAssignments = [];   // [{class_id, learning_area_id, grade, stream, subject_name, subject_code, role, ...}]
+let myClasses     = [];   // de-duplicated list of {id, label}
+
+// ── Resolve logged-in user → teacher record ───────────────────────
+async function resolveTeacherId() {
+  // api.js: teachers.list(params) → GET /teachers?user_id=...
+  const r = await teachers.list({ user_id: me.id, school_id: me.school_id });
+  const t = (r?.data || [])[0];
+  return t?.id || null;
+}
+
+// ── Fetch this teacher's class/subject assignments ────────────────
+async function fetchMyAssignments() {
+  if (!myTeacherId) return;
+  // api.js: assignments.list(params) → GET /assignments?teacher_id=...
+  const r = await assignments.list({ teacher_id: myTeacherId, school_id: me.school_id, academic_year: me.academic_year });
+  myAssignments = r?.data || [];
+  const seen = new Map();
+  myAssignments.forEach(a => {
+    if (!seen.has(a.class_id)) {
+      seen.set(a.class_id, a.class_label || (a.grade + (a.stream ? " – " + a.stream : "")));
+    }
+  });
+  myClasses = [...seen.entries()].map(([id, label]) => ({ id, label }));
+
+  // Populate class dropdowns (attendance modal)
+  const classOpts = '<option value="">Select Class</option>' +
+    myClasses.map(c => `<option value="${esc(String(c.id))}">${esc(c.label)}</option>`).join("");
+  const attClassEl = document.getElementById("att-class");
+  if (attClassEl) attClassEl.innerHTML = classOpts;
+}
+
+// ── Render "My Classes" table ──────────────────────────────────────
+function renderMyClasses() {
+  const el = document.getElementById("myClassesTbl");
+  if (!myAssignments.length) { el.innerHTML = '<div class="empty">No classes assigned yet. Ask your school admin to assign you to a class and subject.</div>'; return; }
+  el.innerHTML = `<table><thead><tr>
+    <th>Class</th><th>Subject</th><th>Role</th><th>Academic Year</th>
+  </tr></thead><tbody>
+    ${myAssignments.map(a => `<tr>
+      <td><strong>${esc(a.class_label || (a.grade + (a.stream ? " – " + a.stream : "")))}</strong></td>
+      <td>${esc(a.subject_name || "–")}</td>
+      <td>${esc(a.role || "–")}</td>
+      <td>${esc(String(a.academic_year || "–"))}</td>
+    </tr>`).join("")}
+  </tbody></table>`;
+}
+
+// ── Overview stats ─────────────────────────────────────────────────
+async function loadOverview() {
+  const grid = document.getElementById("statsGrid");
+  const subjectCount = new Set(myAssignments.map(a => a.learning_area_id)).size;
+  grid.innerHTML = `
+    <div class="stat-card"><div class="val">${myClasses.length}</div><div class="lbl">Classes</div></div>
+    <div class="stat-card"><div class="val">${subjectCount}</div><div class="lbl">Subjects Taught</div></div>
+  `;
+}
+
+async function loadClassesPanel() {
+  renderMyClasses();
+}
+
+// ── Nav & logout ──────────────────────────────────────────────────
+const loaders = {
+  overview: loadOverview,
+  classes:  loadClassesPanel,
+};
+setupNav(loaders);
+
+// ── Modal close wiring ────────────────────────────────────────────
+document.querySelectorAll("[data-close]").forEach(b =>
+  b.addEventListener("click", () => closeModal(b.dataset.close)));
+document.querySelectorAll(".modal-bg").forEach(bg =>
+  bg.addEventListener("click", e => { if (e.target === bg) closeModal(bg.id); }));
+
+// ── Open attendance / assessment modals from any entry point ──────
+function openAttendanceModal() {
+  resetModal("modal-att");
+  document.getElementById("att-students").innerHTML = "";
+  document.getElementById("att-date").value = new Date().toISOString().split("T")[0];
+  openModal("modal-att");
+}
+async function openAssessmentModal() {
+  resetModal("modal-assess");
+  await populateAssessClassContext();
+  openModal("modal-assess");
+}
+document.getElementById("btnQuickAtt")?.addEventListener("click", openAttendanceModal);
+document.getElementById("btnAddAtt")?.addEventListener("click", openAttendanceModal);
+document.getElementById("btnQuickAssess")?.addEventListener("click", openAssessmentModal);
+document.getElementById("btnAddAssess")?.addEventListener("click", openAssessmentModal);
+
+// ── Attendance: class → load students checklist ────────────────────
+document.getElementById("btnLoadStudents")?.addEventListener("click", async () => {
+  const classId = document.getElementById("att-class").value;
+  const listEl  = document.getElementById("att-students");
+  const alertEl = document.getElementById("att-alert");
+  if (!classId) return showAlert(alertEl, "Select a class first.");
+  listEl.innerHTML = '<div class="empty">Loading…</div>';
+  // api.js: classes.students(id) → GET /classes/:id/students
+  const r = await classes.students(classId);
+  const roster = r?.data || [];
+  if (!roster.length) { listEl.innerHTML = '<div class="empty">No students found in this class.</div>'; return; }
+  listEl.innerHTML = roster.map(s => `
+    <div class="att-row" data-student="${esc(String(s.id))}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 6px;border-bottom:1px solid #f1f5f9">
+      <span>${esc(s.first_name + " " + s.last_name)} <small style="color:#64748b">— ${esc(s.admission_number || "")}</small></span>
+      <select class="att-status" style="width:130px">
+        <option value="Present" selected>Present</option>
+        <option value="Absent">Absent</option>
+        <option value="Late">Late</option>
+      </select>
+    </div>`).join("");
+  showAlert(alertEl, "", "ok");
+  document.getElementById("att-alert").innerHTML = "";
+});
+
+document.getElementById("btnSubmitAtt")?.addEventListener("click", async () => {
+  const classId = document.getElementById("att-class").value;
+  const date    = document.getElementById("att-date").value;
+  const alertEl = document.getElementById("att-alert");
+  const rows    = [...document.querySelectorAll("#att-students .att-row")];
+  if (!classId || !date) return showAlert(alertEl, "Class and date are required.");
+  if (!rows.length) return showAlert(alertEl, "Load students before saving attendance.");
+  const records = rows.map(row => ({
+    student_id: row.dataset.student,
+    status:     row.querySelector(".att-status").value,
+  }));
+  setLoading("btnSubmitAtt", true);
+  // api.js: attendance.bulk(d) → POST /attendance/bulk
+  const r = await attendance.bulk({ class_id: classId, date, records });
+  setLoading("btnSubmitAtt", false);
+  if (r?.success) {
+    showAlert(alertEl, "Attendance saved.", "ok");
+    setTimeout(() => closeModal("modal-att"), 1200);
+  } else showAlert(alertEl, r?.message || "Failed to save attendance.");
+});
+
+// ── Assessment: class → subject + student cascade ──────────────────
+async function populateAssessClassContext() {
+  const classEl   = document.getElementById("asc-class");
+  const subjectEl = document.getElementById("asc-subject");
+  const studentEl = document.getElementById("asc-student");
+  if (!myAssignments.length) {
+    classEl.innerHTML   = '<option value="">No classes assigned</option>';
+    subjectEl.innerHTML = '<option value="">No subjects assigned</option>';
+    studentEl.innerHTML = '<option value="">No students available</option>';
+    return;
+  }
+  classEl.innerHTML = '<option value="">Select Class</option>' +
+    myClasses.map(c => `<option value="${esc(String(c.id))}">${esc(c.label)}</option>`).join("");
+  subjectEl.innerHTML = '<option value="">Select Class first</option>';
+  studentEl.innerHTML = '<option value="">Select Class first</option>';
+}
+
+async function loadSubjectsAndStudentsForAssessClass(classId) {
+  const subjectEl = document.getElementById("asc-subject");
+  const studentEl = document.getElementById("asc-student");
+  if (!classId) {
+    subjectEl.innerHTML = '<option value="">Select Class first</option>';
+    studentEl.innerHTML = '<option value="">Select Class first</option>';
+    return;
+  }
+  const subjectsForClass = myAssignments.filter(a => String(a.class_id) === String(classId));
+  subjectEl.innerHTML = '<option value="">Select</option>' +
+    subjectsForClass.map(a =>
+      `<option value="${esc(String(a.learning_area_id))}">${esc(a.subject_name)}</option>`).join("");
+
+  studentEl.innerHTML = '<option value="">Loading…</option>';
+  // api.js: classes.students(id) → GET /classes/:id/students
+  const r = await classes.students(classId);
+  studentEl.innerHTML = '<option value="">Select Student</option>' +
+    (r?.data || []).map(s =>
+      `<option value="${esc(String(s.id))}">${esc(s.first_name + " " + s.last_name)} — ${esc(s.admission_number || "")}</option>`).join("");
+}
+
+document.getElementById("asc-class")?.addEventListener("change", function () {
+  loadSubjectsAndStudentsForAssessClass(this.value);
+});
+
+document.getElementById("btnSubmitAssess")?.addEventListener("click", async () => {
+  const alertEl   = document.getElementById("asc-alert");
+  const classId   = document.getElementById("asc-class").value;
+  const studentId = document.getElementById("asc-student").value;
+  const subjectId = document.getElementById("asc-subject").value;
+  const level     = document.getElementById("asc-level").value;
+  const score     = document.getElementById("asc-score").value;
+  const type      = document.getElementById("asc-type").value;
+  const term      = document.getElementById("asc-term").value;
+  const comment   = document.getElementById("asc-comment").value.trim();
+  if (!classId || !studentId || !subjectId || !level)
+    return showAlert(alertEl, "Class, student, learning area, and achievement level are required.");
+  setLoading("btnSubmitAssess", true);
+  // api.js: assessments.create(d) → POST /assessments
+  const r = await assessments.create({
+    student_id:        studentId,
+    class_id:          classId,
+    learning_area_id:  subjectId,
+    achievement_level: level,
+    score:             score ? parseFloat(score) : undefined,
+    assessment_type:   type,
+    term:              parseInt(term),
+    academic_year:     me.academic_year,
+    teacher_comment:   comment || undefined,
+  });
+  setLoading("btnSubmitAssess", false);
+  if (r?.success) {
+    showAlert(alertEl, "Assessment saved.", "ok");
+    setTimeout(() => closeModal("modal-assess"), 1200);
+  } else showAlert(alertEl, r?.message || "Failed to save assessment.");
+});
+
+// ── Initial load ──────────────────────────────────────────────────
+myTeacherId = await resolveTeacherId();
+if (!myTeacherId) {
+  document.getElementById("statsGrid").innerHTML =
+    '<div class="empty">Your account is not yet linked to a teacher record. Contact your school admin.</div>';
+} else {
+  await fetchMyAssignments();
+  await loadOverview();
+}
+</script>
+</body>
+</html>
+
