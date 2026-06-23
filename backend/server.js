@@ -146,6 +146,7 @@ app.use("/api/assessments", authMiddleware, requireSubscription, require("./rout
 app.use("/api/finance",     authMiddleware, requireSubscription, require("./routes/finance"));
 app.use("/api/reports",     authMiddleware, requireSubscription, require("./routes/reports"));
 app.use("/api/ai",          authMiddleware, requireSubscription, require("./routes/ai"));
+app.use("/api/exams",       authMiddleware, requireSubscription, require("./routes/exams"));
 
 // ── Health check ─────────────────────────────────────────────────
 app.get("/api/health", (req, res) =>

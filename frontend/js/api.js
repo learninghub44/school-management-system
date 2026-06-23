@@ -252,3 +252,10 @@ export const reports = {
   createSlot:   (d)  => apiFetch("/reports/timetable",           { method: "POST", body: d }),
   deleteSlot:   (id) => apiFetch(`/reports/timetable/${id}`,     { method: "DELETE" }),
 };
+
+export const exams = {
+  list:   (p)      => apiFetch("/exams",        { params: p }),
+  create: (d)      => apiFetch("/exams",        { method: "POST",   body: d }),
+  update: (id, d)  => apiFetch(`/exams/${id}`,  { method: "PUT",    body: d }),
+  delete: (id)     => apiFetch(`/exams/${id}`,  { method: "DELETE" }),
+};
