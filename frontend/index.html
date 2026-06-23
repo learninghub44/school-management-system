@@ -464,26 +464,6 @@ footer{
 </head>
 <body>
 
-<!-- Auth redirect for logged-in users -->
-<script>
-(function(){
-  const token = localStorage.getItem("cbc_erp_token") || sessionStorage.getItem("cbc_erp_token");
-  const user  = localStorage.getItem("cbc_erp_user")  || sessionStorage.getItem("cbc_erp_user");
-  if(token && user){
-    try{
-      const p=JSON.parse(atob(token.split(".")[1]));
-      if(p.exp && p.exp*1000 > Date.now()){
-        const u=JSON.parse(user);
-        const dest={SUPER_ADMIN:"/super-admin.html",PRINCIPAL:"/school-admin.html",
-          DEPUTY_PRINCIPAL:"/school-admin.html",HOD:"/school-admin.html",
-          TEACHER:"/teacher.html",BURSAR:"/bursar.html"};
-        window.location.replace(dest[u.role]||"/login.html");
-      }
-    }catch(e){}
-  }
-})();
-</script>
-
 <!-- NAV -->
 <nav>
   <div class="nav-logo">CBC<span> ERP</span></div>
