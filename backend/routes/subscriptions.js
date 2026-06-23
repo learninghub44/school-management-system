@@ -408,9 +408,13 @@ router.post("/checkout", auth, roleM(CHECKOUT_ROLES),
       await audit(req, "CREATE_SUBSCRIPTION_CHECKOUT", "subscription_payments", rows[0].id, null, rows[0]);
       return res.status(201).json({ success: true, data: rows[0], redirect_url: redirectUrl });
     } catch (err) {
-      console.error("[Pesapal] Checkout error:", err.message);
-      // Return actual Pesapal error to client so it's actionable
-      return res.status(500).json({ success: false, message: err.message || "Unable to start Pesapal checkout." });
+      console.error("[Pesapal] Checkout error:", err.message, err.stack);
+      // Surface the real error — could be Pesapal or DB
+      const isDbError = err.message?.includes("relation") || err.message?.includes("column") || err.code?.startsWith("2") || err.code?.startsWith("4");
+      const userMsg = isDbError
+        ? `Database error during checkout: ${err.message}`
+        : (err.message || "Unable to start Pesapal checkout.");
+      return res.status(500).json({ success: false, message: userMsg });
     }
   }
 );
