@@ -5,12 +5,13 @@
  * PRINCIPAL + DEPUTY: read-only
  */
 "use strict";
-const express = require("express");
+const express      = require("express");
 const { body, validationResult } = require("express-validator");
-const db        = require("../config/db");
-const auth      = require("../middleware/authMiddleware");
-const roleM     = require("../middleware/roleMiddleware");
-const { audit } = require("../middleware/auditLog");
+const db           = require("../config/db");
+const auth         = require("../middleware/authMiddleware");
+const roleM        = require("../middleware/roleMiddleware");
+const { audit }    = require("../middleware/auditLog");
+const validateUUID = require("../middleware/validateUUID");
 
 const router = express.Router();
 const ALL          = ["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL", "BURSAR"];
@@ -95,6 +96,8 @@ router.post("/fee-structures", auth, roleM(BURSAR_ONLY),
 
 // ── DELETE /api/finance/fee-structures/:id ────────────────────────
 router.delete("/fee-structures/:id", auth, roleM(BURSAR_ONLY), async (req, res) => {
+  if (!/^\d+$/.test(req.params.id))
+    return res.status(400).json({ success: false, message: "Invalid ID." });
   try {
     const { rows } = await db.query(
       "SELECT school_id FROM fee_structures WHERE id=$1", [req.params.id]
@@ -238,7 +241,7 @@ router.post("/payments", auth, roleM(BURSAR_ONLY),
 );
 
 // ── GET /api/finance/student-balance/:id ─────────────────────────
-router.get("/student-balance/:id", auth, roleM(ALL), async (req, res) => {
+router.get("/student-balance/:id", auth, roleM(ALL), validateUUID("id"), async (req, res) => {
   try {
     const sid = getSchoolId(req);
     const { rows: st } = await db.query(

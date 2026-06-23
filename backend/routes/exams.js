@@ -71,6 +71,24 @@ router.post("/", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD"
       const { title, exam_date, start_time, end_time, term, academic_year,
               class_id, learning_area_id, invigilator_id, venue, notes } = req.body;
 
+      // Verify class belongs to school if provided
+      if (class_id) {
+        const { rows: cls } = await db.query(
+          "SELECT school_id FROM classes WHERE id=$1", [class_id]
+        );
+        if (!cls.length || (req.user.role !== "SUPER_ADMIN" && cls[0].school_id !== schoolId))
+          return res.status(400).json({ success: false, message: "Invalid class." });
+      }
+
+      // Verify invigilator belongs to school if provided
+      if (invigilator_id) {
+        const { rows: inv } = await db.query(
+          "SELECT school_id FROM teachers WHERE id=$1", [invigilator_id]
+        );
+        if (!inv.length || (req.user.role !== "SUPER_ADMIN" && inv[0].school_id !== schoolId))
+          return res.status(400).json({ success: false, message: "Invalid invigilator." });
+      }
+
       const { rows } = await db.query(
         `INSERT INTO exams
          (school_id, title, exam_date, start_time, end_time, term, academic_year,
@@ -92,7 +110,19 @@ router.post("/", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD"
 
 // ── PUT /api/exams/:id ────────────────────────────────────────────
 router.put("/:id", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD"]),
+  [
+    body("title").optional().trim().notEmpty().isLength({ max: 200 }),
+    body("exam_date").optional().isDate(),
+    body("start_time").optional().matches(/^\d{2}:\d{2}$/),
+    body("end_time").optional().matches(/^\d{2}:\d{2}$/),
+    body("term").optional().isInt({ min: 1, max: 3 }),
+    body("academic_year").optional().matches(/^\d{4}$/),
+    body("venue").optional().trim().isLength({ max: 200 }),
+    body("notes").optional().trim().isLength({ max: 1000 }),
+  ],
   async (req, res) => {
+    const errs = validationResult(req);
+    if (!errs.isEmpty()) return res.status(400).json({ success: false, errors: errs.array() });
     try {
       const { rows: ex } = await db.query("SELECT * FROM exams WHERE id=$1", [req.params.id]);
       if (!ex.length) return res.status(404).json({ success: false, message: "Exam not found." });
@@ -101,17 +131,40 @@ router.put("/:id", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HO
 
       const { title, exam_date, start_time, end_time, term, academic_year,
               class_id, learning_area_id, invigilator_id, venue, notes } = req.body;
+
+      // Verify class belongs to school if changing it
+      if (class_id) {
+        const { rows: cls } = await db.query("SELECT school_id FROM classes WHERE id=$1", [class_id]);
+        if (!cls.length || (req.user.role !== "SUPER_ADMIN" && cls[0].school_id !== ex[0].school_id))
+          return res.status(400).json({ success: false, message: "Invalid class." });
+      }
+      // Verify invigilator belongs to school if changing it
+      if (invigilator_id) {
+        const { rows: inv } = await db.query("SELECT school_id FROM teachers WHERE id=$1", [invigilator_id]);
+        if (!inv.length || (req.user.role !== "SUPER_ADMIN" && inv[0].school_id !== ex[0].school_id))
+          return res.status(400).json({ success: false, message: "Invalid invigilator." });
+      }
+
       const { rows } = await db.query(
         `UPDATE exams SET
-           title=$1, exam_date=$2, start_time=$3, end_time=$4, term=$5,
-           academic_year=$6, class_id=$7, learning_area_id=$8, invigilator_id=$9,
-           venue=$10, notes=$11, updated_at=NOW()
+           title            = COALESCE($1,  title),
+           exam_date        = COALESCE($2,  exam_date),
+           start_time       = COALESCE($3,  start_time),
+           end_time         = COALESCE($4,  end_time),
+           term             = COALESCE($5,  term),
+           academic_year    = COALESCE($6,  academic_year),
+           class_id         = COALESCE($7,  class_id),
+           learning_area_id = COALESCE($8,  learning_area_id),
+           invigilator_id   = COALESCE($9,  invigilator_id),
+           venue            = COALESCE($10, venue),
+           notes            = COALESCE($11, notes),
+           updated_at       = NOW()
          WHERE id=$12 RETURNING *`,
-        [title, exam_date, start_time, end_time, term, academic_year,
-         class_id || null, learning_area_id || null, invigilator_id || null,
-         venue || null, notes || null, req.params.id]
+        [title||null, exam_date||null, start_time||null, end_time||null, term??null,
+         academic_year||null, class_id||null, learning_area_id||null, invigilator_id||null,
+         venue||null, notes||null, req.params.id]
       );
-      await audit(req, "UPDATE_EXAM", "exams", req.params.id);
+      await audit(req, "UPDATE_EXAM", "exams", req.params.id, ex[0], rows[0]);
       return res.json({ success: true, data: rows[0] });
     } catch (err) {
       return res.status(500).json({ success: false, message: "Server error." });

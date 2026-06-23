@@ -36,3 +36,9 @@ services:
         value: https://cbc-school-erp-api.onrender.com/api/subscriptions/ipn
       - key: PESAPAL_IPN_ID
         sync: false
+      # Groq AI
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama3-8b-8192
+    healthCheckPath: /api/health

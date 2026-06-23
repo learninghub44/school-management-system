@@ -12,7 +12,8 @@ function getSchoolId(req) {
   return req.user.role === "SUPER_ADMIN" ? (req.query.school_id || null) : req.user.school_id;
 }
 
-router.get("/", auth, async (req, res) => {
+const READ = ["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL", "HOD", "TEACHER", "BURSAR"];
+router.get("/", auth, roleM(READ), async (req, res) => {
   try {
     const sid = getSchoolId(req);
     if (!sid && req.user.role !== "SUPER_ADMIN")
