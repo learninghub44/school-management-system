@@ -67,12 +67,13 @@ tr:hover td{background:#fafbff}
 .bb{background:#e0e7ff;color:#4338ca}.by{background:#fef9c3;color:#854d0e}
 .bpurple{background:#f3e8ff;color:#7e22ce}.bgray{background:#f1f5f9;color:#64748b}
 .bteal{background:#ccfbf1;color:#0f766e}
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 20px}
+/* ── Modals — perfectly centred on every screen ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
 .modal-bg.open{display:flex}
-.modal{background:#fff;border-radius:18px;padding:28px;width:100%;max-width:540px;box-shadow:0 24px 48px rgba(0,0,0,.18);margin:auto}
+.modal{background:#fff;border-radius:18px;padding:28px;width:100%;max-width:540px;box-shadow:0 24px 48px rgba(0,0,0,.18);margin:auto;position:relative;max-height:calc(100vh - 32px);overflow-y:auto}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
 .modal-hdr h3{font-size:17px;font-weight:700;color:#0f172a}
-.modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:#94a3b8;line-height:1;padding:0}
+.modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:#94a3b8;line-height:1;padding:4px;border-radius:6px;transition:color .15s}
 .modal-close:hover{color:#0f172a}
 .fg{margin-bottom:14px}
 .fg label{display:block;font-size:11px;font-weight:700;color:#64748b;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
@@ -80,7 +81,45 @@ tr:hover td{background:#fafbff}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
 .fg textarea{resize:vertical;min-height:70px}
 .fg-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.modal-actions{display:flex;gap:10px;margin-top:22px;justify-content:flex-end}
+.modal-actions{display:flex;gap:10px;margin-top:22px;justify-content:flex-end;flex-wrap:wrap}
+/* ── Mobile hamburger button ── */
+.mob-menu-btn{display:none;background:none;border:none;cursor:pointer;padding:6px;color:#0f172a;border-radius:8px;transition:background .15s}
+.mob-menu-btn:hover{background:#f1f5f9}
+.mob-menu-btn .icon-svg{width:22px;height:22px}
+/* ── Sidebar overlay for mobile ── */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:199}
+.sidebar-overlay.show{display:block}
+/* ── Responsive breakpoints ── */
+@media(max-width:768px){
+  body{flex-direction:column}
+  .sidebar{position:fixed;left:-280px;top:0;height:100vh;width:265px;z-index:200;transition:left .25s ease;box-shadow:none}
+  .sidebar.mob-open{left:0;box-shadow:4px 0 24px rgba(0,0,0,.15)}
+  .mob-menu-btn{display:flex;align-items:center;justify-content:center}
+  .main{width:100%;min-height:100vh}
+  .topbar{padding:12px 16px}
+  .topbar h3{font-size:15px}
+  .content{padding:16px}
+  .stat-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+  .stat-card .val{font-size:22px}
+  .card-hdr{padding:12px 16px;flex-direction:column;align-items:flex-start}
+  .card-body{padding:12px 16px}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:520px}
+  .fg-row{grid-template-columns:1fr}
+  .modal{padding:20px;border-radius:14px}
+  .modal-actions{justify-content:stretch}
+  .modal-actions .btn{flex:1;justify-content:center}
+  .filter-bar{gap:8px}
+  .filter-bar input,.filter-bar select{width:100%;flex:1 1 140px}
+  .action-btns{gap:4px}
+  .btn{padding:8px 12px;font-size:12.5px}
+  .btn-sm{padding:4px 8px;font-size:11px}
+}
+@media(max-width:480px){
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .modal-bg{padding:0;align-items:flex-end}
+  .modal{border-radius:18px 18px 0 0;max-height:92vh;padding:20px 16px}
+}
 .alert{padding:11px 14px;border-radius:10px;font-size:13px;margin-top:12px;font-weight:500;border:1px solid transparent}
 .alert-err{background:#fee2e2;color:#b91c1c;border-color:#fecaca}
 .alert-ok{background:#dcfce7;color:#15803d;border-color:#bbf7d0}
@@ -136,7 +175,8 @@ export function buildSidebar(navItems, activePanel) {
   const user = getUser();
   const initials = (user?.name || "U").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
   return `
-  <aside class="sidebar">
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="sidebar" id="mainSidebar">
     <div class="sidebar-brand">
       <div class="brand-icon">${icon("school", "School")}</div>
       <div>
@@ -168,8 +208,25 @@ export function buildSidebar(navItems, activePanel) {
   </aside>`;
 }
 
+// ── Mobile sidebar helpers ────────────────────────────────────────
+function openSidebar() {
+  document.getElementById("mainSidebar")?.classList.add("mob-open");
+  document.getElementById("sidebarOverlay")?.classList.add("show");
+  document.body.style.overflow = "hidden";
+}
+function closeSidebar() {
+  document.getElementById("mainSidebar")?.classList.remove("mob-open");
+  document.getElementById("sidebarOverlay")?.classList.remove("show");
+  document.body.style.overflow = "";
+}
+
 // ── Nav & logout wiring ───────────────────────────────────────────
 export function setupNav(loaders) {
+  // Hamburger button
+  document.getElementById("mobMenuBtn")?.addEventListener("click", openSidebar);
+  // Overlay click closes sidebar
+  document.getElementById("sidebarOverlay")?.addEventListener("click", closeSidebar);
+
   document.querySelectorAll(".nav-item").forEach(el => {
     el.addEventListener("click", () => {
       document.querySelectorAll(".nav-item").forEach(x => x.classList.remove("active"));
@@ -179,6 +236,8 @@ export function setupNav(loaders) {
       document.getElementById("panel-" + panel)?.classList.add("active");
       document.getElementById("pageTitle").textContent = el.textContent.trim();
       loaders[panel]?.();
+      // Close sidebar on mobile after navigation
+      closeSidebar();
     });
   });
   document.getElementById("logoutBtn")?.addEventListener("click", async () => {

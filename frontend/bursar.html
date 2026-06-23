@@ -130,6 +130,7 @@ document.getElementById("app").innerHTML =
   buildSidebar(NAV, "overview") + `
 <div class="main">
   <header class="topbar">
+    <button class="mob-menu-btn" id="mobMenuBtn" aria-label="Open menu"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
     <h3 id="pageTitle">Dashboard</h3>
     <div class="topbar-right">${esc(me.school_name || "")} · Bursar</div>
   </header>
