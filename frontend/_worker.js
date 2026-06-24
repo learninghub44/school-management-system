@@ -1,15 +1,17 @@
 /**
- * Kadem & Zetu School Management System — Cloudflare Worker v2.2
- *
- * Routes:
- *   /api/* → BACKEND_URL (Render)
- *   /*     → static assets, with .html extension fallback
+ * Kadem & Zetu School Management System — Cloudflare Worker v2.4
  *
  * Env vars required:
  *   BACKEND_URL = https://your-service.onrender.com
  */
 
 const ROOT_DOMAIN = "cbc-school-erp.pages.dev";
+
+// Pages that exist as .html files — resolve clean URLs to them
+const HTML_PAGES = [
+  "school-admin", "super-admin", "teacher", "bursar",
+  "login", "subscription", "change-password"
+];
 
 function getAllowedOrigin(requestOrigin) {
   if (!requestOrigin) return `https://${ROOT_DOMAIN}`;
@@ -72,24 +74,24 @@ export default {
         return new Response(response.body, { status: response.status, headers: newHeaders });
       } catch (err) {
         return new Response(
-          JSON.stringify({ success: false, message: "Backend unreachable. It may be starting up — please wait 30–60 seconds and try again." }),
+          JSON.stringify({ success: false, message: "Backend unreachable — please wait 30–60 seconds and try again." }),
           { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
     }
 
-    // ── Serve static assets ─────────────────────────────────────────
-    // Try exact path first
-    let response = await env.ASSETS.fetch(request);
-
-    // If 404 and no file extension, try appending .html
-    if (response.status === 404 && !url.pathname.includes(".")) {
-      const htmlUrl = new URL(request.url);
-      htmlUrl.pathname = url.pathname.replace(/\/$/, "") + ".html";
-      response = await env.ASSETS.fetch(new Request(htmlUrl.toString(), request));
+    // ── Clean URL → .html rewrite (no redirect, no loop) ───────────
+    // e.g. /school-admin → rewrite request URL to /school-admin.html
+    // then pass to ASSETS. This never loops because ASSETS doesn't
+    // re-invoke the worker.
+    const pageName = url.pathname.replace(/^\//, "").replace(/\/$/, "");
+    if (HTML_PAGES.includes(pageName)) {
+      const rewritten = new URL(request.url);
+      rewritten.pathname = `/${pageName}.html`;
+      return env.ASSETS.fetch(new Request(rewritten.toString(), request));
     }
 
-    // Return whatever we got — no redirect fallback (that caused redirect loops)
-    return response;
+    // ── All other requests → static assets as-is ───────────────────
+    return env.ASSETS.fetch(request);
   }
 };
