@@ -1,5 +1,5 @@
 /**
- * CBC School ERP — Frontend Configuration v5.3
+ * Kadem & Zetu School Management System — Frontend Configuration v5.3
  *
  * SIMPLIFIED APPROACH:
  * - SUPER_ADMIN always uses key "cbc_token_SUPER_ADMIN" regardless of URL
@@ -46,14 +46,14 @@
     AUTH:   { TOKEN_KEY: window.STORAGE_KEYS.TOKEN, USER_KEY: window.STORAGE_KEYS.USER },
     TENANT: window.TENANT,
     APP:    {
-      NAME:        "CBC School ERP",
+      NAME:        "Kadem & Zetu School Management System",
       VERSION:     "5.3.0",
       ENVIRONMENT: isLocal ? "development" : "production",
     },
   };
 
   if (isLocal || window.location.search.includes("debug=1")) {
-    console.log("[CBC ERP] Config:", {
+    console.log("[Kadem & Zetu SMS] Config:", {
       API_BASE: window.API_BASE,
       TENANT: window.TENANT,
       TOKEN_KEY: window.STORAGE_KEYS.TOKEN,

@@ -1,5 +1,5 @@
 /**
- * CBC School ERP — Cloudflare Worker v2.0
+ * Kadem & Zetu School Management System — Cloudflare Worker v2.0
  * Multi-tenant subdomain proxy
  *
  * Routes:

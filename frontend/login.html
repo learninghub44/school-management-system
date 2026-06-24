@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sign In - CBC School ERP</title>
+<title>Sign In — Kadem & Zetu School Management System</title>
 <script src="/js/config.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -10,34 +10,66 @@
 body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4338ca 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .card{background:#fff;border-radius:24px;padding:44px 40px;width:100%;max-width:440px;box-shadow:0 25px 60px rgba(0,0,0,.3)}
 .logo{text-align:center;margin-bottom:28px}
-.logo-icon{width:56px;height:56px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:12px;color:#fff;font-weight:800}
-.logo h1{font-size:24px;font-weight:800;color:#0f172a}
-.logo p{font-size:13px;color:#64748b;margin-top:4px;font-weight:500}
+.logo-icon{width:60px;height:60px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px}
+.logo-icon svg{width:30px;height:30px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.logo h1{font-size:21px;font-weight:800;color:#0f172a;line-height:1.25}
+.logo .brand-sub{font-size:11px;font-weight:700;color:#4f46e5;letter-spacing:.07em;text-transform:uppercase;margin-top:4px}
+.logo .cbc-tag{font-size:12.5px;color:#64748b;margin-top:5px;font-weight:500}
 .fg{margin-bottom:16px}
 .fg label{display:block;font-size:11.5px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
 .fg input{width:100%;padding:12px 16px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px;color:#0f172a;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;background:#fff}
 .fg input:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.12)}
 .fg input::placeholder{color:#cbd5e1}
 .hint{font-size:12px;color:#94a3b8;margin:-8px 0 14px 2px}
-.hint strong{color:#64748b}
-.btn-submit{width:100%;padding:14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;position:relative;margin-top:4px}
+.btn-submit{width:100%;padding:14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;margin-top:4px}
 .btn-submit:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(79,70,229,.35)}
 .btn-submit:disabled{opacity:.7;cursor:not-allowed;transform:none}
 .alert{padding:12px 16px;border-radius:10px;font-size:13.5px;margin-top:14px;font-weight:500;display:none}
 .alert.show{display:block}
 .alert-err{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
 .alert-ok{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
-.footer{text-align:center;margin-top:24px;font-size:12px;color:#94a3b8}
+
+/* Support Section */
+.support{margin-top:24px;border-top:1px solid #f1f5f9;padding-top:20px}
+.support-title{text-align:center;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px}
+.support-links{display:flex;flex-direction:column;gap:10px}
+.support-link{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;text-decoration:none;transition:background .15s,border-color .15s;background:#f8fafc;border:1px solid #e2e8f0}
+.support-link:hover{background:#ede9fe;border-color:#c4b5fd}
+.support-link.phone:hover{background:#f0fdf4;border-color:#86efac}
+.support-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.support-icon svg{width:18px;height:18px;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.support-link.email .support-icon{background:#ede9fe}
+.support-link.email .support-icon svg{stroke:#4f46e5}
+.support-link.phone .support-icon{background:#dcfce7}
+.support-link.phone .support-icon svg{stroke:#16a34a}
+.support-info{display:flex;flex-direction:column}
+.support-label{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.support-link.email .support-value{font-size:13px;font-weight:600;color:#4f46e5}
+.support-link.phone .support-value{font-size:13px;font-weight:600;color:#166534}
+.support-arrow{margin-left:auto;flex-shrink:0;opacity:.35}
+.support-arrow svg{width:14px;height:14px;stroke:#64748b;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+.footer{text-align:center;margin-top:20px;font-size:11px;color:#94a3b8;font-weight:500}
 </style>
 </head>
 <body>
 <div class="card">
+
+  <!-- Logo & Brand -->
   <div class="logo">
-    <div class="logo-icon">ERP</div>
-    <h1>CBC School ERP</h1>
-    <p>Kenya Competency Based Curriculum</p>
+    <div class="logo-icon">
+      <!-- Academic cap / school icon -->
+      <svg viewBox="0 0 24 24">
+        <path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/>
+        <path d="M6 12v5c3.33 2 8.67 2 12 0v-5"/>
+      </svg>
+    </div>
+    <h1>Kadem &amp; Zetu<br>School Management System</h1>
+    <div class="brand-sub">Powered by Zetu Business Solutions</div>
+    <div class="cbc-tag">Kenya Competency Based Curriculum</div>
   </div>
 
+  <!-- Login Form -->
   <form id="loginForm">
     <div class="fg">
       <label>School Code</label>
@@ -58,7 +90,48 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
     <button class="btn-submit" id="loginBtn" type="submit">Sign In</button>
   </form>
 
-  <div class="footer">CBC School ERP v5.3 - Powered by ZETU Business Solutions</div>
+  <!-- Support Section -->
+  <div class="support">
+    <div class="support-title">Need Help? Contact Support</div>
+    <div class="support-links">
+
+      <a class="support-link email" href="mailto:support@cbcerp.co.ke">
+        <div class="support-icon">
+          <!-- Mail icon -->
+          <svg viewBox="0 0 24 24">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <polyline points="2,4 12,13 22,4"/>
+          </svg>
+        </div>
+        <div class="support-info">
+          <span class="support-label">Email Support</span>
+          <span class="support-value">support@cbcerp.co.ke</span>
+        </div>
+        <div class="support-arrow">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </a>
+
+      <a class="support-link phone" href="tel:+254701059192">
+        <div class="support-icon">
+          <!-- Phone icon -->
+          <svg viewBox="0 0 24 24">
+            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+          </svg>
+        </div>
+        <div class="support-info">
+          <span class="support-label">Call / WhatsApp</span>
+          <span class="support-value">+254 701 059 192</span>
+        </div>
+        <div class="support-arrow">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+  <div class="footer">Kadem &amp; Zetu School Management System v5.3 &mdash; CBC Kenya</div>
 </div>
 
 <script type="module" src="/js/login.js"></script>

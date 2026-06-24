@@ -1,5 +1,5 @@
 /**
- * CBC School ERP — API Client v5.3
+ * Kadem & Zetu School Management System — API Client v5.3
  *
  * Key design decisions:
  * - Single storage key pair (no tenant scoping) — simplest, most robust

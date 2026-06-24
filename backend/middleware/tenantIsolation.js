@@ -1,5 +1,5 @@
 /**
- * Tenant Isolation Middleware — ZETU CBC School ERP
+ * Tenant Isolation Middleware — ZETU Kadem & Zetu School Management System
  * Enforces strict school_id isolation on every route.
  * school_id is ALWAYS from JWT — never from request body/query.
  */

@@ -222,7 +222,7 @@ export function buildSidebar(navItems, activePanel) {
     <div class="sidebar-brand">
       <div class="brand-icon">${icon("school", "School")}</div>
       <div>
-        <h2>CBC School ERP</h2>
+        <h2>Kadem & Zetu School Management System</h2>
         <p>${esc(user?.school_name || "System Admin")}</p>
       </div>
     </div>
