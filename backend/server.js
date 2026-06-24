@@ -177,6 +177,10 @@ app.use("/api/finance",     authMiddleware, requirePasswordChange, requireSubscr
 app.use("/api/reports",     authMiddleware, requirePasswordChange, requireSubscription, require("./routes/reports"));
 app.use("/api/ai",          authMiddleware, requirePasswordChange, requireSubscription, require("./routes/ai"));
 app.use("/api/exams",       authMiddleware, requirePasswordChange, requireSubscription, require("./routes/exams"));
+app.use("/api/portfolio",   authMiddleware, requirePasswordChange, requireSubscription, require("./routes/portfolio"));
+app.use("/api/observations",authMiddleware, requirePasswordChange, requireSubscription, require("./routes/observations"));
+app.use("/api/interventions",authMiddleware, requirePasswordChange, requireSubscription, require("./routes/interventions"));
+app.use("/api/moderation",  authMiddleware, requirePasswordChange, requireSubscription, require("./routes/moderation"));
 
 // ── Health check (tests DB connectivity) ─────────────────────────
 app.get("/api/health", async (req, res) => {
