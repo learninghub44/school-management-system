@@ -132,6 +132,40 @@ label{display:block;font-size:11.5px;font-weight:600;color:var(--text3);letter-s
 .modal-close{width:30px;height:30px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--trans);line-height:1;padding:0}
 .modal-close:hover{background:var(--surface);color:var(--text);border-color:var(--border2)}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+/* ── AI Assistant widget (platform-owner console) ── */
+.ai-fab{position:fixed;bottom:24px;right:24px;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#d97706);color:#000;border:none;cursor:pointer;box-shadow:0 8px 24px rgba(245,158,11,.35);display:flex;align-items:center;justify-content:center;z-index:500;transition:var(--trans)}
+.ai-fab:hover{transform:scale(1.06)}
+.ai-fab .icon-svg{width:22px;height:22px}
+.ai-panel{position:fixed;bottom:24px;right:24px;width:380px;max-height:min(560px,calc(100vh - 48px));background:var(--bg2);border:1px solid var(--border2);border-radius:14px;box-shadow:var(--shadow-lg);display:none;flex-direction:column;z-index:501;overflow:hidden}
+.ai-panel.open{display:flex}
+.ai-hdr{padding:14px 16px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ai-hdr-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--text)}
+.ai-hdr-title .icon-svg{width:16px;height:16px;color:var(--accent)}
+.ai-close{background:var(--surface2);border:1px solid var(--border);color:var(--text2);width:26px;height:26px;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1}
+.ai-close:hover{background:var(--surface);color:var(--text)}
+.ai-quota{font-size:10px;color:var(--text3);margin-top:2px}
+.ai-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:9px;background:var(--bg)}
+.ai-msg{max-width:88%;padding:9px 12px;border-radius:10px;font-size:12.5px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word}
+.ai-msg.user{align-self:flex-end;background:var(--accent);color:#000;border-radius:10px 10px 2px 10px;font-weight:500}
+.ai-msg.bot{align-self:flex-start;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:10px 10px 10px 2px}
+.ai-msg.err{align-self:flex-start;background:rgba(239,68,68,.1);color:#fca5a5;border:1px solid rgba(239,68,68,.2);border-radius:10px}
+.ai-msg.typing{align-self:flex-start;background:var(--surface);border:1px solid var(--border);padding:9px 13px;border-radius:10px 10px 10px 2px}
+.ai-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--text3);margin-right:3px;animation:aibounce 1.2s infinite}
+.ai-dot:nth-child(2){animation-delay:.15s}.ai-dot:nth-child(3){animation-delay:.3s}
+@keyframes aibounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-3px);opacity:1}}
+.ai-empty{text-align:center;color:var(--text3);font-size:12px;padding:22px 10px}
+.ai-empty .icon-svg{width:24px;height:24px;margin-bottom:8px;opacity:.5;color:var(--accent)}
+.ai-input-row{padding:10px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--bg2);flex-shrink:0}
+.ai-input-row textarea{flex:1;resize:none;border:1px solid var(--border2);border-radius:9px;padding:8px 11px;font-size:12.5px;font-family:inherit;outline:none;max-height:90px;min-height:36px;background:var(--bg);color:var(--text)}
+.ai-input-row textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentDim)}
+.ai-send{width:36px;height:36px;border-radius:8px;background:var(--accent);color:#000;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-send:hover{background:var(--accent2)}
+.ai-send:disabled{background:var(--surface2);color:var(--text3);cursor:not-allowed}
+.ai-send .icon-svg{width:15px;height:15px}
+@media(max-width:480px){
+  .ai-panel{right:8px;left:8px;bottom:8px;width:auto;max-height:min(72vh,560px)}
+  .ai-fab{right:16px;bottom:16px}
+}
 </style>
 </head>
 <body>
@@ -234,7 +268,7 @@ label{display:block;font-size:11.5px;font-weight:600;color:var(--text3);letter-s
 <div id="app"></div>
 
 <script type="module">
-import { guardPage, esc, apiFetch, clearSession, schools, users, verifySession, logout} from "/js/api.js";
+import { guardPage, esc, apiFetch, clearSession, schools, users, verifySession, logout, ai} from "/js/api.js";
 
 function openModal(id)  { document.getElementById(id)?.classList.add("open"); }
 function closeModal(id) { document.getElementById(id)?.classList.remove("open"); }
@@ -261,7 +295,9 @@ const ICONS = {
   search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
   shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>',
   card: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/>',
-  logout: '<path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 19V5a2 2 0 0 0-2-2h-5"/>'
+  logout: '<path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 19V5a2 2 0 0 0-2-2h-5"/>',
+  sparkle: '<path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/><path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="2.5"/>',
+  send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/>'
 };
 
 function icon(name, label = "") {
@@ -388,6 +424,23 @@ document.getElementById("app").innerHTML = `
       </div>
     </div>
   </div>
+</div>
+<button class="ai-fab" id="aiFab" aria-label="Open AI Assistant">${icon("sparkle", "AI Assistant")}</button>
+<div class="ai-panel" id="aiPanel">
+  <div class="ai-hdr">
+    <div>
+      <div class="ai-hdr-title">${icon("sparkle")} Platform Assistant</div>
+      <div class="ai-quota" id="aiQuotaLabel">Unlimited — Super Admin</div>
+    </div>
+    <button class="ai-close" id="aiClose" aria-label="Close">×</button>
+  </div>
+  <div class="ai-body" id="aiBody">
+    <div class="ai-empty">${icon("sparkle")}<div>Ask about schools, subscriptions, plan design, platform usage trends, or general admin guidance across the system.</div></div>
+  </div>
+  <div class="ai-input-row">
+    <textarea id="aiInput" rows="1" placeholder="Ask the platform assistant…" maxlength="4000"></textarea>
+    <button class="ai-send" id="aiSend" aria-label="Send">${icon("send")}</button>
+  </div>
 </div>`;
 
 const loaders = { overview:loadDashboard, schools:loadSchools, users:loadUsers, audit:loadAudit };
@@ -415,6 +468,87 @@ document.getElementById("logoutBtn")?.addEventListener("click", async () => {
 
 document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => closeModal(b.dataset.close)));
 document.querySelectorAll(".modal-bg").forEach(bg => bg.addEventListener("click", e => { if (e.target===bg) closeModal(bg.id); }));
+
+// ── AI Assistant widget (platform owner) ────────────────────────────
+(function setupAiWidget() {
+  const fab    = document.getElementById("aiFab");
+  const panel  = document.getElementById("aiPanel");
+  const closeB = document.getElementById("aiClose");
+  const body   = document.getElementById("aiBody");
+  const input  = document.getElementById("aiInput");
+  const sendB  = document.getElementById("aiSend");
+  if (!fab || !panel) return;
+
+  fab.addEventListener("click", () => {
+    panel.classList.add("open");
+    fab.style.display = "none";
+    input.focus();
+  });
+  closeB.addEventListener("click", () => {
+    panel.classList.remove("open");
+    fab.style.display = "flex";
+  });
+
+  function addMsg(text, cls) {
+    const placeholder = body.querySelector(".ai-empty");
+    if (placeholder) placeholder.remove();
+    const div = document.createElement("div");
+    div.className = "ai-msg " + cls;
+    div.textContent = text;
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+    return div;
+  }
+
+  function addTyping() {
+    const div = document.createElement("div");
+    div.className = "ai-msg typing";
+    div.innerHTML = '<span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span>';
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+    return div;
+  }
+
+  async function send() {
+    const text = input.value.trim();
+    if (!text || sendB.disabled) return;
+    addMsg(text, "user");
+    input.value = "";
+    input.style.height = "auto";
+    sendB.disabled = true;
+    const typingEl = addTyping();
+    try {
+      // Super Admin bypasses subscription + daily quota checks server-side,
+      // but still goes through the per-minute burst limiter.
+      const r = await ai.assist({
+        prompt: text,
+        context: "You are speaking with the platform owner (Super Admin) of this multi-tenant CBC school ERP, not a school staff member. They may ask about schools, subscriptions, plan design, or platform-wide operations.",
+      });
+      typingEl.remove();
+      if (r?.success) {
+        addMsg(r.output || "(No response)", "bot");
+      } else if (r?.code === "AI_RATE_LIMITED") {
+        addMsg(r.message || "Slow down a little — try again in a moment.", "err");
+      } else {
+        addMsg(r?.message || "Something went wrong. Please try again.", "err");
+      }
+    } catch (e) {
+      typingEl.remove();
+      addMsg("Network error — please try again.", "err");
+    } finally {
+      sendB.disabled = false;
+    }
+  }
+
+  sendB.addEventListener("click", send);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+  input.addEventListener("input", () => {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 90) + "px";
+  });
+})();
 
 async function fetchSchools() {
   const r = await schools.list();

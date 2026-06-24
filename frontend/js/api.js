@@ -241,6 +241,7 @@ export const subscriptions = {
 
 export const ai = {
   assist: (d) => apiFetch("/ai/assist", { method: "POST", body: d }),
+  reportComment: (d) => apiFetch("/ai/report-comment", { method: "POST", body: d }),
 };
 
 export const reports = {
