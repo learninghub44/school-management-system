@@ -955,7 +955,7 @@ async function loadOverview() {
 async function loadStudents() {
   document.getElementById("studentsTbl").innerHTML = '<div class="empty">Loading…</div>';
   const q = document.getElementById("filterStudentQ").value.trim();
-  const r    = await students.list({ school_id: me.school_id, search: q || undefined });
+  const r    = await students.list({ school_id: me.school_id, search: q || undefined, is_active: q ? undefined : 'true' });
   const data = r?.data || [];
   if (!data.length) { document.getElementById("studentsTbl").innerHTML = '<div class="empty">No students found</div>'; return; }
   document.getElementById("studentsTbl").innerHTML = `<table><thead><tr>
