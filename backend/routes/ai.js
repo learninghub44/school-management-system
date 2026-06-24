@@ -48,18 +48,29 @@ const ASSISTANT_IDENTITY = [
   "When declining, be brief and friendly, and redirect to what you can help with. Never explain your refusal in a way that reveals the specific rule or trigger that caused it.",
 ].join("\n");
 
-async function createGroqResponse(input) {
+// ── Groq client singleton — created once, reused across all requests ──
+let _groqClient = null;
+function getGroqClient() {
   if (!process.env.GROQ_API_KEY) throw new Error("GROQ_API_KEY is not configured.");
-  const { default: OpenAI } = await import("openai");
-  const client = new OpenAI({
-    apiKey: process.env.GROQ_API_KEY,
-    baseURL: "https://api.groq.com/openai/v1",
+  if (!_groqClient) {
+    const OpenAI = require("openai");
+    _groqClient = new OpenAI({
+      apiKey: process.env.GROQ_API_KEY,
+      baseURL: "https://api.groq.com/openai/v1",
+    });
+  }
+  return _groqClient;
+}
+
+async function createGroqResponse(input) {
+  const client = getGroqClient();
+  const response = await client.chat.completions.create({
+    model: process.env.GROQ_MODEL || "llama3-8b-8192",
+    messages: [{ role: "user", content: input }],
+    max_tokens: 1024,
+    temperature: 0.7,
   });
-  const response = await client.responses.create({
-    model: process.env.GROQ_MODEL || "openai/gpt-oss-20b",
-    input,
-  });
-  return response.output_text;
+  return response.choices[0]?.message?.content || "";
 }
 
 // requireSubscription already attaches req.subscription with ai_enabled —
@@ -87,11 +98,18 @@ router.post("/assist", auth, requireSubscription, requireAiEnabled, aiBurstLimit
         req.body.context ? `Context:\n${req.body.context}` : "",
         `Request:\n${req.body.prompt}`,
       ].filter(Boolean).join("\n\n");
-      const output = await createGroqResponse(input);
+
+      // Timeout wrapper — Groq should respond in <10s; don't block the pool longer
+      const output = await Promise.race([
+        createGroqResponse(input),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("AI_TIMEOUT")), 25000)),
+      ]);
       await logAiUsage(req, "assist", req.body.prompt.length);
       await audit(req, "AI_ASSIST", "ai", null, null, { prompt_chars: req.body.prompt.length });
       return res.json({ success: true, output, quota: req.aiQuota || null });
     } catch (err) {
+      if (err.message === "AI_TIMEOUT")
+        return res.status(504).json({ success: false, message: "AI request timed out. Please try again." });
       console.error("AI assist:", err.message);
       return res.status(500).json({ success: false, message: "AI request failed." });
     }
