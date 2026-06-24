@@ -1,12 +1,11 @@
 /**
- * Kadem & Zetu School Management System — Cloudflare Worker v2.1
- * Multi-tenant subdomain proxy
+ * Kadem & Zetu School Management System — Cloudflare Worker v2.2
  *
  * Routes:
- *   *.cbc-school-erp.pages.dev/api/* → BACKEND_URL (Render)
- *   *.cbc-school-erp.pages.dev/*     → static assets (Cloudflare Pages)
+ *   /api/* → BACKEND_URL (Render)
+ *   /*     → static assets, with .html extension fallback
  *
- * Env vars required (set in Cloudflare Pages → Settings → Environment Variables):
+ * Env vars required:
  *   BACKEND_URL = https://your-service.onrender.com
  */
 
@@ -52,7 +51,7 @@ export default {
         );
       }
 
-      const targetUrl   = backendUrl + url.pathname + url.search;
+      const targetUrl    = backendUrl + url.pathname + url.search;
       const proxyHeaders = new Headers(request.headers);
       proxyHeaders.delete("Origin");
 
@@ -61,23 +60,16 @@ export default {
         proxyHeaders.set("X-School-Code", subdomain === "ADMIN" ? "SUPER_ADMIN" : subdomain);
       }
 
-      const proxyRequest = new Request(targetUrl, {
-        method:   request.method,
-        headers:  proxyHeaders,
-        body:     ["GET", "HEAD"].includes(request.method) ? null : request.body,
-        redirect: "follow",
-      });
-
       try {
-        const response   = await fetch(proxyRequest);
+        const response   = await fetch(new Request(targetUrl, {
+          method:   request.method,
+          headers:  proxyHeaders,
+          body:     ["GET", "HEAD"].includes(request.method) ? null : request.body,
+          redirect: "follow",
+        }));
         const newHeaders = new Headers(response.headers);
         Object.entries(corsHeaders).forEach(([k, v]) => newHeaders.set(k, v));
-
-        return new Response(response.body, {
-          status:  response.status,
-          headers: newHeaders,
-        });
-
+        return new Response(response.body, { status: response.status, headers: newHeaders });
       } catch (err) {
         return new Response(
           JSON.stringify({ success: false, message: "Backend unreachable. It may be starting up — please wait 30–60 seconds and try again." }),
@@ -86,25 +78,18 @@ export default {
       }
     }
 
-    // ── Serve static assets — try exact path, then with .html ───────
-    // Cloudflare Pages does NOT auto-add .html when a _worker.js is present.
-    // So /school-admin must resolve to /school-admin.html manually.
+    // ── Serve static assets ─────────────────────────────────────────
+    // Try exact path first
     let response = await env.ASSETS.fetch(request);
 
+    // If 404 and no file extension, try appending .html
     if (response.status === 404 && !url.pathname.includes(".")) {
-      // Try appending .html
       const htmlUrl = new URL(request.url);
       htmlUrl.pathname = url.pathname.replace(/\/$/, "") + ".html";
       response = await env.ASSETS.fetch(new Request(htmlUrl.toString(), request));
     }
 
-    // If still 404, serve login page (graceful fallback)
-    if (response.status === 404) {
-      const loginUrl = new URL(request.url);
-      loginUrl.pathname = "/login.html";
-      response = await env.ASSETS.fetch(new Request(loginUrl.toString(), request));
-    }
-
+    // Return whatever we got — no redirect fallback (that caused redirect loops)
     return response;
   }
 };
