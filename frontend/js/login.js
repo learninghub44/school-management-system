@@ -105,6 +105,15 @@ function redirectExistingSession() {
   const token = getToken();
   if (!user || !token) return;
 
+  // If we arrived here from a protected page, that means the token failed
+  // server-side validation. Clear session and stay on login — do not redirect back.
+  const ref = document.referrer;
+  const protectedPages = ["school-admin", "super-admin", "teacher", "bursar", "subscription", "change-password"];
+  if (ref && protectedPages.some(p => ref.includes(p))) {
+    clearSession();
+    return;
+  }
+
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
     if (!payload.exp || payload.exp * 1000 > Date.now()) {
@@ -112,7 +121,7 @@ function redirectExistingSession() {
       return;
     }
   } catch (_) {
-    // Bad local token; clear below.
+    // Bad token — clear it and stay on login.
   }
 
   clearSession();
