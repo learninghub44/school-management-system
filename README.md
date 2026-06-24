@@ -56,7 +56,7 @@ JWT_SECRET=<at least 32 chars, preferably 64+>
 JWT_EXPIRES=10h
 PORT=5000
 NODE_ENV=development
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5500
+ALLOWED_ORIGINS=http://localhost:5000,http://localhost:5500
 ```
 
 5. Install and run:
