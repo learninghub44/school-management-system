@@ -863,7 +863,8 @@ async function fetchClasses() {
     `<option value="${esc(String(c.id))}">${esc(classLabel(c))}</option>`).join("");
   ["s-class","cl-teacher","att-class","filterAttClass",
    "filterAssessClass","as-class","asc-class",
-   "tt-class","filterTTClass","rc-class","filterRCClass","ex-class"].forEach(id => {
+   "tt-class","filterTTClass","rc-class","filterRCClass","ex-class",
+   "filterPortfolioClass","filterObsClass","obs-class"].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const prefix = id.startsWith("filter") ? '<option value="">All Classes</option>'
@@ -2219,24 +2220,6 @@ makeStudentPicker("port-student-picker", {});
 makeStudentPicker("obs-student-picker",  {});
 makeStudentPicker("int-student-picker",  {});
 
-// Also populate new class filter selects whenever allClasses loads
-// (fetchClasses already runs on init — patch it to include new selects)
-const _origFetchClasses = fetchClasses;
-async function fetchClasses() {
-  await _origFetchClasses();
-  // Extra selects for new panels
-  const opts = allClasses.map(c =>
-    `<option value="${esc(String(c.id))}">${esc(c.grade + (c.stream?" – "+c.stream:""))}</option>`
-  ).join("");
-  ["filterPortfolioClass","filterObsClass","obs-class"].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const prefix = id.startsWith("filter")
-      ? '<option value="">All Classes</option>'
-      : '<option value="">Select Class</option>';
-    el.innerHTML = prefix + opts;
-  });
-}
 
 // ── Initial load ──────────────────────────────────────────────────
 loadOverview();
