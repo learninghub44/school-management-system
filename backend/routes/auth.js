@@ -171,6 +171,8 @@ router.post("/logout", auth, async (req, res) => {
         [req.user.jti, req.user.id, exp]
       );
     }
+    // Bust the auth cache so revocation is immediate
+    auth.cacheBust?.(req.user?.id);
     await audit(req, "LOGOUT", "users", req.user.id);
     return res.json({ success: true, message: "Logged out." });
   } catch (err) {

@@ -1,10 +1,12 @@
 services:
   - type: web
-    name: cbc-school-erp-api
+    name: kadem-zetu-sms-api
     env: node
     rootDir: backend
     buildCommand: npm install
     startCommand: node server.js
+    healthCheckPath: /api/health
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
@@ -33,7 +35,7 @@ services:
       - key: PESAPAL_CALLBACK_URL
         value: https://cbc-school-erp.pages.dev/subscription.html
       - key: PESAPAL_IPN_URL
-        value: https://cbc-school-erp-api.onrender.com/api/subscriptions/ipn
+        value: https://kadem-zetu-sms-api.onrender.com/api/subscriptions/ipn
       - key: PESAPAL_IPN_ID
         sync: false
       # Groq AI
@@ -41,4 +43,6 @@ services:
         sync: false
       - key: GROQ_MODEL
         value: llama3-8b-8192
-    healthCheckPath: /api/health
+      # Support contact (used in AI assistant identity)
+      - key: PLATFORM_SUPPORT_EMAIL
+        value: support@cbcerp.co.ke

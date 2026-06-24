@@ -1,10 +1,24 @@
 /**
- * Kadem & Zetu School Management System — Express Server v4.1
+ * Kadem & Zetu School Management System — Express Server v4.2
  * Production-hardened: Helmet, CORS whitelist, rate limiting,
- * global error handler that never leaks stack traces
+ * global error handler, graceful shutdown, crash guards
  */
 "use strict";
 require("dotenv").config();
+
+// ── Global crash guards — MUST be first ──────────────────────────
+// Prevent one bad async handler from taking down the entire process
+process.on("uncaughtException", (err) => {
+  console.error(`[FATAL] uncaughtException at ${new Date().toISOString()}:`, err.message, err.stack);
+  // Give logger time to flush, then exit so the process manager (Render) restarts us
+  setTimeout(() => process.exit(1), 500);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error(`[ERROR] unhandledRejection at ${new Date().toISOString()}:`, reason);
+  // Don't exit — unhandled rejections are often non-fatal (e.g. network timeouts)
+  // but we want them visible in logs
+});
 const { startCleanupJob } = require("./jobs/cleanupTokens");
 const express    = require("express");
 const cors       = require("cors");
@@ -12,6 +26,7 @@ const helmet     = require("helmet");
 const rateLimit  = require("express-rate-limit");
 const morgan     = require("morgan");
 const path       = require("path");
+const db         = require("./config/db");
 
 // ── Abort early if required secrets are missing ───────────────────
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
@@ -163,10 +178,16 @@ app.use("/api/reports",     authMiddleware, requirePasswordChange, requireSubscr
 app.use("/api/ai",          authMiddleware, requirePasswordChange, requireSubscription, require("./routes/ai"));
 app.use("/api/exams",       authMiddleware, requirePasswordChange, requireSubscription, require("./routes/exams"));
 
-// ── Health check ─────────────────────────────────────────────────
-app.get("/api/health", (req, res) =>
-  res.json({ status: "ok", version: "4.1.0", ts: new Date().toISOString() })
-);
+// ── Health check (tests DB connectivity) ─────────────────────────
+app.get("/api/health", async (req, res) => {
+  try {
+    const { rows } = await db.query("SELECT NOW() AS ts");
+    res.json({ status: "ok", version: "4.2.0", ts: rows[0].ts, db: "ok" });
+  } catch (err) {
+    console.error("[health] DB check failed:", err.message);
+    res.status(503).json({ status: "degraded", version: "4.2.0", ts: new Date().toISOString(), db: "error" });
+  }
+});
 
 // ── 404 for unmatched API routes ─────────────────────────────────
 app.use("/api/*", (req, res) =>
@@ -198,8 +219,35 @@ app.use((err, req, res, next) => {
 
 startCleanupJob();
 const PORT = parseInt(process.env.PORT || "5000", 10);
-app.listen(PORT, () =>
-  console.log(`Kadem & Zetu School Management System v4.1 running on port ${PORT} [${process.env.NODE_ENV || "development"}]`)
+const server = app.listen(PORT, () =>
+  console.log(`Kadem & Zetu School Management System v4.2 running on port ${PORT} [${process.env.NODE_ENV || "development"}]`)
 );
+
+// ── Request timeout — prevent hung connections blocking the pool ──
+// 30s covers even slow AI calls; adjust if needed
+server.setTimeout(30000);
+
+// ── Graceful shutdown ─────────────────────────────────────────────
+// On SIGTERM (Render deploy/scale), stop accepting new connections
+// and wait for in-flight requests to finish (up to 10s), then exit cleanly.
+function gracefulShutdown(signal) {
+  console.log(`[shutdown] ${signal} received — closing server gracefully…`);
+  server.close((err) => {
+    if (err) {
+      console.error("[shutdown] Error during close:", err.message);
+      process.exit(1);
+    }
+    console.log("[shutdown] All connections closed. Exiting.");
+    process.exit(0);
+  });
+  // Force-kill after 10s if connections don't drain
+  setTimeout(() => {
+    console.error("[shutdown] Forced exit after 10s timeout.");
+    process.exit(1);
+  }, 10000);
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT",  () => gracefulShutdown("SIGINT"));
 
 module.exports = app;
