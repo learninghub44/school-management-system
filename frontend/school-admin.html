@@ -148,7 +148,7 @@
     </div>
   </div>
   <div class="fg-row">
-    <div class="fg"><label>Academic Year *</label><input id="cl-year" maxlength="4" placeholder="2025"></div>
+    <div class="fg"><label>Academic Year *</label><input id="cl-year" maxlength="4" placeholder="e.g. 2026"></div>
     <div class="fg"><label>Capacity</label><input id="cl-cap" type="number" min="1" max="100" value="40"></div>
   </div>
   <div class="fg"><label>Class Teacher</label><select id="cl-teacher"><option value="">None</option></select></div>
@@ -174,7 +174,7 @@
       <option value="HOD">HOD</option>
     </select>
   </div>
-  <div class="fg"><label>Academic Year *</label><input id="as-year" maxlength="4" placeholder="2025"></div>
+  <div class="fg"><label>Academic Year *</label><input id="as-year" maxlength="4" placeholder="e.g. 2026"></div>
   <div id="as-alert"></div>
   <div class="modal-actions">
     <button class="btn btn-ghost" data-close="modal-assign">Cancel</button>
@@ -262,7 +262,7 @@
     <div class="fg"><label>Start Time *</label><input id="tt-start" type="time"></div>
     <div class="fg"><label>End Time *</label><input id="tt-end" type="time"></div>
   </div>
-  <div class="fg"><label>Academic Year *</label><input id="tt-year" maxlength="4" placeholder="e.g. 2025"></div>
+  <div class="fg"><label>Academic Year *</label><input id="tt-year" maxlength="4" placeholder="e.g. 2026"></div>
   <div id="tt-alert"></div>
   <div class="modal-actions">
     <button class="btn btn-ghost" data-close="modal-timetable">Cancel</button>
@@ -281,7 +281,7 @@
       <select id="rc-term"><option value="">Select Term</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
     </div>
   </div>
-  <div class="fg"><label>Academic Year *</label><input id="rc-year" maxlength="4" placeholder="e.g. 2025"></div>
+  <div class="fg"><label>Academic Year *</label><input id="rc-year" maxlength="4" placeholder="e.g. 2026"></div>
   <div class="fg">
     <label style="display:flex;align-items:center;justify-content:space-between">
       <span>Class Teacher Remark</span>
@@ -320,7 +320,7 @@
     <div class="fg"><label>Term *</label>
       <select id="ex-term"><option value="">Select</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
     </div>
-    <div class="fg"><label>Academic Year *</label><input id="ex-year" maxlength="4" placeholder="e.g. 2025"></div>
+    <div class="fg"><label>Academic Year *</label><input id="ex-year" maxlength="4" placeholder="e.g. 2026"></div>
   </div>
   <div class="fg-row">
     <div class="fg"><label>Class</label><select id="ex-class"><option value="">All Classes</option></select></div>
@@ -511,7 +511,7 @@ document.getElementById("app").innerHTML =
         <div class="card-body">
           <div class="filter-bar">
             <select id="filterTTClass"><option value="">All Classes</option></select>
-            <input id="filterTTYear" maxlength="4" placeholder="Year e.g. 2025" style="width:120px">
+            <input id="filterTTYear" maxlength="4" placeholder="Year e.g. 2026" style="width:120px">
             <button class="btn btn-ghost" id="btnLoadTimetable">Load</button>
           </div>
           <div class="table-wrap" id="timetableTbl"><div class="empty">Select a class and year, then click Load.</div></div>
@@ -530,7 +530,7 @@ document.getElementById("app").innerHTML =
           <div class="filter-bar">
             <select id="filterRCClass"><option value="">All Classes</option></select>
             <select id="filterRCTerm"><option value="">All Terms</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
-            <input id="filterRCYear" maxlength="4" placeholder="Year e.g. 2025" style="width:110px">
+            <input id="filterRCYear" maxlength="4" placeholder="Year e.g. 2026" style="width:110px">
             <button class="btn btn-ghost" id="btnLoadCards">Load</button>
           </div>
           <div class="table-wrap" id="reportCardsTbl"><div class="empty">Select filters and click Load.</div></div>
@@ -548,7 +548,7 @@ document.getElementById("app").innerHTML =
         <div class="card-body">
           <div class="filter-bar">
             <select id="filterExamTerm"><option value="">All Terms</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
-            <input id="filterExamYear" maxlength="4" placeholder="Year e.g. 2025" style="width:110px">
+            <input id="filterExamYear" maxlength="4" placeholder="Year e.g. 2026" style="width:110px">
             <button class="btn btn-ghost" id="btnLoadExams">Load</button>
           </div>
           <div class="table-wrap" id="examsTbl"><div class="empty">Select term/year and click Load.</div></div>
@@ -893,6 +893,7 @@ async function loadClasses() {
 document.getElementById("btnAddClass")?.addEventListener("click", () => {
   resetModal("modal-class");
   document.getElementById("cl-pathway-row").style.display = "none";
+  document.getElementById("cl-year").value = new Date().getFullYear();
   openModal("modal-class");
 });
 
@@ -959,7 +960,7 @@ async function loadAssignments() {
     }));
 }
 
-document.getElementById("btnAddAssign")?.addEventListener("click", () => { resetModal("modal-assign"); openModal("modal-assign"); });
+document.getElementById("btnAddAssign")?.addEventListener("click", () => { resetModal("modal-assign"); document.getElementById("as-year").value = new Date().getFullYear(); openModal("modal-assign"); });
 document.getElementById("btnSubmitAssign")?.addEventListener("click", async () => {
   const teacherId  = document.getElementById("as-teacher").value;
   const classId    = document.getElementById("as-class").value;
