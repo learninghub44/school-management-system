@@ -1,4 +1,4 @@
-# CBC School ERP — Deployment Setup
+# Kadem & Zetu School Management System — Deployment Setup
 
 ## Architecture
 ```

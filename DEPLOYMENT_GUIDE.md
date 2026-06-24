@@ -1,4 +1,4 @@
-# CBC School ERP v4.0 — Deployment Guide
+# Kadem & Zetu School Management System v4.0 — Deployment Guide
 
 ## Stack
 - **Backend**: Node.js 18+ / Express on [Render](https://render.com)
