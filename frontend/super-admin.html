@@ -197,7 +197,7 @@ label{display:block;font-size:11.5px;font-weight:600;color:var(--text3);letter-s
     <div class="fg"><label>Email</label><input id="sc-email" type="email" maxlength="255" placeholder="school@example.ke"></div>
   </div>
   <div class="fg"><label>Address</label><textarea id="sc-addr" maxlength="300" placeholder="Physical address of the school"></textarea></div>
-  <div class="fg"><label>Academic Year</label><input id="sc-year" maxlength="4" value="2025" style="font-family:var(--mono)"></div>
+  <div class="fg"><label>Academic Year</label><input id="sc-year" maxlength="4" style="font-family:var(--mono)"></div>
   <div id="sc-alert"></div>
   <div class="modal-actions">
     <button class="btn btn-ghost" data-close="modal-school">Cancel</button>
@@ -675,7 +675,10 @@ async function loadAudit() {
   </tbody></table>`;
 }
 
-document.getElementById("btnAddSchool").addEventListener("click", () => openModal("modal-school"));
+document.getElementById("btnAddSchool").addEventListener("click", () => {
+  document.getElementById("sc-year").value = new Date().getFullYear();
+  openModal("modal-school");
+});
 document.getElementById("btnAddAdmin").addEventListener("click",  () => openModal("modal-admin"));
 document.getElementById("btnAddPlan").addEventListener("click",   () => openModal("modal-plan"));
 
