@@ -123,6 +123,7 @@ import { buildSidebar, setupNav,
   showAlert, setLoading, injectStyles,
   buildAiWidget, setupAiWidget
 } from "/js/layout.js";
+import { makeStudentPicker } from "/js/searchable-select.js";
 
 injectStyles();
 
@@ -278,6 +279,10 @@ async function fetchFeeItems(term, year) {
 
 await fetchClasses();
 
+// Init student pickers (searchable — no pre-loading all students)
+makeStudentPicker("py-student",  {}, null);
+makeStudentPicker("bal-student", {}, null);
+
 // Set default year in modals
 const thisYear = String(new Date().getFullYear());
 ["py-year","fee-year","bal-year"].forEach(id => {
@@ -286,17 +291,9 @@ const thisYear = String(new Date().getFullYear());
 });
 document.getElementById("py-date").value = new Date().toISOString().split("T")[0];
 
-// ── Payment class → student cascade ──────────────────────────────
+// ── Payment class → student picker (searchable, optionally filtered by class) ──
 document.getElementById("py-class")?.addEventListener("change", async function () {
-  const studEl = document.getElementById("py-student");
-  studEl.innerHTML = '<option value="">Loading…</option>';
-  if (!this.value) { studEl.innerHTML = '<option value="">Select Student</option>'; return; }
-  // api.js: classes.students(id) → GET /classes/:id/students
-  const r = await classes.students(this.value);
-  studEl.innerHTML = '<option value="">Select Student</option>' +
-    (r?.data || []).map(s =>
-      `<option value="${esc(String(s.id))}">${esc(s.full_name || (s.first_name + " " + s.last_name))} — ${esc(s.admission_no || "")}</option>`).join("");
-  // Update fee items for selected term/year
+  makeStudentPicker("py-student", { classId: this.value || undefined }, null);
   await fetchFeeItems(
     document.getElementById("py-term").value,
     document.getElementById("py-year").value
@@ -306,15 +303,9 @@ document.getElementById("py-class")?.addEventListener("change", async function (
 document.getElementById("py-term")?.addEventListener("change", () =>
   fetchFeeItems(document.getElementById("py-term").value, document.getElementById("py-year").value));
 
-// ── Balance class → student cascade ──────────────────────────────
+// ── Balance class → student picker ───────────────────────────────────────────
 document.getElementById("bal-class")?.addEventListener("change", async function () {
-  const studEl = document.getElementById("bal-student");
-  studEl.innerHTML = '<option value="">Loading…</option>';
-  if (!this.value) { studEl.innerHTML = '<option value="">Select Student</option>'; return; }
-  const r = await classes.students(this.value);
-  studEl.innerHTML = '<option value="">Select Student</option>' +
-    (r?.data || []).map(s =>
-      `<option value="${esc(String(s.id))}">${esc(s.full_name || (s.first_name + " " + s.last_name))}</option>`).join("");
+  makeStudentPicker("bal-student", { classId: this.value || undefined }, null);
 });
 
 // ── Overview ──────────────────────────────────────────────────────
