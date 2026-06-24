@@ -166,4 +166,130 @@ router.post("/report-comment", auth, requireSubscription, requireAiEnabled, aiBu
   }
 );
 
+// ── POST /ai/competency-analysis — Analyse CBC competency scores ──
+router.post("/competency-analysis", auth, requireSubscription, requireAiEnabled, aiBurstLimit, aiDailyQuota,
+  [
+    body("student_name").trim().notEmpty().isLength({ max: 150 }),
+    body("grade").optional().trim().isLength({ max: 50 }),
+    body("term").optional().isInt({ min: 1, max: 3 }),
+    body("academic_year").optional().matches(/^\d{4}$/),
+    body("competencies").optional().isObject(),
+    body("assessments").optional().isArray({ max: 50 }),
+  ],
+  async (req, res) => {
+    const errs = validationResult(req);
+    if (!errs.isEmpty()) return res.status(400).json({ success: false, errors: errs.array() });
+    try {
+      const { student_name, grade, term, academic_year, competencies, assessments } = req.body;
+
+      const CC_LABELS = {
+        communication: "Communication & Collaboration",
+        critical_thinking: "Critical Thinking & Problem Solving",
+        creativity: "Creativity & Imagination",
+        citizenship: "Citizenship",
+        digital_literacy: "Digital Literacy",
+        learning_to_learn: "Learning to Learn",
+        self_efficacy: "Self-Efficacy",
+      };
+      const LEVEL_LABELS = { 1: "Not Observed", 2: "Developing", 3: "Competent", 4: "Exceptional" };
+
+      const competencyLines = competencies
+        ? Object.entries(competencies)
+            .filter(([, v]) => v != null)
+            .map(([k, v]) => `- ${CC_LABELS[k] || k}: ${LEVEL_LABELS[v] || v}`)
+            .join("\n")
+        : "";
+
+      const assessmentLines = (assessments || [])
+        .filter(a => a.subject && a.achievement_level)
+        .map(a => `- ${a.subject}: ${a.achievement_level}${a.score != null ? ` (${a.score}%)` : ""}`)
+        .join("\n");
+
+      const input = [
+        ASSISTANT_IDENTITY,
+        "",
+        `Perform a CBC competency analysis for the following learner.`,
+        `Student: ${student_name}`,
+        grade          ? `Grade: ${grade}` : "",
+        term           ? `Term: ${term}` : "",
+        academic_year  ? `Year: ${academic_year}` : "",
+        competencyLines ? `Core Competency Scores (1=Not Observed, 2=Developing, 3=Competent, 4=Exceptional):\n${competencyLines}` : "",
+        assessmentLines ? `Learning Area Achievement Levels:\n${assessmentLines}` : "",
+        "",
+        "Provide a structured analysis with three clearly labelled sections:",
+        "1. STRENGTHS — what this learner does well",
+        "2. AREAS FOR GROWTH — specific competencies or subjects to improve",
+        "3. SUGGESTED SUPPORT ACTIVITIES — practical, teacher-actionable CBC-aligned activities",
+        "Keep it concise, constructive, and practical. Use plain language, no jargon.",
+      ].filter(Boolean).join("\n\n");
+
+      const output = await Promise.race([
+        createGroqResponse(input),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("AI_TIMEOUT")), 25000)),
+      ]);
+      await logAiUsage(req, "competency_analysis", input.length);
+      await audit(req, "AI_COMPETENCY_ANALYSIS", "ai", null, null, { student_name });
+      return res.json({ success: true, output, quota: req.aiQuota || null });
+    } catch (err) {
+      if (err.message === "AI_TIMEOUT")
+        return res.status(504).json({ success: false, message: "AI request timed out." });
+      console.error("AI competency-analysis:", err.message);
+      return res.status(500).json({ success: false, message: "AI request failed." });
+    }
+  }
+);
+
+// ── POST /ai/risk-detection — Identify at-risk learners from data ─
+router.post("/risk-detection", auth, requireSubscription, requireAiEnabled, aiBurstLimit, aiDailyQuota,
+  [
+    body("student_name").trim().notEmpty().isLength({ max: 150 }),
+    body("grade").optional().trim().isLength({ max: 50 }),
+    body("assessments").optional().isArray({ max: 50 }),
+    body("attendance_summary").optional().trim().isLength({ max: 300 }),
+    body("intervention_history").optional().trim().isLength({ max: 500 }),
+  ],
+  async (req, res) => {
+    const errs = validationResult(req);
+    if (!errs.isEmpty()) return res.status(400).json({ success: false, errors: errs.array() });
+    try {
+      const { student_name, grade, assessments, attendance_summary, intervention_history } = req.body;
+
+      const assessmentLines = (assessments || [])
+        .filter(a => a.subject && a.achievement_level)
+        .map(a => `- ${a.subject} (Term ${a.term || "?"}): ${a.achievement_level}`)
+        .join("\n");
+
+      const input = [
+        ASSISTANT_IDENTITY,
+        "",
+        `Analyse the following learner data and identify academic risk indicators.`,
+        `Student: ${student_name}`,
+        grade                ? `Grade: ${grade}` : "",
+        assessmentLines      ? `Recent Assessment Results:\n${assessmentLines}` : "",
+        attendance_summary   ? `Attendance: ${attendance_summary}` : "",
+        intervention_history ? `Prior Interventions: ${intervention_history}` : "",
+        "",
+        "Provide a structured risk report with three sections:",
+        "1. RISK LEVEL — Overall risk: Low / Medium / High / Critical, with one-sentence justification",
+        "2. KEY RISK INDICATORS — bullet list of specific warning signs found in this data",
+        "3. RECOMMENDED ACTIONS — concrete next steps for the teacher or school admin",
+        "Be direct, brief, and actionable. This will be read by a school administrator.",
+      ].filter(Boolean).join("\n\n");
+
+      const output = await Promise.race([
+        createGroqResponse(input),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("AI_TIMEOUT")), 25000)),
+      ]);
+      await logAiUsage(req, "risk_detection", input.length);
+      await audit(req, "AI_RISK_DETECTION", "ai", null, null, { student_name });
+      return res.json({ success: true, output, quota: req.aiQuota || null });
+    } catch (err) {
+      if (err.message === "AI_TIMEOUT")
+        return res.status(504).json({ success: false, message: "AI request timed out." });
+      console.error("AI risk-detection:", err.message);
+      return res.status(500).json({ success: false, message: "AI request failed." });
+    }
+  }
+);
+
 module.exports = router;
