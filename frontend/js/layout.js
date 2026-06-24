@@ -2,7 +2,7 @@
  * Shared layout helpers v4.2
  * CSS is injected via injectStyles() — works even if <style> tag missing
  */
-import { esc, getUser, logout } from "/js/api.js";
+import { esc, getUser, logout, ai } from "/js/api.js";
 
 const CSS = `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -134,6 +134,40 @@ tr:hover td{background:#fafbff}
 .level-AE{background:#fef9c3;color:#854d0e;padding:3px 8px;border-radius:6px;font-weight:800;font-size:12px;display:inline-block}
 .level-BE{background:#fee2e2;color:#b91c1c;padding:3px 8px;border-radius:6px;font-weight:800;font-size:12px;display:inline-block}
 .net-err{background:#fef9c3;color:#92400e;border:1px solid #fde68a;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:16px}
+/* ── AI Assistant widget ── */
+.ai-fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border:none;cursor:pointer;box-shadow:0 8px 24px rgba(79,70,229,.35);display:flex;align-items:center;justify-content:center;z-index:500;transition:transform .15s}
+.ai-fab:hover{transform:scale(1.06)}
+.ai-fab .icon-svg{width:24px;height:24px}
+.ai-panel{position:fixed;bottom:24px;right:24px;width:380px;max-height:min(560px,calc(100vh - 48px));background:#fff;border-radius:18px;box-shadow:0 24px 48px rgba(0,0,0,.22);display:none;flex-direction:column;z-index:501;overflow:hidden;border:1px solid #e2e8f0}
+.ai-panel.open{display:flex}
+.ai-hdr{padding:16px 18px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ai-hdr-title{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700}
+.ai-hdr-title .icon-svg{width:18px;height:18px}
+.ai-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:26px;height:26px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1}
+.ai-close:hover{background:rgba(255,255,255,.28)}
+.ai-quota{font-size:10.5px;color:rgba(255,255,255,.85);margin-top:2px}
+.ai-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:#f8fafc}
+.ai-msg{max-width:88%;padding:10px 13px;border-radius:12px;font-size:13px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word}
+.ai-msg.user{align-self:flex-end;background:#4f46e5;color:#fff;border-radius:12px 12px 2px 12px}
+.ai-msg.bot{align-self:flex-start;background:#fff;color:#0f172a;border:1px solid #e2e8f0;border-radius:12px 12px 12px 2px}
+.ai-msg.err{align-self:flex-start;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:12px}
+.ai-msg.typing{align-self:flex-start;background:#fff;border:1px solid #e2e8f0;padding:10px 14px;border-radius:12px 12px 12px 2px}
+.ai-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#94a3b8;margin-right:3px;animation:cbc-bounce 1.2s infinite}
+.ai-dot:nth-child(2){animation-delay:.15s}.ai-dot:nth-child(3){animation-delay:.3s}
+@keyframes cbc-bounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-3px);opacity:1}}
+.ai-empty{text-align:center;color:#94a3b8;font-size:12.5px;padding:24px 12px}
+.ai-empty .icon-svg{width:28px;height:28px;margin-bottom:8px;opacity:.5}
+.ai-input-row{padding:12px;border-top:1px solid #e2e8f0;display:flex;gap:8px;background:#fff;flex-shrink:0}
+.ai-input-row textarea{flex:1;resize:none;border:1.5px solid #e2e8f0;border-radius:12px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;max-height:90px;min-height:38px}
+.ai-input-row textarea:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.ai-send{width:38px;height:38px;border-radius:10px;background:#4f46e5;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-send:hover{background:#4338ca}
+.ai-send:disabled{background:#c7d2fe;cursor:not-allowed}
+.ai-send .icon-svg{width:16px;height:16px}
+@media(max-width:480px){
+  .ai-panel{right:8px;left:8px;bottom:8px;width:auto;max-height:min(72vh,560px)}
+  .ai-fab{right:16px;bottom:16px}
+}
 `;
 
 // ── Inject CSS into document <head> — works regardless of DOM state ──
@@ -167,7 +201,9 @@ const ICONS = {
   scale: '<path d="M12 3v18"/><path d="M5 6h14"/><path d="M6 6l-3 7h6z"/><path d="M18 6l-3 7h6z"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
   shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>',
-  logout: '<path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 19V5a2 2 0 0 0-2-2h-5"/>'
+  logout: '<path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 19V5a2 2 0 0 0-2-2h-5"/>',
+  sparkle: '<path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/><path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="2.5"/>',
+  send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/>'
 };
 
 export function icon(name, label = "") {
@@ -293,4 +329,112 @@ export function setLoading(btn, on) {
   if (!btn) return;
   on ? btn.classList.add("btn-loading") : btn.classList.remove("btn-loading");
   btn.disabled = on;
+}
+
+// ── AI Assistant widget — floating button + chat panel ─────────────
+// Shared across every dashboard. Calls POST /ai/assist via api.js,
+// which is already gated server-side by subscription + rate limits.
+// Call buildAiWidget() once into the page, then setupAiWidget() after
+// the DOM is in place.
+export function buildAiWidget() {
+  return `
+  <button class="ai-fab" id="aiFab" aria-label="Open AI Assistant">${icon("sparkle", "AI Assistant")}</button>
+  <div class="ai-panel" id="aiPanel">
+    <div class="ai-hdr">
+      <div>
+        <div class="ai-hdr-title">${icon("sparkle")} AI Assistant</div>
+        <div class="ai-quota" id="aiQuotaLabel"></div>
+      </div>
+      <button class="ai-close" id="aiClose" aria-label="Close">×</button>
+    </div>
+    <div class="ai-body" id="aiBody">
+      <div class="ai-empty">${icon("sparkle")}<div>Ask about attendance, fees, report comments, CBC guidance, or anything school-admin related.</div></div>
+    </div>
+    <div class="ai-input-row">
+      <textarea id="aiInput" rows="1" placeholder="Ask the assistant…" maxlength="4000"></textarea>
+      <button class="ai-send" id="aiSend" aria-label="Send">${icon("send")}</button>
+    </div>
+  </div>`;
+}
+
+export function setupAiWidget() {
+  const fab    = document.getElementById("aiFab");
+  const panel  = document.getElementById("aiPanel");
+  const closeB = document.getElementById("aiClose");
+  const body   = document.getElementById("aiBody");
+  const input  = document.getElementById("aiInput");
+  const sendB  = document.getElementById("aiSend");
+  const quotaL = document.getElementById("aiQuotaLabel");
+  if (!fab || !panel) return;
+
+  fab.addEventListener("click", () => {
+    panel.classList.add("open");
+    fab.style.display = "none";
+    input.focus();
+  });
+  closeB.addEventListener("click", () => {
+    panel.classList.remove("open");
+    fab.style.display = "flex";
+  });
+
+  function addMsg(text, cls) {
+    // ai-empty placeholder gets cleared on first real message
+    const placeholder = body.querySelector(".ai-empty");
+    if (placeholder) placeholder.remove();
+    const div = document.createElement("div");
+    div.className = "ai-msg " + cls;
+    div.textContent = text;
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+    return div;
+  }
+
+  function addTyping() {
+    const div = document.createElement("div");
+    div.className = "ai-msg typing";
+    div.innerHTML = '<span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span>';
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+    return div;
+  }
+
+  async function send() {
+    const text = input.value.trim();
+    if (!text || sendB.disabled) return;
+    addMsg(text, "user");
+    input.value = "";
+    input.style.height = "auto";
+    sendB.disabled = true;
+    const typingEl = addTyping();
+    try {
+      const r = await ai.assist({ prompt: text });
+      typingEl.remove();
+      if (r?.success) {
+        addMsg(r.output || "(No response)", "bot");
+        if (r.quota) quotaL.textContent = `${r.quota.remaining} requests left today`;
+      } else if (r?.code === "AI_DAILY_LIMIT_REACHED") {
+        addMsg(r.message || "Daily AI limit reached. Try again tomorrow.", "err");
+      } else if (r?.code === "AI_RATE_LIMITED") {
+        addMsg(r.message || "Slow down a little — try again in a moment.", "err");
+      } else if (r?.code === "SUBSCRIPTION_REQUIRED" || r?.code === "AI_NOT_ON_PLAN") {
+        addMsg(r.message || "AI isn't available on the current plan.", "err");
+      } else {
+        addMsg(r?.message || "Something went wrong. Please try again.", "err");
+      }
+    } catch (e) {
+      typingEl.remove();
+      addMsg("Network error — please try again.", "err");
+    } finally {
+      sendB.disabled = false;
+    }
+  }
+
+  sendB.addEventListener("click", send);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+  input.addEventListener("input", () => {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 90) + "px";
+  });
 }

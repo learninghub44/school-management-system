@@ -15,7 +15,7 @@ module.exports = async function requireSubscription(req, res, next) {
 
   try {
     const { rows } = await db.query(
-      `SELECT ss.status, ss.current_period_end, pp.ai_enabled
+      `SELECT ss.status, ss.current_period_end, pp.ai_enabled, pp.ai_daily_limit
        FROM school_subscriptions ss
        JOIN payment_plans pp ON pp.id = ss.plan_id
        WHERE ss.school_id = $1

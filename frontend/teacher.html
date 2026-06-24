@@ -84,7 +84,7 @@
 
 <script type="module">
 import { guardPage, esc, apiFetch, attendance, assessments, classes, schools, teachers, assignments, students, verifySession, clearSession, logout} from "/js/api.js";
-import { buildSidebar, setupNav, openModal, closeModal, resetModal, showAlert, setLoading, injectStyles } from "/js/layout.js";
+import { buildSidebar, setupNav, openModal, closeModal, resetModal, showAlert, setLoading, injectStyles, buildAiWidget, setupAiWidget } from "/js/layout.js";
 injectStyles();
 
 let me = guardPage(["TEACHER"]);
@@ -145,7 +145,8 @@ document.getElementById("app").innerHTML =
     </div>
 
   </div>
-</div>`;
+</div>
+${buildAiWidget()}`;
 
 // ── State ─────────────────────────────────────────────────────────
 let myTeacherId   = null;
@@ -217,6 +218,7 @@ const loaders = {
   classes:  loadClassesPanel,
 };
 setupNav(loaders);
+setupAiWidget();
 
 // ── Modal close wiring ────────────────────────────────────────────
 document.querySelectorAll("[data-close]").forEach(b =>

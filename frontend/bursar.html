@@ -120,7 +120,8 @@ import {
   finance, classes, students, verifySession, logout} from "/js/api.js";
 import { buildSidebar, setupNav,
   openModal, closeModal, resetModal,
-  showAlert, setLoading, injectStyles
+  showAlert, setLoading, injectStyles,
+  buildAiWidget, setupAiWidget
 } from "/js/layout.js";
 
 injectStyles();
@@ -223,7 +224,8 @@ document.getElementById("app").innerHTML =
     </div>
 
   </div>
-</div>`;
+</div>
+${buildAiWidget()}`;
 
 // ── State ─────────────────────────────────────────────────────────
 let allClasses = [];
@@ -236,6 +238,7 @@ const loaders = {
   balances: () => {},   // triggered by filter
 };
 setupNav(loaders);
+setupAiWidget();
 
 // ── Modal close wiring ────────────────────────────────────────────
 document.querySelectorAll("[data-close]").forEach(b =>

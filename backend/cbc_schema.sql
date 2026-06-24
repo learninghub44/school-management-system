@@ -245,10 +245,23 @@ CREATE TABLE payment_plans (
   billing_interval VARCHAR(10)   NOT NULL CHECK (billing_interval IN ('month','term','year')),
   student_limit    INTEGER,
   ai_enabled       BOOLEAN       DEFAULT TRUE,
+  ai_daily_limit   INTEGER       DEFAULT 50,   -- max AI requests/day per school; NULL = unlimited
   is_active        BOOLEAN       DEFAULT TRUE,
   created_at       TIMESTAMPTZ   DEFAULT NOW(),
   updated_at       TIMESTAMPTZ   DEFAULT NOW()
 );
+
+-- AI usage log — backs the daily per-school request quota
+CREATE TABLE ai_usage_log (
+  id           BIGSERIAL    PRIMARY KEY,
+  school_id    UUID         NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+  user_id      UUID         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  feature      VARCHAR(40)  NOT NULL DEFAULT 'assist',
+  prompt_chars INTEGER,
+  created_at   TIMESTAMPTZ  DEFAULT NOW()
+);
+CREATE INDEX idx_ai_usage_school_day ON ai_usage_log(school_id, created_at);
+CREATE INDEX idx_ai_usage_user_day   ON ai_usage_log(user_id, created_at);
 
 CREATE TABLE school_subscriptions (
   id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),

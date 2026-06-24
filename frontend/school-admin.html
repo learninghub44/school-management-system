@@ -282,8 +282,20 @@
     </div>
   </div>
   <div class="fg"><label>Academic Year *</label><input id="rc-year" maxlength="4" placeholder="e.g. 2025"></div>
-  <div class="fg"><label>Class Teacher Remark</label><textarea id="rc-teacher-remark" maxlength="1000" placeholder="Optional remark from class teacher..."></textarea></div>
-  <div class="fg"><label>Principal Remark</label><textarea id="rc-principal-remark" maxlength="1000" placeholder="Optional remark from principal..."></textarea></div>
+  <div class="fg">
+    <label style="display:flex;align-items:center;justify-content:space-between">
+      <span>Class Teacher Remark</span>
+      <button type="button" class="btn btn-ghost btn-sm" id="btnAiTeacherRemark" style="text-transform:none;font-weight:600">✨ AI Suggest</button>
+    </label>
+    <textarea id="rc-teacher-remark" maxlength="1000" placeholder="Optional remark from class teacher..."></textarea>
+  </div>
+  <div class="fg">
+    <label style="display:flex;align-items:center;justify-content:space-between">
+      <span>Principal Remark</span>
+      <button type="button" class="btn btn-ghost btn-sm" id="btnAiPrincipalRemark" style="text-transform:none;font-weight:600">✨ AI Suggest</button>
+    </label>
+    <textarea id="rc-principal-remark" maxlength="1000" placeholder="Optional remark from principal..."></textarea>
+  </div>
   <div id="rc-alert"></div>
   <div class="modal-actions">
     <button class="btn btn-ghost" data-close="modal-reportcard">Cancel</button>
@@ -328,11 +340,12 @@
 import {
   guardPage, esc, logout, apiFetch, clearSession,
   users, teachers, classes, students, departments,
-  assignments, attendance, assessments, reports, schools, verifySession, exams, finance
+  assignments, attendance, assessments, reports, schools, verifySession, exams, finance, ai
 } from "/js/api.js";
 import { buildSidebar, setupNav,
   openModal, closeModal, resetModal,
-  showAlert, setLoading, injectStyles
+  showAlert, setLoading, injectStyles,
+  buildAiWidget, setupAiWidget
 } from "/js/layout.js";
 
 injectStyles();
@@ -588,7 +601,8 @@ document.getElementById("app").innerHTML =
     </div>
 
   </div>
-</div>`;
+</div>
+${buildAiWidget()}`;
 
 // ── State ─────────────────────────────────────────────────────────
 let allClasses  = [];
@@ -610,6 +624,7 @@ const loaders = {
   backup:      () => {},       // manual export only
 };
 setupNav(loaders);
+setupAiWidget();
 
 // ── Modal close wiring ────────────────────────────────────────────
 document.querySelectorAll("[data-close]").forEach(b =>
@@ -1310,6 +1325,70 @@ document.getElementById("btnGenerateCard")?.addEventListener("click", async () =
     (r?.data || []).map(s => `<option value="${esc(s.id)}">${esc(s.first_name + " " + s.last_name)} (${esc(s.admission_no || "")})</option>`).join("");
   openModal("modal-reportcard");
 });
+
+// ── AI Suggest: draft a remark from the student's actual assessment data ──
+async function aiSuggestRemark(role, btn, textareaId) {
+  const studentId = document.getElementById("rc-student").value;
+  const classId    = document.getElementById("rc-class").value;
+  const term       = document.getElementById("rc-term").value;
+  const year       = document.getElementById("rc-year").value.trim();
+  const alertEl    = document.getElementById("rc-alert");
+  if (!studentId) return showAlert(alertEl, "Select a student first so the assistant has something to work from.");
+
+  const studentLabel = document.getElementById("rc-student").selectedOptions[0]?.textContent || "the student";
+  const studentName  = studentLabel.replace(/\s*\([^)]*\)\s*$/, "").trim();
+
+  setLoading(btn, true);
+  try {
+    // api.js: assessments.report(p) → GET /assessments/report
+    const [assessRes, attRes] = await Promise.all([
+      assessments.report({ student_id: studentId, term: term || undefined, academic_year: year || undefined }),
+      classId ? attendance.list({ class_id: classId }) : Promise.resolve(null),
+    ]);
+    const achievements = (assessRes?.data || []).map(a => ({ subject: a.subject_name, level: a.achievement_level }));
+
+    let attendanceSummary;
+    if (attRes?.data?.length) {
+      const mine = attRes.data.filter(a => String(a.student_id) === String(studentId));
+      if (mine.length) {
+        const present = mine.filter(a => a.status === "Present").length;
+        const rate = Math.round((present / mine.length) * 100);
+        attendanceSummary = `${rate}% attendance over ${mine.length} recorded day(s) this period`;
+      }
+    }
+
+    // api.js: ai.reportComment(d) → POST /ai/report-comment
+    const r = await ai.reportComment({
+      student_name: studentName,
+      role,
+      achievements,
+      attendance_summary: attendanceSummary,
+      tone: "encouraging",
+    });
+    if (r?.success) {
+      document.getElementById(textareaId).value = r.output.trim();
+      showAlert(alertEl, "Draft inserted — feel free to edit before saving.", "ok");
+    } else if (r?.code === "AI_DAILY_LIMIT_REACHED") {
+      showAlert(alertEl, r.message || "Daily AI limit reached for today.");
+    } else if (r?.code === "AI_RATE_LIMITED") {
+      showAlert(alertEl, r.message || "Slow down a little and try again.");
+    } else if (r?.code === "SUBSCRIPTION_REQUIRED" || r?.code === "AI_NOT_ON_PLAN") {
+      showAlert(alertEl, r.message || "AI isn't available on the current plan.");
+    } else {
+      showAlert(alertEl, r?.message || "Couldn't generate a suggestion. You can still write the remark manually.");
+    }
+  } catch (e) {
+    showAlert(alertEl, "Network error — please try again.");
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+document.getElementById("btnAiTeacherRemark")?.addEventListener("click", () =>
+  aiSuggestRemark("class_teacher", "btnAiTeacherRemark", "rc-teacher-remark"));
+document.getElementById("btnAiPrincipalRemark")?.addEventListener("click", () =>
+  aiSuggestRemark("principal", "btnAiPrincipalRemark", "rc-principal-remark"));
+
 document.getElementById("btnSubmitReportCard")?.addEventListener("click", async () => {
   const alertEl = document.getElementById("rc-alert");
   const studentId = document.getElementById("rc-student").value;
