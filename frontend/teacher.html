@@ -85,6 +85,7 @@
 <script type="module">
 import { guardPage, esc, apiFetch, attendance, assessments, classes, schools, teachers, assignments, students, verifySession, clearSession, logout} from "/js/api.js";
 import { buildSidebar, setupNav, openModal, closeModal, resetModal, showAlert, setLoading, injectStyles, buildAiWidget, setupAiWidget } from "/js/layout.js";
+import { makeStudentPicker } from "/js/searchable-select.js";
 injectStyles();
 
 let me = guardPage(["TEACHER"]);
@@ -236,6 +237,7 @@ function openAttendanceModal() {
 async function openAssessmentModal() {
   resetModal("modal-assess");
   await populateAssessClassContext();
+  makeStudentPicker("asc-student", {}, null);
   openModal("modal-assess");
 }
 document.getElementById("btnQuickAtt")?.addEventListener("click", openAttendanceModal);
@@ -307,10 +309,8 @@ async function populateAssessClassContext() {
 
 async function loadSubjectsAndStudentsForAssessClass(classId) {
   const subjectEl = document.getElementById("asc-subject");
-  const studentEl = document.getElementById("asc-student");
   if (!classId) {
     subjectEl.innerHTML = '<option value="">Select Class first</option>';
-    studentEl.innerHTML = '<option value="">Select Class first</option>';
     return;
   }
   const subjectsForClass = myAssignments.filter(a => String(a.class_id) === String(classId));
@@ -318,12 +318,8 @@ async function loadSubjectsAndStudentsForAssessClass(classId) {
     subjectsForClass.map(a =>
       `<option value="${esc(String(a.learning_area_id))}">${esc(a.subject_name)}</option>`).join("");
 
-  studentEl.innerHTML = '<option value="">Loading…</option>';
-  // api.js: classes.students(id) → GET /classes/:id/students
-  const r = await classes.students(classId);
-  studentEl.innerHTML = '<option value="">Select Student</option>' +
-    (r?.data || []).map(s =>
-      `<option value="${esc(String(s.id))}">${esc(s.first_name + " " + s.last_name)} — ${esc(s.admission_number || "")}</option>`).join("");
+  // Re-init student picker filtered to selected class
+  makeStudentPicker("asc-student", { classId }, null);
 }
 
 document.getElementById("asc-class")?.addEventListener("change", function () {

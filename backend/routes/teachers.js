@@ -31,7 +31,12 @@ router.get("/", auth, roleM(READ), async (req, res) => {
     if (req.query.is_active !== undefined) { p.push(req.query.is_active === "true"); q += ` AND t.is_active=$${p.length}`; }
     if (req.query.department_id) { p.push(req.query.department_id); q += ` AND t.department_id=$${p.length}`; }
     if (req.query.user_id) { p.push(req.query.user_id); q += ` AND t.user_id=$${p.length}`; }
-    q += " ORDER BY t.last_name, t.first_name";
+    if (req.query.search) {
+      const search = req.query.search.replace(/[%_\\]/g, "\\$&").substring(0, 100);
+      p.push(`%${search}%`);
+      q += ` AND (t.first_name ILIKE $${p.length} OR t.last_name ILIKE $${p.length} OR t.tsc_number ILIKE $${p.length} OR t.email ILIKE $${p.length})`;
+    }
+    q += " ORDER BY t.last_name, t.first_name LIMIT 100";
     const { rows } = await db.query(q, p);
     return res.json({ success: true, data: rows, count: rows.length });
   } catch (err) { return res.status(500).json({ success: false, message: "Server error." }); }

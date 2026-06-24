@@ -347,6 +347,7 @@ import { buildSidebar, setupNav,
   showAlert, setLoading, injectStyles,
   buildAiWidget, setupAiWidget
 } from "/js/layout.js";
+import { makeStudentPicker, makeTeacherPicker } from "/js/searchable-select.js";
 
 injectStyles();
 
@@ -653,16 +654,11 @@ async function fetchClasses() {
 }
 
 async function fetchTeachers() {
-  // api.js: teachers.list(params) → GET /teachers
-  const r = await teachers.list({ school_id: me.school_id });
-  allTeachers = r?.data || [];
-  const opts = allTeachers.map(t =>
-    `<option value="${esc(String(t.id))}">${esc(t.name || (t.first_name + " " + t.last_name))}</option>`).join("");
-  ["cl-teacher","as-teacher","tt-teacher","ex-invigilator"].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.innerHTML = `<option value="">None</option>` + opts;
-  });
+  // Replace teacher <select>s with searchable pickers
+  makeTeacherPicker("cl-teacher",     { allowNone: true },  (t) => { /* value via .value */ });
+  makeTeacherPicker("as-teacher",     {},                   (t) => { /* value via .value */ });
+  makeTeacherPicker("tt-teacher",     { allowNone: true },  (t) => { /* value via .value */ });
+  makeTeacherPicker("ex-invigilator", { allowNone: true },  (t) => { /* value via .value */ });
 }
 
 async function fetchDepts() {
@@ -692,6 +688,10 @@ async function fetchLearningAreas() {
 }
 
 await Promise.all([fetchClasses(), fetchTeachers(), fetchDepts(), fetchLearningAreas()]);
+
+// Init student pickers (teacher pickers already initialised inside fetchTeachers)
+makeStudentPicker("asc-student", {}, null);
+makeStudentPicker("rc-student",  {}, null);
 
 // ── Overview ──────────────────────────────────────────────────────
 async function loadOverview() {
@@ -1082,15 +1082,9 @@ document.getElementById("btnAddAssess")?.addEventListener("click", () => {
 });
 
 document.getElementById("asc-class")?.addEventListener("change", async function () {
-  const classId  = this.value;
-  const studEl   = document.getElementById("asc-student");
-  studEl.innerHTML = '<option value="">Loading…</option>';
-  if (!classId) { studEl.innerHTML = '<option value="">Select Student</option>'; return; }
-  // api.js: classes.students(id) → GET /classes/:id/students
-  const r = await classes.students(classId);
-  studEl.innerHTML = '<option value="">Select Student</option>' +
-    (r?.data || []).map(s =>
-      `<option value="${esc(String(s.id))}">${esc(s.full_name || (s.first_name + " " + s.last_name))}</option>`).join("");
+  const classId = this.value;
+  // Re-init student picker filtered by selected class
+  makeStudentPicker("asc-student", { classId: classId || undefined }, null);
 });
 
 document.getElementById("btnSubmitAssess")?.addEventListener("click", async () => {
@@ -1318,11 +1312,8 @@ window.printCard = (rc) => {
 document.getElementById("btnLoadCards")?.addEventListener("click", loadReportCards);
 document.getElementById("btnGenerateCard")?.addEventListener("click", async () => {
   document.getElementById("rc-year").value = new Date().getFullYear();
-  // Populate student select
-  const r = await students.list({ school_id: me.school_id });
-  const sl = document.getElementById("rc-student");
-  if (sl) sl.innerHTML = '<option value="">Select Student</option>' +
-    (r?.data || []).map(s => `<option value="${esc(s.id)}">${esc(s.first_name + " " + s.last_name)} (${esc(s.admission_no || "")})</option>`).join("");
+  // Searchable picker for student selection
+  makeStudentPicker("rc-student", {}, null);
   openModal("modal-reportcard");
 });
 
@@ -1335,7 +1326,7 @@ async function aiSuggestRemark(role, btn, textareaId) {
   const alertEl    = document.getElementById("rc-alert");
   if (!studentId) return showAlert(alertEl, "Select a student first so the assistant has something to work from.");
 
-  const studentLabel = document.getElementById("rc-student").selectedOptions[0]?.textContent || "the student";
+  const studentLabel = document.querySelector("#rc-student")?.closest('.ss-wrap')?.querySelector('.ss-input')?.value || "the student";
   const studentName  = studentLabel.replace(/\s*\([^)]*\)\s*$/, "").trim();
 
   setLoading(btn, true);
