@@ -171,4 +171,19 @@ router.post("/:id/updates", auth, roleM(WRITE_ROLES),
   }
 );
 
+// DELETE /api/interventions/:id — admin only
+router.delete("/:id", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL"]), async (req, res) => {
+  try {
+    const { rows } = await db.query("SELECT school_id FROM interventions WHERE id=$1", [req.params.id]);
+    if (!rows.length) return res.status(404).json({ success: false, message: "Not found." });
+    if (req.user.role !== "SUPER_ADMIN" && rows[0].school_id !== req.user.school_id)
+      return res.status(403).json({ success: false, message: "Access denied." });
+    await db.query("DELETE FROM interventions WHERE id=$1", [req.params.id]);
+    await audit(req, "DELETE_INTERVENTION", "interventions", req.params.id);
+    return res.json({ success: true, message: "Deleted." });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
 module.exports = router;

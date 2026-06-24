@@ -279,15 +279,17 @@ export const observations = {
 export const interventions = {
   list:   (p)      => apiFetch("/interventions",        { params: p }),
   create: (d)      => apiFetch("/interventions",        { method: "POST",   body: d }),
-  update: (id, d)  => apiFetch(`/interventions/${id}`,  { method: "PUT",    body: d }),
+  update: (id, d)  => apiFetch(`/interventions/${id}`,  { method: "PATCH",  body: d }),  // route is PATCH
   delete: (id)     => apiFetch(`/interventions/${id}`,  { method: "DELETE" }),
+  addNote:(id, d)  => apiFetch(`/interventions/${id}/updates`, { method: "POST", body: d }),
 };
 
 export const moderation = {
-  list:     (p)      => apiFetch("/moderation",           { params: p }),
-  lock:     (id)     => apiFetch(`/moderation/${id}/lock`,   { method: "POST" }),
-  unlock:   (id)     => apiFetch(`/moderation/${id}/unlock`, { method: "POST" }),
-  approve:  (id, d)  => apiFetch(`/moderation/${id}/approve`,{ method: "POST", body: d }),
-  years:    (p)      => apiFetch("/moderation/years",        { params: p }),
-  createYear: (d)    => apiFetch("/moderation/years",        { method: "POST", body: d }),
+  list:         (p)      => apiFetch("/moderation",                     { params: p }),
+  lock:         (id, d)  => apiFetch(`/moderation/${id}/lock`,          { method: "POST", body: d }),  // body={term,academic_year,is_locked}
+  moderate:     (id, d)  => apiFetch(`/moderation/${id}/moderate`,      { method: "POST", body: d }),  // frontend calls .moderate()
+  academicYears:(p)      => apiFetch("/moderation/academic-years",      { params: p }),                // frontend calls .academicYears()
+  createYear:   (d)      => apiFetch("/moderation/academic-years",      { method: "POST", body: d }),
+  bulkAssess:   (d)      => apiFetch("/moderation/bulk-assess",         { method: "POST", body: d }),
+  bulkPromote:  (d)      => apiFetch("/moderation/bulk-promote",        { method: "POST", body: d }),
 };
