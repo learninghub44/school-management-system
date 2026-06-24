@@ -102,7 +102,26 @@ router.post("/cards",
     body("term").isInt({ min: 1, max: 3 }),
     body("academic_year").matches(/^\d{4}$/),
     body("class_teacher_remark").optional().trim().isLength({ max: 1000 }),
+    body("teacher_remark").optional().trim().isLength({ max: 1000 }),
     body("principal_remark").optional().trim().isLength({ max: 1000 }),
+    body("headteacher_remark").optional().trim().isLength({ max: 1000 }),
+    body("ai_remark").optional().trim().isLength({ max: 1000 }),
+    // Core Competencies (1=Not Observed, 2=Developing, 3=Competent, 4=Exceptional)
+    body("cc_communication").optional().isInt({ min: 1, max: 4 }),
+    body("cc_critical_thinking").optional().isInt({ min: 1, max: 4 }),
+    body("cc_creativity").optional().isInt({ min: 1, max: 4 }),
+    body("cc_citizenship").optional().isInt({ min: 1, max: 4 }),
+    body("cc_digital_literacy").optional().isInt({ min: 1, max: 4 }),
+    body("cc_learning_to_learn").optional().isInt({ min: 1, max: 4 }),
+    body("cc_self_efficacy").optional().isInt({ min: 1, max: 4 }),
+    // Values (1=Needs Improvement, 2=Satisfactory, 3=Good, 4=Excellent)
+    body("val_respect").optional().isInt({ min: 1, max: 4 }),
+    body("val_responsibility").optional().isInt({ min: 1, max: 4 }),
+    body("val_integrity").optional().isInt({ min: 1, max: 4 }),
+    body("val_unity").optional().isInt({ min: 1, max: 4 }),
+    body("val_peace").optional().isInt({ min: 1, max: 4 }),
+    body("val_patriotism").optional().isInt({ min: 1, max: 4 }),
+    body("val_social_justice").optional().isInt({ min: 1, max: 4 }),
   ],
   async (req, res) => {
     const errs = validationResult(req);
@@ -130,25 +149,66 @@ router.post("/cards",
       if (!cls.length || (req.user.role !== "SUPER_ADMIN" && cls[0].school_id !== schoolId))
         return res.status(400).json({ success: false, message: "Invalid class." });
 
-      const { student_id, class_id, term, academic_year, class_teacher_remark, principal_remark } = req.body;
+      const {
+        student_id, class_id, term, academic_year,
+        class_teacher_remark, teacher_remark, principal_remark,
+        headteacher_remark, ai_remark,
+        cc_communication, cc_critical_thinking, cc_creativity,
+        cc_citizenship, cc_digital_literacy, cc_learning_to_learn, cc_self_efficacy,
+        val_respect, val_responsibility, val_integrity, val_unity,
+        val_peace, val_patriotism, val_social_justice,
+      } = req.body;
+
       const { rows } = await db.query(
         `INSERT INTO report_cards
-         (school_id, student_id, class_id, term, academic_year, class_teacher_remark, principal_remark, generated_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         (school_id, student_id, class_id, term, academic_year,
+          class_teacher_remark, teacher_remark, principal_remark,
+          headteacher_remark, ai_remark,
+          cc_communication, cc_critical_thinking, cc_creativity,
+          cc_citizenship, cc_digital_literacy, cc_learning_to_learn, cc_self_efficacy,
+          val_respect, val_responsibility, val_integrity, val_unity,
+          val_peace, val_patriotism, val_social_justice,
+          generated_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
          ON CONFLICT (school_id, student_id, term, academic_year)
          DO UPDATE SET
            class_teacher_remark = EXCLUDED.class_teacher_remark,
+           teacher_remark       = EXCLUDED.teacher_remark,
            principal_remark     = EXCLUDED.principal_remark,
+           headteacher_remark   = EXCLUDED.headteacher_remark,
+           ai_remark            = EXCLUDED.ai_remark,
+           cc_communication     = COALESCE(EXCLUDED.cc_communication,     report_cards.cc_communication),
+           cc_critical_thinking = COALESCE(EXCLUDED.cc_critical_thinking, report_cards.cc_critical_thinking),
+           cc_creativity        = COALESCE(EXCLUDED.cc_creativity,        report_cards.cc_creativity),
+           cc_citizenship       = COALESCE(EXCLUDED.cc_citizenship,       report_cards.cc_citizenship),
+           cc_digital_literacy  = COALESCE(EXCLUDED.cc_digital_literacy,  report_cards.cc_digital_literacy),
+           cc_learning_to_learn = COALESCE(EXCLUDED.cc_learning_to_learn, report_cards.cc_learning_to_learn),
+           cc_self_efficacy     = COALESCE(EXCLUDED.cc_self_efficacy,     report_cards.cc_self_efficacy),
+           val_respect          = COALESCE(EXCLUDED.val_respect,          report_cards.val_respect),
+           val_responsibility   = COALESCE(EXCLUDED.val_responsibility,   report_cards.val_responsibility),
+           val_integrity        = COALESCE(EXCLUDED.val_integrity,        report_cards.val_integrity),
+           val_unity            = COALESCE(EXCLUDED.val_unity,            report_cards.val_unity),
+           val_peace            = COALESCE(EXCLUDED.val_peace,            report_cards.val_peace),
+           val_patriotism       = COALESCE(EXCLUDED.val_patriotism,       report_cards.val_patriotism),
+           val_social_justice   = COALESCE(EXCLUDED.val_social_justice,   report_cards.val_social_justice),
            generated_by         = EXCLUDED.generated_by,
            generated_date       = NOW()
          RETURNING *`,
         [schoolId, student_id, class_id, term, academic_year,
-         class_teacher_remark || null, principal_remark || null, req.user.id]
+         class_teacher_remark || null, teacher_remark || null,
+         principal_remark || null, headteacher_remark || null, ai_remark || null,
+         cc_communication || null, cc_critical_thinking || null, cc_creativity || null,
+         cc_citizenship || null, cc_digital_literacy || null,
+         cc_learning_to_learn || null, cc_self_efficacy || null,
+         val_respect || null, val_responsibility || null, val_integrity || null,
+         val_unity || null, val_peace || null, val_patriotism || null,
+         val_social_justice || null, req.user.id]
       );
       await audit(req, "GENERATE_REPORT_CARD", "report_cards", rows[0].id, null,
         { student_id, term, academic_year });
       return res.status(201).json({ success: true, data: rows[0] });
     } catch (err) {
+      console.error("report card POST:", err.message);
       return res.status(500).json({ success: false, message: "Server error." });
     }
   }
@@ -274,6 +334,152 @@ router.delete("/timetable/:id",
         return res.status(403).json({ success: false, message: "Access denied." });
       await db.query("DELETE FROM timetable WHERE id=$1", [req.params.id]);
       return res.json({ success: true, message: "Slot deleted." });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: "Server error." });
+    }
+  }
+);
+
+// ── GET /api/reports/analytics — CBC Analytics Dashboard ─────────
+router.get("/analytics",
+  auth,
+  roleM(["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL", "HOD"]),
+  async (req, res) => {
+    try {
+      const schoolId = getSchoolId(req);
+      if (!schoolId)
+        return res.status(400).json({ success: false, message: "school_id required." });
+      const year = req.query.academic_year || new Date().getFullYear().toString();
+      const term = req.query.term || null;
+
+      const termFilter = term ? "AND a.term=$3" : "";
+      const params     = term ? [schoolId, year, term] : [schoolId, year];
+
+      const [byGrade, bySubject, competencies, atRisk] = await Promise.all([
+        // Achievement by grade
+        db.query(
+          `SELECT c.grade,
+                  COUNT(*) AS total,
+                  COUNT(*) FILTER(WHERE a.achievement_level='EE') AS ee,
+                  COUNT(*) FILTER(WHERE a.achievement_level='ME') AS me,
+                  COUNT(*) FILTER(WHERE a.achievement_level='AE') AS ae,
+                  COUNT(*) FILTER(WHERE a.achievement_level='BE') AS be
+           FROM assessments a
+           JOIN classes c ON c.id = a.class_id
+           WHERE a.school_id=$1 AND a.academic_year=$2 ${termFilter}
+           GROUP BY c.grade ORDER BY c.grade`, params
+        ),
+        // Achievement by subject/learning area
+        db.query(
+          `SELECT la.name AS subject,
+                  COUNT(*) AS total,
+                  COUNT(*) FILTER(WHERE a.achievement_level='EE') AS ee,
+                  COUNT(*) FILTER(WHERE a.achievement_level='ME') AS me,
+                  COUNT(*) FILTER(WHERE a.achievement_level='AE') AS ae,
+                  COUNT(*) FILTER(WHERE a.achievement_level='BE') AS be,
+                  ROUND(AVG(a.score) FILTER (WHERE a.score IS NOT NULL), 1) AS avg_score
+           FROM assessments a
+           JOIN learning_areas la ON la.id = a.learning_area_id
+           WHERE a.school_id=$1 AND a.academic_year=$2 ${termFilter}
+           GROUP BY la.name ORDER BY la.name`, params
+        ),
+        // Core competency averages from report cards
+        db.query(
+          `SELECT
+             ROUND(AVG(NULLIF(cc_communication,    0))::NUMERIC, 2) AS communication,
+             ROUND(AVG(NULLIF(cc_critical_thinking,0))::NUMERIC, 2) AS critical_thinking,
+             ROUND(AVG(NULLIF(cc_creativity,       0))::NUMERIC, 2) AS creativity,
+             ROUND(AVG(NULLIF(cc_citizenship,      0))::NUMERIC, 2) AS citizenship,
+             ROUND(AVG(NULLIF(cc_digital_literacy, 0))::NUMERIC, 2) AS digital_literacy,
+             ROUND(AVG(NULLIF(cc_learning_to_learn,0))::NUMERIC, 2) AS learning_to_learn,
+             ROUND(AVG(NULLIF(cc_self_efficacy,    0))::NUMERIC, 2) AS self_efficacy
+           FROM report_cards
+           WHERE school_id=$1 AND academic_year=$2`,
+          [schoolId, year]
+        ),
+        // At-risk students (mostly BE this term)
+        db.query(
+          `SELECT s.id, s.first_name||' '||s.last_name AS student_name,
+                  s.admission_number,
+                  c.grade||COALESCE(' '||c.stream,'') AS class_label,
+                  COUNT(*) FILTER(WHERE a.achievement_level='BE') AS be_count,
+                  COUNT(*) AS total_assessments
+           FROM assessments a
+           JOIN students s ON s.id = a.student_id
+           JOIN classes  c ON c.id = a.class_id
+           WHERE a.school_id=$1 AND a.academic_year=$2 ${termFilter}
+           GROUP BY s.id, student_name, s.admission_number, class_label
+           HAVING COUNT(*) FILTER(WHERE a.achievement_level='BE') >= 2
+           ORDER BY be_count DESC LIMIT 20`, params
+        ),
+      ]);
+
+      return res.json({
+        success: true,
+        data: {
+          by_grade:       byGrade.rows,
+          by_subject:     bySubject.rows,
+          competencies:   competencies.rows[0],
+          at_risk:        atRisk.rows,
+        }
+      });
+    } catch (err) {
+      console.error("analytics:", err.message);
+      return res.status(500).json({ success: false, message: "Server error." });
+    }
+  }
+);
+
+// ── GET /api/reports/progress/:student_id — Student progress over time ──
+router.get("/progress/:student_id",
+  auth,
+  roleM(["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL", "HOD", "TEACHER"]),
+  async (req, res) => {
+    try {
+      const schoolId = getSchoolId(req);
+      if (!schoolId && req.user.role !== "SUPER_ADMIN")
+        return res.status(403).json({ success: false, message: "Access denied." });
+
+      const sid = req.params.student_id;
+
+      const [student, progress, competencies] = await Promise.all([
+        db.query(
+          `SELECT s.*, c.grade, c.stream FROM students s
+           LEFT JOIN classes c ON c.id = s.class_id
+           WHERE s.id=$1`, [sid]
+        ),
+        db.query(
+          `SELECT a.academic_year, a.term, la.name AS subject,
+                  a.achievement_level, a.score, a.strand
+           FROM assessments a
+           JOIN learning_areas la ON la.id = a.learning_area_id
+           WHERE a.student_id=$1 ${schoolId ? "AND a.school_id=$2" : ""}
+           ORDER BY a.academic_year, a.term, la.name`,
+          schoolId ? [sid, schoolId] : [sid]
+        ),
+        db.query(
+          `SELECT academic_year, term,
+                  cc_communication, cc_critical_thinking, cc_creativity,
+                  cc_citizenship, cc_digital_literacy, cc_learning_to_learn,
+                  cc_self_efficacy
+           FROM report_cards
+           WHERE student_id=$1 ${schoolId ? "AND school_id=$2" : ""}
+           ORDER BY academic_year, term`,
+          schoolId ? [sid, schoolId] : [sid]
+        ),
+      ]);
+
+      if (!student.rows.length)
+        return res.status(404).json({ success: false, message: "Student not found." });
+
+      return res.json({
+        success: true,
+        data: {
+          student:      student.rows[0],
+          assessments:  progress.rows,
+          competencies: competencies.rows,
+        }
+      });
     } catch (err) {
       return res.status(500).json({ success: false, message: "Server error." });
     }
