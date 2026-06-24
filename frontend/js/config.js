@@ -15,7 +15,7 @@
 
   // ── API base ──────────────────────────────────────────────────────
   window.API_BASE = isLocal
-    ? "http://localhost:3000/api"
+    ? "http://localhost:5000/api"
     : window.location.origin + "/api";
 
   // ── Storage keys — simple, not tenant-scoped ──────────────────────
