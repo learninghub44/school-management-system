@@ -1,5 +1,2 @@
-/school-admin    /school-admin.html    200
-/super-admin     /super-admin.html     200
-/teacher         /teacher.html         200
-/bursar          /bursar.html          200
-/subscription    /subscription.html    200
+# No rewrites — use explicit .html URLs
+# e.g. /login.html, /school-admin.html

@@ -71,6 +71,7 @@ if (loginForm) {
       setMessage("Username/email and password are required.");
       return;
     }
+
     const result = await auth.login({
       username,
       password,
@@ -81,6 +82,9 @@ if (loginForm) {
       setMessage(result?.message || "Login failed. Please check your credentials.");
       return;
     }
+
+    // Clear any redirect-loop guard before navigating away
+    sessionStorage.removeItem("login_redirected");
 
     setSession(result.token, result.user);
     setMessage("Login successful. Redirecting...", "success");
@@ -103,25 +107,29 @@ if (registerForm) {
 function redirectExistingSession() {
   const user = getUser();
   const token = getToken();
-  if (!user || !token) return;
 
-  // If we arrived here from a protected page, that means the token failed
-  // server-side validation. Clear session and stay on login — do not redirect back.
-  const ref = document.referrer;
-  const protectedPages = ["school-admin", "super-admin", "teacher", "bursar", "subscription", "change-password"];
-  if (ref && protectedPages.some(p => ref.includes(p))) {
+  // If we've already tried redirecting this session and ended up back here,
+  // the token is bad — clear it and show the login form.
+  if (sessionStorage.getItem("login_redirected")) {
+    sessionStorage.removeItem("login_redirected");
     clearSession();
     return;
   }
 
+  if (!user || !token) return;
+
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
     if (!payload.exp || payload.exp * 1000 > Date.now()) {
-      window.location.href = hasActiveSubscription(user) ? roleDestination(user.role) : "/subscription.html";
+      // Mark that we are redirecting — if we come back, token was rejected
+      sessionStorage.setItem("login_redirected", "1");
+      window.location.href = hasActiveSubscription(user)
+        ? roleDestination(user.role)
+        : "/subscription.html";
       return;
     }
   } catch (_) {
-    // Bad token — clear it and stay on login.
+    // Bad token
   }
 
   clearSession();
