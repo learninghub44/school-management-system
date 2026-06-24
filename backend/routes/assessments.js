@@ -185,6 +185,16 @@ router.post("/", auth, roleM(WRITE_ROLES),
       if (!cls.length || (req.user.role !== "SUPER_ADMIN" && cls[0].school_id !== schoolId))
         return res.status(400).json({ success: false, message: "Invalid class." });
 
+      // Check moderation lock — block writes if term is locked
+      if (req.body.class_id && req.body.term && req.body.academic_year) {
+        const { rows: lockRow } = await db.query(
+          "SELECT is_locked FROM assessment_moderation WHERE school_id=$1 AND class_id=$2 AND term=$3 AND academic_year=$4",
+          [schoolId, req.body.class_id, req.body.term, req.body.academic_year]
+        );
+        if (lockRow.length && lockRow[0].is_locked)
+          return res.status(403).json({ success: false, message: "Assessments for this class/term are locked for moderation." });
+      }
+
       // Resolve teacher profile from user account (if TEACHER role)
       let teacherId = null;
       if (req.user.role === "TEACHER") {
