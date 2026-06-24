@@ -240,8 +240,10 @@ export const subscriptions = {
 };
 
 export const ai = {
-  assist: (d) => apiFetch("/ai/assist", { method: "POST", body: d }),
-  reportComment: (d) => apiFetch("/ai/report-comment", { method: "POST", body: d }),
+  assist:             (d) => apiFetch("/ai/assist",              { method: "POST", body: d }),
+  reportComment:      (d) => apiFetch("/ai/report-comment",      { method: "POST", body: d }),
+  competencyAnalysis: (d) => apiFetch("/ai/competency-analysis", { method: "POST", body: d }),
+  riskDetection:      (d) => apiFetch("/ai/risk-detection",      { method: "POST", body: d }),
 };
 
 export const reports = {
@@ -252,6 +254,7 @@ export const reports = {
   timetable:    (p)  => apiFetch("/reports/timetable",           { params: p }),
   createSlot:   (d)  => apiFetch("/reports/timetable",           { method: "POST", body: d }),
   deleteSlot:   (id) => apiFetch(`/reports/timetable/${id}`,     { method: "DELETE" }),
+  analytics:    (p)  => apiFetch("/reports/analytics",           { params: p }),
 };
 
 export const exams = {
@@ -259,4 +262,32 @@ export const exams = {
   create: (d)      => apiFetch("/exams",        { method: "POST",   body: d }),
   update: (id, d)  => apiFetch(`/exams/${id}`,  { method: "PUT",    body: d }),
   delete: (id)     => apiFetch(`/exams/${id}`,  { method: "DELETE" }),
+};
+
+export const portfolio = {
+  list:   (p)      => apiFetch("/portfolio",        { params: p }),
+  create: (d)      => apiFetch("/portfolio",        { method: "POST",   body: d }),
+  delete: (id)     => apiFetch(`/portfolio/${id}`,  { method: "DELETE" }),
+};
+
+export const observations = {
+  list:   (p)      => apiFetch("/observations",        { params: p }),
+  create: (d)      => apiFetch("/observations",        { method: "POST",   body: d }),
+  delete: (id)     => apiFetch(`/observations/${id}`,  { method: "DELETE" }),
+};
+
+export const interventions = {
+  list:   (p)      => apiFetch("/interventions",        { params: p }),
+  create: (d)      => apiFetch("/interventions",        { method: "POST",   body: d }),
+  update: (id, d)  => apiFetch(`/interventions/${id}`,  { method: "PUT",    body: d }),
+  delete: (id)     => apiFetch(`/interventions/${id}`,  { method: "DELETE" }),
+};
+
+export const moderation = {
+  list:     (p)      => apiFetch("/moderation",           { params: p }),
+  lock:     (id)     => apiFetch(`/moderation/${id}/lock`,   { method: "POST" }),
+  unlock:   (id)     => apiFetch(`/moderation/${id}/unlock`, { method: "POST" }),
+  approve:  (id, d)  => apiFetch(`/moderation/${id}/approve`,{ method: "POST", body: d }),
+  years:    (p)      => apiFetch("/moderation/years",        { params: p }),
+  createYear: (d)    => apiFetch("/moderation/years",        { method: "POST", body: d }),
 };
