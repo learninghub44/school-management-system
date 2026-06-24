@@ -1,5 +1,5 @@
 /**
- * CBC School ERP — Express Server v4.1
+ * Kadem & Zetu School Management System — Express Server v4.1
  * Production-hardened: Helmet, CORS whitelist, rate limiting,
  * global error handler that never leaks stack traces
  */
@@ -199,7 +199,7 @@ app.use((err, req, res, next) => {
 startCleanupJob();
 const PORT = parseInt(process.env.PORT || "5000", 10);
 app.listen(PORT, () =>
-  console.log(`CBC School ERP v4.1 running on port ${PORT} [${process.env.NODE_ENV || "development"}]`)
+  console.log(`Kadem & Zetu School Management System v4.1 running on port ${PORT} [${process.env.NODE_ENV || "development"}]`)
 );
 
 module.exports = app;
