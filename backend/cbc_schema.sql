@@ -1,5 +1,5 @@
 -- ================================================================
--- CBC School ERP — Production Schema v4.0
+-- Kadem & Zetu School Management System — Production Schema v4.0
 -- Kenya KICD Competency Based Curriculum
 -- Multi-tenant · Roles: SUPER_ADMIN, PRINCIPAL, DEPUTY_PRINCIPAL,
 --   HOD, TEACHER, BURSAR

@@ -1,4 +1,4 @@
-# CBC School ERP
+# Kadem & Zetu School Management System
 
 Multi-tenant school management system for Kenya's Competency Based Curriculum (CBC).
 
