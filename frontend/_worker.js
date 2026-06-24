@@ -1,5 +1,5 @@
 /**
- * Kadem & Zetu School Management System — Cloudflare Worker v2.0
+ * Kadem & Zetu School Management System — Cloudflare Worker v2.1
  * Multi-tenant subdomain proxy
  *
  * Routes:
@@ -14,15 +14,11 @@ const ROOT_DOMAIN = "cbc-school-erp.pages.dev";
 
 function getAllowedOrigin(requestOrigin) {
   if (!requestOrigin) return `https://${ROOT_DOMAIN}`;
-  // Allow root domain
   if (requestOrigin === `https://${ROOT_DOMAIN}`) return requestOrigin;
-  // Allow any subdomain: kpri001.cbc-school-erp.pages.dev, admin.cbc-school-erp.pages.dev
   if (requestOrigin.match(new RegExp(`^https://[a-z0-9-]+\\.${ROOT_DOMAIN.replace(".", "\\.")}$`))) {
     return requestOrigin;
   }
-  // Allow local dev
   if (requestOrigin.match(/^http:\/\/localhost(:\d+)?$/)) return requestOrigin;
-  // Fallback
   return `https://${ROOT_DOMAIN}`;
 }
 
@@ -60,7 +56,6 @@ export default {
       const proxyHeaders = new Headers(request.headers);
       proxyHeaders.delete("Origin");
 
-      // Forward the school subdomain to backend for context (optional but useful for logging)
       const subdomain = url.hostname.replace(`.${ROOT_DOMAIN}`, "").toUpperCase();
       if (subdomain && subdomain !== ROOT_DOMAIN.toUpperCase()) {
         proxyHeaders.set("X-School-Code", subdomain === "ADMIN" ? "SUPER_ADMIN" : subdomain);
@@ -91,7 +86,25 @@ export default {
       }
     }
 
-    // ── Serve static assets ─────────────────────────────────────────
-    return env.ASSETS.fetch(request);
+    // ── Serve static assets — try exact path, then with .html ───────
+    // Cloudflare Pages does NOT auto-add .html when a _worker.js is present.
+    // So /school-admin must resolve to /school-admin.html manually.
+    let response = await env.ASSETS.fetch(request);
+
+    if (response.status === 404 && !url.pathname.includes(".")) {
+      // Try appending .html
+      const htmlUrl = new URL(request.url);
+      htmlUrl.pathname = url.pathname.replace(/\/$/, "") + ".html";
+      response = await env.ASSETS.fetch(new Request(htmlUrl.toString(), request));
+    }
+
+    // If still 404, serve login page (graceful fallback)
+    if (response.status === 404) {
+      const loginUrl = new URL(request.url);
+      loginUrl.pathname = "/login.html";
+      response = await env.ASSETS.fetch(new Request(loginUrl.toString(), request));
+    }
+
+    return response;
   }
 };
