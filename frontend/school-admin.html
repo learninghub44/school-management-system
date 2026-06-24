@@ -303,6 +303,112 @@
   </div>
 </div></div>
 
+<!-- ADD PORTFOLIO ITEM -->
+<div class="modal-bg" id="modal-portfolio">
+<div class="modal">
+  <div class="modal-hdr"><h3>Add Portfolio Item</h3><button class="modal-close" data-close="modal-portfolio">×</button></div>
+  <div class="fg"><label>Student *</label><div id="port-student-picker"></div></div>
+  <div class="fg"><label>Title *</label><input id="port-title" maxlength="200" placeholder="e.g. Science Project — Water Cycle"></div>
+  <div class="fg-row">
+    <div class="fg"><label>Item Type *</label>
+      <select id="port-type"><option value="">Select Type</option><option>Project</option><option>Assignment</option><option>Practical</option><option>Artwork</option><option>Video</option><option>Image</option><option>Observation</option><option>Other</option></select>
+    </div>
+    <div class="fg"><label>Learning Area</label><select id="port-subject"><option value="">Select</option></select></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label>Term</label><select id="port-term"><option value="">Select</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select></div>
+    <div class="fg"><label>Academic Year</label><input id="port-year" maxlength="4" placeholder="e.g. 2026"></div>
+  </div>
+  <div class="fg"><label>Description</label><textarea id="port-desc" maxlength="2000" rows="3" placeholder="Describe the work, learning outcomes achieved…"></textarea></div>
+  <div class="fg"><label>File URL (optional)</label><input id="port-url" type="url" maxlength="500" placeholder="https://drive.google.com/…"></div>
+  <div id="port-alert"></div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" data-close="modal-portfolio">Cancel</button>
+    <button class="btn btn-primary" id="btnSubmitPortfolio">Add Item</button>
+  </div>
+</div></div>
+
+<!-- ADD OBSERVATION -->
+<div class="modal-bg" id="modal-observation">
+<div class="modal">
+  <div class="modal-hdr"><h3>Record Observation</h3><button class="modal-close" data-close="modal-observation">×</button></div>
+  <div class="fg"><label>Student *</label><div id="obs-student-picker"></div></div>
+  <div class="fg-row">
+    <div class="fg"><label>Observation Type *</label>
+      <select id="obs-type"><option value="">Select Type</option><option>Behaviour</option><option>Skill Development</option><option>Participation</option><option>Social Interaction</option><option>Leadership</option><option>General</option></select>
+    </div>
+    <div class="fg"><label>Date</label><input id="obs-date" type="date"></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label>Class</label><select id="obs-class"><option value="">Select Class</option></select></div>
+    <div class="fg"><label>Term</label><select id="obs-term"><option value="">Select</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select></div>
+  </div>
+  <div class="fg"><label>Academic Year</label><input id="obs-year" maxlength="4" placeholder="e.g. 2026"></div>
+  <div class="fg"><label>Observation Notes *</label><textarea id="obs-notes" maxlength="3000" rows="4" placeholder="Describe what you observed…"></textarea></div>
+  <div id="obs-alert"></div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" data-close="modal-observation">Cancel</button>
+    <button class="btn btn-primary" id="btnSubmitObservation">Save Observation</button>
+  </div>
+</div></div>
+
+<!-- FLAG INTERVENTION -->
+<div class="modal-bg" id="modal-intervention">
+<div class="modal">
+  <div class="modal-hdr"><h3>Flag Learner for Intervention</h3><button class="modal-close" data-close="modal-intervention">×</button></div>
+  <div class="fg"><label>Student *</label><div id="int-student-picker"></div></div>
+  <div class="fg-row">
+    <div class="fg"><label>Risk Level *</label>
+      <select id="int-risk"><option value="Medium">Medium</option><option value="Low">Low</option><option value="High">High</option><option value="Critical">Critical</option></select>
+    </div>
+    <div class="fg"><label>Term</label><select id="int-term"><option value="">Select</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select></div>
+  </div>
+  <div class="fg"><label>Academic Year</label><input id="int-year" maxlength="4" placeholder="e.g. 2026"></div>
+  <div class="fg"><label>Reason for Flagging *</label><textarea id="int-reason" maxlength="2000" rows="3" placeholder="Describe the concern — declining performance, missing assessments, behaviour…"></textarea></div>
+  <div class="fg"><label>Initial Intervention Plan</label><textarea id="int-plan" maxlength="3000" rows="3" placeholder="What support has been put in place or is planned…"></textarea></div>
+  <div id="int-alert"></div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" data-close="modal-intervention">Cancel</button>
+    <button class="btn btn-primary" id="btnSubmitIntervention">Flag Learner</button>
+  </div>
+</div></div>
+
+<!-- ADD ACADEMIC YEAR -->
+<div class="modal-bg" id="modal-academicyear">
+<div class="modal">
+  <div class="modal-hdr"><h3>Add / Update Academic Year</h3><button class="modal-close" data-close="modal-academicyear">×</button></div>
+  <div class="fg-row">
+    <div class="fg"><label>Year Label *</label><input id="ay-label" maxlength="9" placeholder="e.g. 2026"></div>
+    <div class="fg" style="display:flex;align-items:center;gap:8px;padding-top:22px">
+      <input type="checkbox" id="ay-current" style="width:auto">
+      <label for="ay-current" style="margin:0">Set as Current Year</label>
+    </div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label>Year Start</label><input id="ay-start" type="date"></div>
+    <div class="fg"><label>Year End</label><input id="ay-end" type="date"></div>
+  </div>
+  <div style="font-weight:600;font-size:13px;margin:12px 0 4px;color:var(--muted)">Term Dates (optional)</div>
+  <div class="fg-row">
+    <div class="fg"><label>Term 1 Start</label><input id="ay-t1s" type="date"></div>
+    <div class="fg"><label>Term 1 End</label><input id="ay-t1e" type="date"></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label>Term 2 Start</label><input id="ay-t2s" type="date"></div>
+    <div class="fg"><label>Term 2 End</label><input id="ay-t2e" type="date"></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label>Term 3 Start</label><input id="ay-t3s" type="date"></div>
+    <div class="fg"><label>Term 3 End</label><input id="ay-t3e" type="date"></div>
+  </div>
+  <div class="fg"><label>Notes</label><textarea id="ay-notes" maxlength="500" rows="2"></textarea></div>
+  <div id="ay-alert"></div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" data-close="modal-academicyear">Cancel</button>
+    <button class="btn btn-primary" id="btnSubmitAcademicYear">Save</button>
+  </div>
+</div></div>
+
 <!-- SCHEDULE EXAM -->
 <div class="modal-bg" id="modal-exam">
 <div class="modal">
@@ -340,7 +446,8 @@
 import {
   guardPage, esc, logout, apiFetch, clearSession,
   users, teachers, classes, students, departments,
-  assignments, attendance, assessments, reports, schools, verifySession, exams, finance, ai
+  assignments, attendance, assessments, reports, schools, verifySession, exams, finance, ai,
+  portfolio, observations, interventions, moderation
 } from "/js/api.js";
 import { buildSidebar, setupNav,
   openModal, closeModal, resetModal,
@@ -367,18 +474,24 @@ if (vRes.ok) me = vRes.user;
 
 // ── Nav items ─────────────────────────────────────────────────────
 const NAV = [
-  { panel: "overview",    icon: "chart",      label: "Dashboard"     },
-  { panel: "students",    icon: "student",    label: "Students"      },
-  { panel: "teachers",    icon: "teacher",    label: "Teachers"      },
-  { panel: "classes",     icon: "school",     label: "Classes"       },
-  { panel: "assignments", icon: "clipboard",  label: "Assignments"   },
-  { panel: "attendance",  icon: "attendance", label: "Attendance"    },
-  { panel: "assessments", icon: "assessment", label: "Assessments"   },
-  { panel: "staff",       icon: "user",       label: "Staff Accounts" },
-  { panel: "timetable",   icon: "calendar",   label: "Timetable"     },
-  { panel: "reportcards", icon: "clipboard",  label: "Report Cards"  },
-  { panel: "exams",       icon: "assessment", label: "Exam Schedule"  },
-  { panel: "backup",      icon: "chart",      label: "Data Backup"   },
+  { panel: "overview",      icon: "chart",      label: "Dashboard"         },
+  { panel: "students",      icon: "student",    label: "Students"          },
+  { panel: "teachers",      icon: "teacher",    label: "Teachers"          },
+  { panel: "classes",       icon: "school",     label: "Classes"           },
+  { panel: "assignments",   icon: "clipboard",  label: "Assignments"       },
+  { panel: "attendance",    icon: "attendance", label: "Attendance"        },
+  { panel: "assessments",   icon: "assessment", label: "Assessments"       },
+  { panel: "reportcards",   icon: "clipboard",  label: "Report Cards"      },
+  { panel: "analytics",     icon: "chart",      label: "CBC Analytics"     },
+  { panel: "portfolio",     icon: "student",    label: "Learner Portfolio"  },
+  { panel: "observations",  icon: "clipboard",  label: "Observations"      },
+  { panel: "interventions", icon: "assessment", label: "Interventions"     },
+  { panel: "moderation",    icon: "clipboard",  label: "Moderation"        },
+  { panel: "academicyears", icon: "calendar",   label: "Academic Years"    },
+  { panel: "staff",         icon: "user",       label: "Staff Accounts"    },
+  { panel: "timetable",     icon: "calendar",   label: "Timetable"         },
+  { panel: "exams",         icon: "assessment", label: "Exam Schedule"     },
+  { panel: "backup",        icon: "chart",      label: "Data Backup"       },
 ];
 
 // ── Render shell ──────────────────────────────────────────────────
@@ -556,6 +669,107 @@ document.getElementById("app").innerHTML =
       </div>
     </div>
 
+    <!-- CBC ANALYTICS -->
+    <div class="panel" id="panel-analytics">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>CBC Analytics Dashboard</h4>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="analyticsYear" style="width:90px"><option value="">Year</option></select>
+            <select id="analyticsTerm"><option value="">All Terms</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+            <button class="btn btn-primary" id="btnLoadAnalytics">Load</button>
+          </div>
+        </div>
+        <div class="card-body" id="analyticsBody"><div class="empty">Select year and click Load.</div></div>
+      </div>
+    </div>
+
+    <!-- LEARNER PORTFOLIO -->
+    <div class="panel" id="panel-portfolio">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Learner Portfolio</h4>
+          <button class="btn btn-primary" id="btnAddPortfolio">+ Add Item</button>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <select id="filterPortfolioClass"><option value="">All Classes</option></select>
+            <select id="filterPortfolioType"><option value="">All Types</option><option>Project</option><option>Assignment</option><option>Practical</option><option>Artwork</option><option>Video</option><option>Image</option><option>Observation</option><option>Other</option></select>
+            <select id="filterPortfolioTerm"><option value="">All Terms</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+            <button class="btn btn-ghost" id="btnLoadPortfolio">Load</button>
+          </div>
+          <div class="table-wrap" id="portfolioTbl"><div class="empty">Select a class and click Load.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEACHER OBSERVATIONS -->
+    <div class="panel" id="panel-observations">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Teacher Observation Records</h4>
+          <button class="btn btn-primary" id="btnAddObservation">+ Record Observation</button>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <select id="filterObsClass"><option value="">All Classes</option></select>
+            <select id="filterObsType"><option value="">All Types</option><option>Behaviour</option><option>Skill Development</option><option>Participation</option><option>Social Interaction</option><option>Leadership</option><option>General</option></select>
+            <select id="filterObsTerm"><option value="">All Terms</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+            <button class="btn btn-ghost" id="btnLoadObservations">Load</button>
+          </div>
+          <div class="table-wrap" id="observationsTbl"><div class="empty">Select filters and click Load.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INTERVENTIONS -->
+    <div class="panel" id="panel-interventions">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Intervention Management</h4>
+          <button class="btn btn-primary" id="btnFlagIntervention">+ Flag Learner</button>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <select id="filterIntStatus"><option value="">All Statuses</option><option>Active</option><option>In Progress</option><option>Resolved</option><option>Closed</option></select>
+            <select id="filterIntRisk"><option value="">All Risk Levels</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+            <button class="btn btn-ghost" id="btnLoadInterventions">Load</button>
+          </div>
+          <div class="table-wrap" id="interventionsTbl"><div class="empty">Click Load to view interventions.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODERATION -->
+    <div class="panel" id="panel-moderation">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Assessment Moderation</h4>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <select id="filterModTerm"><option value="">All Terms</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
+            <input id="filterModYear" maxlength="4" placeholder="Year e.g. 2026" style="width:110px">
+            <button class="btn btn-ghost" id="btnLoadModeration">Load</button>
+          </div>
+          <div class="table-wrap" id="moderationTbl"><div class="empty">Select term/year and click Load.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACADEMIC YEARS -->
+    <div class="panel" id="panel-academicyears">
+      <div class="card">
+        <div class="card-hdr">
+          <h4>Academic Year Management</h4>
+          <button class="btn btn-primary" id="btnAddAcademicYear">+ Add Year</button>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap" id="academicYearsTbl"><div class="empty">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
     <!-- DATA BACKUP -->
     <div class="panel" id="panel-backup">
       <div class="card">
@@ -611,18 +825,24 @@ let allTeachers = [];
 
 // ── Nav & logout ──────────────────────────────────────────────────
 const loaders = {
-  overview:    loadOverview,
-  students:    loadStudents,
-  teachers:    loadTeachers,
-  classes:     loadClasses,
-  assignments: loadAssignments,
-  attendance:  () => {},       // triggered by filter
-  assessments: loadAssessments,
-  staff:       loadStaff,
-  timetable:   () => {},       // triggered by filter
-  reportcards: () => {},       // triggered by filter
-  exams:       () => {},       // triggered by filter
-  backup:      () => {},       // manual export only
+  overview:      loadOverview,
+  students:      loadStudents,
+  teachers:      loadTeachers,
+  classes:       loadClasses,
+  assignments:   loadAssignments,
+  attendance:    () => {},       // triggered by filter
+  assessments:   loadAssessments,
+  staff:         loadStaff,
+  timetable:     () => {},       // triggered by filter
+  reportcards:   () => {},       // triggered by filter
+  exams:         () => {},       // triggered by filter
+  backup:        () => {},       // manual export only
+  analytics:     () => {},       // triggered by filter
+  portfolio:     () => {},       // triggered by filter
+  observations:  () => {},       // triggered by filter
+  interventions: loadInterventions,
+  moderation:    () => {},       // triggered by filter
+  academicyears: loadAcademicYears,
 };
 setupNav(loaders);
 setupAiWidget();
@@ -1556,6 +1776,467 @@ document.getElementById("exportExams")?.addEventListener("click", async () => {
   ]);
   status.innerHTML = `<div style="color:var(--green);font-size:14px">✓ ${data.length} exams exported.</div>`;
 });
+
+// ══════════════════════════════════════════════════════════════════
+// ── CBC ANALYTICS ─────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+const LEVEL_COLOR = { EE: "#16a34a", ME: "#2563eb", AE: "#d97706", BE: "#dc2626" };
+const CC_LABEL = { 1: "Not Observed", 2: "Developing", 3: "Competent", 4: "Exceptional" };
+const CC_COLOR = { 1: "#94a3b8", 2: "#f59e0b", 3: "#2563eb", 4: "#16a34a" };
+
+// Pre-fill analytics year
+document.getElementById("analyticsYear") && (() => {
+  const yr = new Date().getFullYear();
+  const sel = document.getElementById("analyticsYear");
+  for (let y = yr; y >= yr - 3; y--) sel.innerHTML += `<option value="${y}">${y}</option>`;
+  sel.value = String(yr);
+})();
+
+document.getElementById("btnLoadAnalytics")?.addEventListener("click", async () => {
+  const year = document.getElementById("analyticsYear").value;
+  const term = document.getElementById("analyticsTerm").value;
+  const body = document.getElementById("analyticsBody");
+  if (!year) { body.innerHTML = '<div class="empty">Please select a year.</div>'; return; }
+  body.innerHTML = '<div class="empty">Loading analytics…</div>';
+  const r = await reports.analytics({ academic_year: year, term: term || undefined });
+  if (!r?.success) { body.innerHTML = '<div class="empty">Failed to load analytics.</div>'; return; }
+  const { by_grade, by_subject, competencies, at_risk } = r.data;
+
+  // Helper: small level bar
+  const pct = (n, total) => total ? Math.round((n/total)*100) : 0;
+  const bar = (row) => {
+    const t = Number(row.total) || 1;
+    return ["EE","ME","AE","BE"].map(l =>
+      `<span style="display:inline-block;width:${pct(row[l.toLowerCase()],t)}%;height:8px;background:${LEVEL_COLOR[l]};border-radius:2px;margin-right:1px" title="${l}: ${row[l.toLowerCase()]}"></span>`
+    ).join("");
+  };
+
+  // Grade table
+  let gradeHtml = `<h5 style="margin:0 0 10px">Achievement by Grade</h5>
+    <table><thead><tr><th>Grade</th><th>Total</th><th>EE</th><th>ME</th><th>AE</th><th>BE</th><th style="min-width:120px">Distribution</th></tr></thead><tbody>`;
+  (by_grade || []).forEach(g => {
+    gradeHtml += `<tr>
+      <td><strong>${esc(g.grade)}</strong></td>
+      <td>${g.total}</td>
+      <td style="color:${LEVEL_COLOR.EE}">${g.ee}</td>
+      <td style="color:${LEVEL_COLOR.ME}">${g.me}</td>
+      <td style="color:${LEVEL_COLOR.AE}">${g.ae}</td>
+      <td style="color:${LEVEL_COLOR.BE}">${g.be}</td>
+      <td>${bar(g)}</td>
+    </tr>`;
+  });
+  gradeHtml += "</tbody></table>";
+
+  // Subject table
+  let subjectHtml = `<h5 style="margin:16px 0 10px">Achievement by Learning Area</h5>
+    <table><thead><tr><th>Subject</th><th>Total</th><th>EE</th><th>ME</th><th>AE</th><th>BE</th><th>Avg Score</th></tr></thead><tbody>`;
+  (by_subject || []).forEach(s => {
+    subjectHtml += `<tr>
+      <td>${esc(s.subject)}</td><td>${s.total}</td>
+      <td style="color:${LEVEL_COLOR.EE}">${s.ee}</td>
+      <td style="color:${LEVEL_COLOR.ME}">${s.me}</td>
+      <td style="color:${LEVEL_COLOR.AE}">${s.ae}</td>
+      <td style="color:${LEVEL_COLOR.BE}">${s.be}</td>
+      <td>${s.avg_score != null ? s.avg_score + "%" : "–"}</td>
+    </tr>`;
+  });
+  subjectHtml += "</tbody></table>";
+
+  // Competencies
+  const CC_KEYS = ["communication","critical_thinking","creativity","citizenship","digital_literacy","learning_to_learn","self_efficacy"];
+  const CC_NAMES = ["Communication & Collaboration","Critical Thinking","Creativity & Imagination","Citizenship","Digital Literacy","Learning to Learn","Self-Efficacy"];
+  let compHtml = `<h5 style="margin:16px 0 10px">Core Competency Averages (school-wide)</h5>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">`;
+  CC_KEYS.forEach((k, i) => {
+    const val = competencies ? Number(competencies[k]) : null;
+    const lvl = val ? Math.round(val) : null;
+    compHtml += `<div class="stat-card" style="padding:14px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px">${CC_NAMES[i]}</div>
+      <div style="font-size:22px;font-weight:700;color:${lvl ? CC_COLOR[lvl] : "var(--muted)"}">${val ? val.toFixed(1) : "–"}</div>
+      <div style="font-size:11px;color:var(--muted)">${lvl ? CC_LABEL[lvl] : "No data"}</div>
+    </div>`;
+  });
+  compHtml += "</div>";
+
+  // At-risk
+  let riskHtml = `<h5 style="margin:16px 0 10px">At-Risk Learners (2+ BE this period)</h5>`;
+  if (!at_risk?.length) {
+    riskHtml += '<div class="empty" style="margin:0">No at-risk learners identified.</div>';
+  } else {
+    riskHtml += `<table><thead><tr><th>Student</th><th>Adm No</th><th>Class</th><th>BE Count</th><th>Total Assessments</th></tr></thead><tbody>`;
+    at_risk.forEach(s => {
+      riskHtml += `<tr>
+        <td>${esc(s.student_name)}</td>
+        <td>${esc(s.admission_number)}</td>
+        <td>${esc(s.class_label)}</td>
+        <td style="color:${LEVEL_COLOR.BE};font-weight:700">${s.be_count}</td>
+        <td>${s.total_assessments}</td>
+      </tr>`;
+    });
+    riskHtml += "</tbody></table>";
+  }
+
+  body.innerHTML = gradeHtml + subjectHtml + compHtml + riskHtml;
+});
+
+// ══════════════════════════════════════════════════════════════════
+// ── LEARNER PORTFOLIO ──────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+document.getElementById("btnAddPortfolio")?.addEventListener("click", () => {
+  document.getElementById("port-year").value = String(new Date().getFullYear());
+  openModal("modal-portfolio");
+});
+
+document.getElementById("btnLoadPortfolio")?.addEventListener("click", loadPortfolio);
+
+async function loadPortfolio() {
+  const classId = document.getElementById("filterPortfolioClass")?.value;
+  const type    = document.getElementById("filterPortfolioType")?.value;
+  const term    = document.getElementById("filterPortfolioTerm")?.value;
+  const tbl     = document.getElementById("portfolioTbl");
+  tbl.innerHTML = '<div class="empty">Loading…</div>';
+  const r = await portfolio.list({ term: term||undefined, item_type: type||undefined });
+  const rows = r?.data || [];
+  if (!rows.length) { tbl.innerHTML = '<div class="empty">No portfolio items found.</div>'; return; }
+  tbl.innerHTML = `<table>
+    <thead><tr><th>Student</th><th>Title</th><th>Type</th><th>Subject</th><th>Term</th><th>Year</th><th>Date</th><th></th></tr></thead>
+    <tbody>
+      ${rows.map(p => `<tr>
+        <td>${esc(p.student_name)}<br><small style="color:var(--muted)">${esc(p.admission_number)}</small></td>
+        <td>${esc(p.title)}</td>
+        <td><span class="badge badge-blue">${esc(p.item_type)}</span></td>
+        <td>${esc(p.learning_area_name||"–")}</td>
+        <td>${p.term ? "Term "+p.term : "–"}</td>
+        <td>${esc(p.academic_year||"–")}</td>
+        <td>${p.created_at ? new Date(p.created_at).toLocaleDateString() : "–"}</td>
+        <td>
+          ${p.file_url ? `<a href="${esc(p.file_url)}" target="_blank" class="btn btn-ghost btn-sm">View</a>` : ""}
+          <button class="btn btn-ghost btn-sm btn-danger" onclick="deletePortfolioItem(${p.id})">Delete</button>
+        </td>
+      </tr>`).join("")}
+    </tbody>
+  </table>`;
+}
+
+window.deletePortfolioItem = async (id) => {
+  if (!confirm("Delete this portfolio item?")) return;
+  const r = await portfolio.delete(id);
+  if (r?.success) loadPortfolio();
+};
+
+document.getElementById("btnSubmitPortfolio")?.addEventListener("click", async () => {
+  const studentId = document.querySelector("#port-student-picker [data-value]")?.dataset.value;
+  const title     = document.getElementById("port-title").value.trim();
+  const type      = document.getElementById("port-type").value;
+  if (!studentId) { showAlert("port-alert", "Select a student.", "error"); return; }
+  if (!title)     { showAlert("port-alert", "Title is required.", "error"); return; }
+  if (!type)      { showAlert("port-alert", "Select an item type.", "error"); return; }
+  setLoading("btnSubmitPortfolio", true);
+  const r = await portfolio.create({
+    student_id:      studentId,
+    title,
+    item_type:       type,
+    learning_area_id: document.getElementById("port-subject").value || undefined,
+    term:            document.getElementById("port-term").value || undefined,
+    academic_year:   document.getElementById("port-year").value || undefined,
+    description:     document.getElementById("port-desc").value.trim() || undefined,
+    file_url:        document.getElementById("port-url").value.trim() || undefined,
+  });
+  setLoading("btnSubmitPortfolio", false);
+  if (r?.success) {
+    showAlert("port-alert", "Portfolio item added.", "success");
+    setTimeout(() => { closeModal("modal-portfolio"); loadPortfolio(); }, 900);
+  } else {
+    showAlert("port-alert", r?.message || "Failed to add item.", "error");
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+// ── TEACHER OBSERVATIONS ───────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+document.getElementById("btnAddObservation")?.addEventListener("click", () => {
+  document.getElementById("obs-date").value = new Date().toISOString().slice(0,10);
+  document.getElementById("obs-year").value = String(new Date().getFullYear());
+  openModal("modal-observation");
+});
+
+document.getElementById("btnLoadObservations")?.addEventListener("click", loadObservations);
+
+async function loadObservations() {
+  const classId = document.getElementById("filterObsClass")?.value;
+  const type    = document.getElementById("filterObsType")?.value;
+  const term    = document.getElementById("filterObsTerm")?.value;
+  const tbl     = document.getElementById("observationsTbl");
+  tbl.innerHTML = '<div class="empty">Loading…</div>';
+  const r = await observations.list({
+    class_id: classId||undefined,
+    observation_type: type||undefined,
+    term: term||undefined,
+  });
+  const rows = r?.data || [];
+  if (!rows.length) { tbl.innerHTML = '<div class="empty">No observations found.</div>'; return; }
+  tbl.innerHTML = `<table>
+    <thead><tr><th>Student</th><th>Type</th><th>Notes</th><th>Teacher</th><th>Class</th><th>Date</th><th></th></tr></thead>
+    <tbody>
+      ${rows.map(o => `<tr>
+        <td>${esc(o.student_name)}<br><small style="color:var(--muted)">${esc(o.admission_number)}</small></td>
+        <td><span class="badge badge-blue">${esc(o.observation_type)}</span></td>
+        <td style="max-width:280px;font-size:13px">${esc(o.notes.slice(0,120))}${o.notes.length>120?"…":""}</td>
+        <td>${esc(o.teacher_name||"–")}</td>
+        <td>${esc(o.class_label||"–")}</td>
+        <td>${o.observation_date ? new Date(o.observation_date).toLocaleDateString() : "–"}</td>
+        <td><button class="btn btn-ghost btn-sm btn-danger" onclick="deleteObservation(${o.id})">Delete</button></td>
+      </tr>`).join("")}
+    </tbody>
+  </table>`;
+}
+
+window.deleteObservation = async (id) => {
+  if (!confirm("Delete this observation?")) return;
+  const r = await observations.delete(id);
+  if (r?.success) loadObservations();
+};
+
+document.getElementById("btnSubmitObservation")?.addEventListener("click", async () => {
+  const studentId = document.querySelector("#obs-student-picker [data-value]")?.dataset.value;
+  const type  = document.getElementById("obs-type").value;
+  const notes = document.getElementById("obs-notes").value.trim();
+  if (!studentId) { showAlert("obs-alert", "Select a student.", "error"); return; }
+  if (!type)      { showAlert("obs-alert", "Select an observation type.", "error"); return; }
+  if (!notes)     { showAlert("obs-alert", "Observation notes are required.", "error"); return; }
+  setLoading("btnSubmitObservation", true);
+  const r = await observations.create({
+    student_id:       studentId,
+    observation_type: type,
+    notes,
+    observation_date: document.getElementById("obs-date").value || undefined,
+    class_id:         document.getElementById("obs-class").value || undefined,
+    term:             document.getElementById("obs-term").value || undefined,
+    academic_year:    document.getElementById("obs-year").value || undefined,
+  });
+  setLoading("btnSubmitObservation", false);
+  if (r?.success) {
+    showAlert("obs-alert", "Observation recorded.", "success");
+    setTimeout(() => { closeModal("modal-observation"); loadObservations(); }, 900);
+  } else {
+    showAlert("obs-alert", r?.message || "Failed to save.", "error");
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+// ── INTERVENTIONS ──────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+const RISK_COLOR = { Critical: "#dc2626", High: "#ea580c", Medium: "#d97706", Low: "#16a34a" };
+
+document.getElementById("btnFlagIntervention")?.addEventListener("click", () => {
+  document.getElementById("int-year").value = String(new Date().getFullYear());
+  openModal("modal-intervention");
+});
+
+document.getElementById("btnLoadInterventions")?.addEventListener("click", loadInterventions);
+
+async function loadInterventions() {
+  const status    = document.getElementById("filterIntStatus")?.value;
+  const riskLevel = document.getElementById("filterIntRisk")?.value;
+  const tbl       = document.getElementById("interventionsTbl");
+  tbl.innerHTML   = '<div class="empty">Loading…</div>';
+  const r = await interventions.list({ status: status||undefined, risk_level: riskLevel||undefined });
+  const rows = r?.data || [];
+  if (!rows.length) { tbl.innerHTML = '<div class="empty">No interventions found.</div>'; return; }
+  tbl.innerHTML = `<table>
+    <thead><tr><th>Student</th><th>Risk</th><th>Status</th><th>Reason</th><th>Flagged By</th><th>Date</th><th></th></tr></thead>
+    <tbody>
+      ${rows.map(i => `<tr>
+        <td>${esc(i.student_name)}<br><small style="color:var(--muted)">${esc(i.admission_number)}</small></td>
+        <td><span style="color:${RISK_COLOR[i.risk_level]};font-weight:700">${esc(i.risk_level)}</span></td>
+        <td><span class="badge">${esc(i.status)}</span></td>
+        <td style="max-width:220px;font-size:13px">${esc((i.reason||"").slice(0,100))}${(i.reason||"").length>100?"…":""}</td>
+        <td>${esc(i.flagged_by_name||"–")}</td>
+        <td>${i.created_at ? new Date(i.created_at).toLocaleDateString() : "–"}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="resolveIntervention(${i.id})">Resolve</button>
+          <button class="btn btn-ghost btn-sm btn-primary" onclick="runAiRisk(${i.id},'${esc(i.student_name)}')">AI Risk</button>
+        </td>
+      </tr>`).join("")}
+    </tbody>
+  </table>`;
+}
+
+window.resolveIntervention = async (id) => {
+  if (!confirm("Mark this intervention as Resolved?")) return;
+  const r = await interventions.update(id, { status: "Resolved" });
+  if (r?.success) loadInterventions();
+};
+
+window.runAiRisk = async (id, studentName) => {
+  const tbl = document.getElementById("interventionsTbl");
+  tbl.insertAdjacentHTML("afterend", `<div id="aiRiskOutput" style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:12px"><strong>AI Risk Report — ${esc(studentName)}</strong><br><div class="empty">Analysing…</div></div>`);
+  const r = await ai.riskDetection({ student_name: studentName });
+  const box = document.getElementById("aiRiskOutput");
+  if (box) box.innerHTML = `<strong>AI Risk Report — ${esc(studentName)}</strong><br><pre style="white-space:pre-wrap;font-size:13px;margin-top:8px">${esc(r?.output||"No output.")}</pre>`;
+  // Store AI recommendations
+  if (r?.output) await interventions.update(id, { ai_recommendations: r.output });
+};
+
+document.getElementById("btnSubmitIntervention")?.addEventListener("click", async () => {
+  const studentId = document.querySelector("#int-student-picker [data-value]")?.dataset.value;
+  const reason    = document.getElementById("int-reason").value.trim();
+  if (!studentId) { showAlert("int-alert", "Select a student.", "error"); return; }
+  if (!reason)    { showAlert("int-alert", "Reason is required.", "error"); return; }
+  setLoading("btnSubmitIntervention", true);
+  const r = await interventions.create({
+    student_id:        studentId,
+    reason,
+    risk_level:        document.getElementById("int-risk").value,
+    term:              document.getElementById("int-term").value || undefined,
+    academic_year:     document.getElementById("int-year").value || undefined,
+    intervention_plan: document.getElementById("int-plan").value.trim() || undefined,
+  });
+  setLoading("btnSubmitIntervention", false);
+  if (r?.success) {
+    showAlert("int-alert", "Learner flagged for intervention.", "success");
+    setTimeout(() => { closeModal("modal-intervention"); loadInterventions(); }, 900);
+  } else {
+    showAlert("int-alert", r?.message || "Failed.", "error");
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+// ── MODERATION ─────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+document.getElementById("btnLoadModeration")?.addEventListener("click", loadModeration);
+
+async function loadModeration() {
+  const term = document.getElementById("filterModTerm")?.value;
+  const year = document.getElementById("filterModYear")?.value;
+  const tbl  = document.getElementById("moderationTbl");
+  if (!term || !year) { tbl.innerHTML = '<div class="empty">Select term and year.</div>'; return; }
+  tbl.innerHTML = '<div class="empty">Loading…</div>';
+  const r = await moderation.list({ term, academic_year: year });
+  const rows = r?.data || [];
+
+  // Also show classes without a moderation record
+  const classRows = allClasses.filter(c => c.academic_year === year || !c.academic_year);
+  const modMap = {};
+  rows.forEach(row => { modMap[row.class_id] = row; });
+
+  let html = `<table>
+    <thead><tr><th>Class</th><th>Status</th><th>Locked By</th><th>Moderated By</th><th>Actions</th></tr></thead>
+    <tbody>`;
+  classRows.forEach(cls => {
+    const m = modMap[cls.id];
+    const locked     = m?.is_locked;
+    const moderated  = !!m?.moderated_at;
+    html += `<tr>
+      <td><strong>${esc(cls.grade)}${cls.stream ? " – "+esc(cls.stream) : ""}</strong></td>
+      <td>
+        ${locked     ? '<span class="badge badge-red">Locked</span>' : '<span class="badge">Open</span>'}
+        ${moderated  ? '<span class="badge badge-green" style="margin-left:4px">Approved</span>' : ""}
+      </td>
+      <td>${esc(m?.locked_by_name||"–")}</td>
+      <td>${esc(m?.moderated_by_name||"–")}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="lockClass(${cls.id},'${term}','${year}',${!locked})">${locked ? "Unlock" : "Lock"}</button>
+        ${!moderated ? `<button class="btn btn-ghost btn-sm btn-primary" onclick="approveClass(${cls.id},'${term}','${year}')">Approve</button>` : ""}
+      </td>
+    </tr>`;
+  });
+  html += "</tbody></table>";
+  tbl.innerHTML = classRows.length ? html : '<div class="empty">No classes found for this year.</div>';
+}
+
+window.lockClass = async (classId, term, year, isLocked) => {
+  const msg = isLocked ? "Lock assessments for this class/term?" : "Unlock assessments for this class/term?";
+  if (!confirm(msg)) return;
+  const r = await moderation.lock(classId, { term: Number(term), academic_year: year, is_locked: isLocked });
+  if (r?.success) loadModeration();
+};
+
+window.approveClass = async (classId, term, year) => {
+  if (!confirm("Approve and lock results for this class/term?")) return;
+  const r = await moderation.moderate(classId, { term: Number(term), academic_year: year });
+  if (r?.success) loadModeration();
+};
+
+// ══════════════════════════════════════════════════════════════════
+// ── ACADEMIC YEARS ─────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+document.getElementById("btnAddAcademicYear")?.addEventListener("click", () => openModal("modal-academicyear"));
+
+async function loadAcademicYears() {
+  const tbl = document.getElementById("academicYearsTbl");
+  tbl.innerHTML = '<div class="empty">Loading…</div>';
+  const r = await moderation.academicYears();
+  const rows = r?.data || [];
+  if (!rows.length) {
+    tbl.innerHTML = '<div class="empty">No academic years configured. Click + Add Year to get started.</div>';
+    return;
+  }
+  tbl.innerHTML = `<table>
+    <thead><tr><th>Year</th><th>Current</th><th>Year Start</th><th>Year End</th><th>Term 1</th><th>Term 2</th><th>Term 3</th></tr></thead>
+    <tbody>
+      ${rows.map(y => `<tr>
+        <td><strong>${esc(y.year_label)}</strong></td>
+        <td>${y.is_current ? '<span class="badge badge-green">Current</span>' : ""}</td>
+        <td>${y.start_date ? new Date(y.start_date).toLocaleDateString() : "–"}</td>
+        <td>${y.end_date   ? new Date(y.end_date).toLocaleDateString()   : "–"}</td>
+        <td style="font-size:12px">${y.term1_start&&y.term1_end ? new Date(y.term1_start).toLocaleDateString()+" – "+new Date(y.term1_end).toLocaleDateString() : "–"}</td>
+        <td style="font-size:12px">${y.term2_start&&y.term2_end ? new Date(y.term2_start).toLocaleDateString()+" – "+new Date(y.term2_end).toLocaleDateString() : "–"}</td>
+        <td style="font-size:12px">${y.term3_start&&y.term3_end ? new Date(y.term3_start).toLocaleDateString()+" – "+new Date(y.term3_end).toLocaleDateString() : "–"}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>`;
+}
+
+document.getElementById("btnSubmitAcademicYear")?.addEventListener("click", async () => {
+  const label = document.getElementById("ay-label").value.trim();
+  if (!label) { showAlert("ay-alert", "Year label is required.", "error"); return; }
+  setLoading("btnSubmitAcademicYear", true);
+  const r = await moderation.createYear({
+    year_label:  label,
+    is_current:  document.getElementById("ay-current").checked,
+    start_date:  document.getElementById("ay-start").value || undefined,
+    end_date:    document.getElementById("ay-end").value   || undefined,
+    term1_start: document.getElementById("ay-t1s").value   || undefined,
+    term1_end:   document.getElementById("ay-t1e").value   || undefined,
+    term2_start: document.getElementById("ay-t2s").value   || undefined,
+    term2_end:   document.getElementById("ay-t2e").value   || undefined,
+    term3_start: document.getElementById("ay-t3s").value   || undefined,
+    term3_end:   document.getElementById("ay-t3e").value   || undefined,
+    notes:       document.getElementById("ay-notes").value.trim() || undefined,
+  });
+  setLoading("btnSubmitAcademicYear", false);
+  if (r?.success) {
+    showAlert("ay-alert", "Academic year saved.", "success");
+    setTimeout(() => { closeModal("modal-academicyear"); loadAcademicYears(); }, 900);
+  } else {
+    showAlert("ay-alert", r?.message || "Failed to save.", "error");
+  }
+});
+
+// Wire student pickers for new modals
+makeStudentPicker("port-student-picker", {});
+makeStudentPicker("obs-student-picker",  {});
+makeStudentPicker("int-student-picker",  {});
+
+// Also populate new class filter selects whenever allClasses loads
+// (fetchClasses already runs on init — patch it to include new selects)
+const _origFetchClasses = fetchClasses;
+async function fetchClasses() {
+  await _origFetchClasses();
+  // Extra selects for new panels
+  const opts = allClasses.map(c =>
+    `<option value="${esc(String(c.id))}">${esc(c.grade + (c.stream?" – "+c.stream:""))}</option>`
+  ).join("");
+  ["filterPortfolioClass","filterObsClass","obs-class"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const prefix = id.startsWith("filter")
+      ? '<option value="">All Classes</option>'
+      : '<option value="">Select Class</option>';
+    el.innerHTML = prefix + opts;
+  });
+}
 
 // ── Initial load ──────────────────────────────────────────────────
 loadOverview();
