@@ -6,7 +6,8 @@ import { esc, getUser, logout, ai } from "/js/api.js";
 
 const CSS = `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Plus Jakarta Sans',sans-serif;background:#f1f5f9;color:#0f172a;min-height:100vh}#app{display:flex;min-height:100vh}
+html{overflow-x:hidden}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:#f1f5f9;color:#0f172a;min-height:100vh;max-width:100vw}#app{display:flex;min-height:100vh}
 .sidebar{width:265px;background:#fff;display:flex;flex-direction:column;flex-shrink:0;height:100vh;position:sticky;top:0;border-right:1px solid #e2e8f0;overflow-y:auto}
 .sidebar-brand{padding:22px 20px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #f1f5f9}
 .brand-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:#4f46e5;flex-shrink:0}
