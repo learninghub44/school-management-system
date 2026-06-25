@@ -1521,8 +1521,11 @@ window.publishCard = async (id) => {
 window.printCard = (rc) => {
   // Build a full CBC report card in a hidden iframe to avoid popup blockers
   // and allow proper external printer access via browser print dialog.
-  const ccLabel = {1:"Not Observed",2:"Developing",3:"Competent",4:"Exceptional"};
-  const valLabel = {1:"Needs Improvement",2:"Satisfactory",3:"Good",4:"Excellent"};
+
+  // Achievement scale: 4=EE Exceeding, 3=ME Meeting, 2=AE Approaching, 1=BE Below
+  const levelCode  = {1:"BE",2:"AE",3:"ME",4:"EE"};
+  const levelLabel = {1:"Below Expectation",2:"Approaching Expectation",3:"Meeting Expectation",4:"Exceeding Expectation"};
+
   const cc = [
     ["Communication & Collaboration", rc.cc_communication],
     ["Critical Thinking & Problem Solving", rc.cc_critical_thinking],
@@ -1542,92 +1545,208 @@ window.printCard = (rc) => {
     ["Social Justice", rc.val_social_justice],
   ].filter(([,v]) => v);
 
+  const badgeFor = (score) => {
+    const code = levelCode[score] || "—";
+    return `<span class="badge badge-${code}">${code}</span> <span class="lvl-text">${levelLabel[score] || ""}</span>`;
+  };
   const ccRows = cc.map(([name, score]) =>
-    `<tr><td>${name}</td><td class="c">${ccLabel[score] || score}</td></tr>`
+    `<tr><td>${esc(name)}</td><td class="c">${badgeFor(score)}</td></tr>`
   ).join("");
   const valRows = vals.map(([name, score]) =>
-    `<tr><td>${name}</td><td class="c">${valLabel[score] || score}</td></tr>`
+    `<tr><td>${esc(name)}</td><td class="c">${badgeFor(score)}</td></tr>`
   ).join("");
+
+  // ── Performance summary: tally achievement levels across all rated rows ──
+  const allScores = [...cc, ...vals].map(([,v]) => v).filter(Boolean);
+  const tally = {4:0,3:0,2:0,1:0};
+  allScores.forEach(s => { if (tally[s] !== undefined) tally[s]++; });
+  const avg = allScores.length ? allScores.reduce((a,b)=>a+b,0) / allScores.length : 0;
+  const overallScore = avg >= 3.5 ? 4 : avg >= 2.5 ? 3 : avg >= 1.5 ? 2 : 1;
+  const overallCode  = levelCode[overallScore] || "—";
+  const summaryChips = [4,3,2,1].map(s =>
+    `<div class="sum-chip"><span class="badge badge-${levelCode[s]}">${levelCode[s]}</span><span class="sum-count">${tally[s]}</span></div>`
+  ).join("");
+
+  // ── Verification payload for QR code (no network dependency at scan time —
+  // payload is self-contained; pair with a /verify/:id endpoint for full auth) ──
+  const verifyId = String(rc.id || "").padStart(6,"0");
+  const qrPayload = [
+    `SCHOOL: ${rc.school_name || "—"}`,
+    `STUDENT: ${rc.student_name}`,
+    `ADM NO: ${rc.admission_number || "—"}`,
+    `CLASS: ${rc.class_label || "—"}`,
+    `TERM/YEAR: ${rc.term}/${rc.academic_year}`,
+    `REPORT ID: RC-${verifyId}`,
+  ].join(" | ");
+
+  const initials = (rc.student_name || "?").split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
 
   const html = `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Report Card — ${rc.student_name}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
+  :root{
+    --navy:#1e3a5f; --navy-dark:#142a45; --gold:#c9a14a;
+    --ee:#15803d; --ee-bg:#dcfce7; --me:#1e40af; --me-bg:#dbeafe;
+    --ae:#854d0e; --ae-bg:#fef9c3; --be:#b91c1c; --be-bg:#fee2e2;
+    --ink:#1a1a1a; --muted:#5b6472; --line:#e2e6ee;
+  }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:"Segoe UI",Arial,sans-serif;font-size:13px;color:#111;background:#fff;padding:24px}
-  .page{max-width:720px;margin:0 auto;border:2px solid #1e3a5f;border-radius:4px;padding:0;overflow:hidden}
-  .header{background:#1e3a5f;color:#fff;padding:18px 24px;display:flex;align-items:center;gap:16px}
-  .header .school-name{font-size:18px;font-weight:700;line-height:1.3}
-  .header .subtitle{font-size:11px;opacity:.85;margin-top:3px}
-  .rc-title{background:#e8f0fe;text-align:center;padding:8px;font-size:13px;font-weight:700;color:#1e3a5f;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid #c5d4f0}
-  .body{padding:18px 24px}
-  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;margin-bottom:18px;border:1px solid #dde;border-radius:6px;padding:12px}
-  .info-row{display:flex;gap:6px;font-size:12.5px}
-  .info-row .lbl{color:#555;min-width:110px;font-weight:600}
-  .info-row .val{color:#111;font-weight:700}
-  .section{margin-bottom:16px}
-  .section-title{font-size:12px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #1e3a5f;padding-bottom:4px;margin-bottom:10px}
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
-  th{background:#1e3a5f;color:#fff;padding:7px 10px;text-align:left;font-size:11.5px;font-weight:600}
-  td{padding:6px 10px;border-bottom:1px solid #eee}
+  html,body{background:#eef1f6}
+  body{font-family:"Inter",Arial,sans-serif;font-size:12.5px;color:var(--ink);padding:18px}
+  .page{max-width:760px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 24px rgba(20,30,50,.12)}
+
+  /* Header */
+  .header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-dark) 100%);color:#fff;padding:16px 22px;display:flex;align-items:center;gap:14px}
+  .header .logo{width:52px;height:52px;border-radius:8px;background:#fff;object-fit:contain;flex:0 0 auto;padding:4px}
+  .header .logo-fallback{width:52px;height:52px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:"Poppins";font-weight:800;font-size:18px;color:var(--gold);flex:0 0 auto}
+  .header .school-block{flex:1;min-width:0}
+  .header .school-name{font-family:"Poppins";font-size:17px;font-weight:700;line-height:1.25;letter-spacing:.01em}
+  .header .school-meta{font-size:10.5px;opacity:.82;margin-top:3px;line-height:1.5}
+  .header .qr-mini{flex:0 0 auto;background:#fff;border-radius:6px;padding:4px;width:54px;height:54px;display:flex;align-items:center;justify-content:center}
+  .header .qr-mini canvas, .header .qr-mini img{width:46px!important;height:46px!important}
+
+  .rc-title{background:var(--gold);color:var(--navy-dark);text-align:center;padding:7px;font-family:"Poppins";font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+
+  .body{padding:16px 22px}
+
+  /* Student block: photo + info grid */
+  .student-block{display:flex;gap:14px;border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:14px}
+  .photo{width:74px;height:90px;border-radius:6px;object-fit:cover;border:1px solid var(--line);flex:0 0 auto;background:#f3f5f9}
+  .photo-fallback{width:74px;height:90px;border-radius:6px;border:1px dashed #c7cede;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-family:"Poppins";font-weight:700;font-size:22px;color:var(--navy);background:#f3f5f9}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px 20px;flex:1;align-content:center}
+  .info-row{display:flex;gap:6px;font-size:12px}
+  .info-row .lbl{color:var(--muted);min-width:96px;font-weight:500}
+  .info-row .val{color:var(--ink);font-weight:700}
+
+  /* Performance summary strip */
+  .summary{display:flex;align-items:center;gap:14px;background:#f6f8fc;border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:14px}
+  .summary .ov-label{font-size:10.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  .summary .ov-badge{font-family:"Poppins";font-weight:800;font-size:15px;display:flex;align-items:center;gap:6px}
+  .sum-chips{display:flex;gap:10px;margin-left:auto}
+  .sum-chip{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--muted)}
+  .sum-count{font-weight:700;color:var(--ink)}
+
+  .section{margin-bottom:13px;page-break-inside:avoid}
+  .section-title{font-family:"Poppins";font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--navy);padding-bottom:4px;margin-bottom:8px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{background:var(--navy);color:#fff;padding:6px 10px;text-align:left;font-size:10.5px;font-weight:600}
+  td{padding:5.5px 10px;border-bottom:1px solid #eef0f5}
   tr:last-child td{border-bottom:none}
   tr:nth-child(even) td{background:#f8f9ff}
-  td.c{text-align:center;font-weight:600}
-  .remarks{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .remark-box{border:1px solid #dde;border-radius:6px;padding:12px}
-  .remark-box .r-title{font-size:11px;font-weight:700;color:#1e3a5f;text-transform:uppercase;margin-bottom:6px}
-  .remark-box p{font-size:12.5px;color:#333;line-height:1.6}
-  .sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:24px}
-  .sig-box{border-top:1px solid #333;padding-top:6px;text-align:center;font-size:11px;color:#555}
-  .footer{background:#f0f4ff;border-top:1px solid #c5d4f0;padding:8px 24px;font-size:10.5px;color:#555;text-align:center}
-  .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
-  .badge-EE{background:#dcfce7;color:#15803d}
-  .badge-ME{background:#dbeafe;color:#1e40af}
-  .badge-AE{background:#fef9c3;color:#854d0e}
-  .badge-BE{background:#fee2e2;color:#b91c1c}
+  td.c{text-align:center}
+  .lvl-text{font-size:10.5px;color:var(--muted)}
+
+  .remarks{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .remark-box{border:1px solid var(--line);border-left:3px solid var(--navy);border-radius:6px;padding:10px}
+  .remark-box .r-title{font-size:10px;font-weight:700;color:var(--navy);text-transform:uppercase;margin-bottom:5px;letter-spacing:.04em}
+  .remark-box p{font-size:12px;color:#333;line-height:1.55}
+
+  .scale-row{display:flex;gap:10px;flex-wrap:wrap}
+  .scale-pill{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:10.5px;color:var(--muted)}
+
+  .sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:18px}
+  .sig-box{text-align:center}
+  .sig-line{border-top:1px solid #333;margin-bottom:5px;height:30px}
+  .sig-box .role{font-size:10.5px;font-weight:700;color:var(--navy)}
+  .sig-box .sub{font-size:9px;color:var(--muted);margin-top:1px}
+
+  .verify-row{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:10px;border-top:1px dashed var(--line)}
+  .verify-row .qr-big{width:56px;height:56px;flex:0 0 auto}
+  .verify-row .qr-big canvas, .verify-row .qr-big img{width:56px!important;height:56px!important}
+  .verify-row .vtext{font-size:9.5px;color:var(--muted);line-height:1.5}
+  .verify-row .vtext b{color:var(--ink)}
+
+  .footer{background:var(--navy-dark);color:#cdd6e6;padding:8px 22px;font-size:9.5px;text-align:center}
+
+  .badge{display:inline-block;min-width:24px;text-align:center;padding:2px 7px;border-radius:10px;font-size:10.5px;font-weight:800;font-family:"Poppins"}
+  .badge-EE{background:var(--ee-bg);color:var(--ee)}
+  .badge-ME{background:var(--me-bg);color:var(--me)}
+  .badge-AE{background:var(--ae-bg);color:var(--ae)}
+  .badge-BE{background:var(--be-bg);color:var(--be)}
+
+  @page{ size:A4; margin:10mm; }
   @media print{
+    html,body{background:#fff}
     body{padding:0}
-    .page{border:none;border-radius:0}
+    .page{box-shadow:none;border-radius:0;max-width:100%}
     .no-print{display:none!important}
+    .section{page-break-inside:avoid}
+  }
+  @media (max-width:600px){
+    body{padding:8px;font-size:12px}
+    .page{border-radius:6px}
+    .header{flex-wrap:wrap;padding:14px}
+    .header .qr-mini{display:none}
+    .student-block{flex-direction:column;align-items:center;text-align:center}
+    .info-grid{grid-template-columns:1fr;width:100%}
+    .info-row{justify-content:space-between}
+    .summary{flex-wrap:wrap}
+    .sum-chips{margin-left:0;width:100%;justify-content:space-between}
+    .remarks{grid-template-columns:1fr}
+    .sig-row{grid-template-columns:1fr;gap:18px}
+    .verify-row{flex-direction:column;text-align:center}
   }
 </style>
 </head>
 <body>
-<div class="no-print" style="text-align:center;margin-bottom:16px">
-  <button onclick="window.print()" style="padding:10px 28px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-right:8px">🖨️ Print / Save PDF</button>
-  <button onclick="window.close()" style="padding:10px 20px;background:#f1f5f9;color:#333;border:none;border-radius:8px;font-size:14px;cursor:pointer">Close</button>
+<div class="no-print" style="text-align:center;margin-bottom:14px">
+  <button onclick="window.print()" style="padding:10px 28px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-right:8px;font-family:Inter">🖨️ Print / Save PDF</button>
+  <button onclick="window.close()" style="padding:10px 20px;background:#f1f5f9;color:#333;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-family:Inter">Close</button>
 </div>
 <div class="page">
   <div class="header">
-    <div>
-      <div class="school-name">Kadem &amp; Zetu School Management System</div>
-      <div class="subtitle">Kenya CBC Competency Based Curriculum</div>
+    ${rc.school_logo_url
+      ? `<img class="logo" src="${rc.school_logo_url}" alt="School logo" onerror="this.style.display='none'">`
+      : `<div class="logo-fallback">${esc((rc.school_name||"S")[0])}</div>`}
+    <div class="school-block">
+      <div class="school-name">${esc(rc.school_name || "School Management System")}</div>
+      <div class="school-meta">${[rc.school_address, rc.school_phone, rc.school_email].filter(Boolean).map(esc).join("  •  ") || "Kenya CBC Competency Based Curriculum"}</div>
     </div>
+    <div class="qr-mini" id="qrMini"></div>
   </div>
-  <div class="rc-title">Student Report Card — Term ${rc.term}, ${rc.academic_year}</div>
+  <div class="rc-title">Official Student Report Card — Term ${rc.term}, ${rc.academic_year}</div>
   <div class="body">
-    <div class="info-grid">
-      <div class="info-row"><span class="lbl">Student Name:</span><span class="val">${rc.student_name}</span></div>
-      <div class="info-row"><span class="lbl">Admission No:</span><span class="val">${rc.admission_number || "—"}</span></div>
-      <div class="info-row"><span class="lbl">Class:</span><span class="val">${rc.class_label || "—"}</span></div>
-      <div class="info-row"><span class="lbl">Gender:</span><span class="val">${rc.gender || "—"}</span></div>
-      <div class="info-row"><span class="lbl">Term:</span><span class="val">Term ${rc.term}</span></div>
-      <div class="info-row"><span class="lbl">Academic Year:</span><span class="val">${rc.academic_year}</span></div>
+
+    <div class="student-block">
+      ${rc.student_photo_url
+        ? `<img class="photo" src="${rc.student_photo_url}" alt="Student photo" onerror="this.outerHTML='<div class=&quot;photo-fallback&quot;>${initials}</div>'">`
+        : `<div class="photo-fallback">${initials}</div>`}
+      <div class="info-grid">
+        <div class="info-row"><span class="lbl">Student Name:</span><span class="val">${esc(rc.student_name)}</span></div>
+        <div class="info-row"><span class="lbl">Admission No:</span><span class="val">${esc(rc.admission_number) || "—"}</span></div>
+        <div class="info-row"><span class="lbl">Class:</span><span class="val">${esc(rc.class_label) || "—"}</span></div>
+        <div class="info-row"><span class="lbl">Gender:</span><span class="val">${esc(rc.gender) || "—"}</span></div>
+        <div class="info-row"><span class="lbl">Term:</span><span class="val">Term ${rc.term}</span></div>
+        <div class="info-row"><span class="lbl">Academic Year:</span><span class="val">${esc(rc.academic_year)}</span></div>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div>
+        <div class="ov-label">Overall Achievement</div>
+        <div class="ov-badge"><span class="badge badge-${overallCode}">${overallCode}</span> ${levelLabel[overallScore]}</div>
+      </div>
+      <div class="sum-chips">${summaryChips}</div>
     </div>
 
     ${cc.length ? `
     <div class="section">
       <div class="section-title">Core Competencies</div>
-      <table><thead><tr><th>Competency</th><th style="width:160px;text-align:center">Rating</th></tr></thead>
+      <table><thead><tr><th>Competency</th><th style="width:200px;text-align:center">Rating</th></tr></thead>
       <tbody>${ccRows}</tbody></table>
     </div>` : ""}
 
     ${vals.length ? `
     <div class="section">
       <div class="section-title">Values &amp; Citizenship</div>
-      <table><thead><tr><th>Value</th><th style="width:160px;text-align:center">Rating</th></tr></thead>
+      <table><thead><tr><th>Value</th><th style="width:200px;text-align:center">Rating</th></tr></thead>
       <tbody>${valRows}</tbody></table>
     </div>` : ""}
 
@@ -1635,31 +1754,42 @@ window.printCard = (rc) => {
     <div class="section">
       <div class="section-title">Remarks</div>
       <div class="remarks">
-        ${rc.class_teacher_remark ? `<div class="remark-box"><div class="r-title">Class Teacher</div><p>${rc.class_teacher_remark}</p></div>` : ""}
-        ${rc.principal_remark ? `<div class="remark-box"><div class="r-title">Principal</div><p>${rc.principal_remark}</p></div>` : ""}
-        ${rc.headteacher_remark ? `<div class="remark-box"><div class="r-title">Head Teacher</div><p>${rc.headteacher_remark}</p></div>` : ""}
+        ${rc.class_teacher_remark ? `<div class="remark-box"><div class="r-title">Class Teacher</div><p>${esc(rc.class_teacher_remark)}</p></div>` : ""}
+        ${rc.principal_remark ? `<div class="remark-box"><div class="r-title">Principal</div><p>${esc(rc.principal_remark)}</p></div>` : ""}
+        ${rc.headteacher_remark ? `<div class="remark-box"><div class="r-title">Head Teacher</div><p>${esc(rc.headteacher_remark)}</p></div>` : ""}
       </div>
     </div>` : ""}
 
     <div class="section">
       <div class="section-title">Achievement Scale</div>
-      <table><thead><tr><th>Code</th><th>Description</th><th>Core Competency Scale</th></tr></thead>
-      <tbody>
-        <tr><td><span class="badge badge-EE">EE</span></td><td>Exceeds Expectation</td><td>Exceptional (4)</td></tr>
-        <tr><td><span class="badge badge-ME">ME</span></td><td>Meets Expectation</td><td>Competent (3)</td></tr>
-        <tr><td><span class="badge badge-AE">AE</span></td><td>Approaches Expectation</td><td>Developing (2)</td></tr>
-        <tr><td><span class="badge badge-BE">BE</span></td><td>Below Expectation</td><td>Not Observed (1)</td></tr>
-      </tbody></table>
+      <div class="scale-row">
+        <div class="scale-pill"><span class="badge badge-EE">EE</span> Exceeding Expectation</div>
+        <div class="scale-pill"><span class="badge badge-ME">ME</span> Meeting Expectation</div>
+        <div class="scale-pill"><span class="badge badge-AE">AE</span> Approaching Expectation</div>
+        <div class="scale-pill"><span class="badge badge-BE">BE</span> Below Expectation</div>
+      </div>
     </div>
 
     <div class="sig-row">
-      <div class="sig-box">Class Teacher</div>
-      <div class="sig-box">Head Teacher / Principal</div>
-      <div class="sig-box">Parent / Guardian</div>
+      <div class="sig-box"><div class="sig-line"></div><div class="role">Class Teacher</div><div class="sub">Name &amp; Date</div></div>
+      <div class="sig-box"><div class="sig-line"></div><div class="role">Head Teacher / Principal</div><div class="sub">Name &amp; Date</div></div>
+      <div class="sig-box"><div class="sig-line"></div><div class="role">Parent / Guardian</div><div class="sub">Name &amp; Date</div></div>
     </div>
+
+    <div class="verify-row">
+      <div class="qr-big" id="qrBig"></div>
+      <div class="vtext">This report card is digitally generated and can be verified for authenticity.<br><b>Verification ID: RC-${verifyId}</b> &bull; Issued ${new Date().toLocaleDateString("en-KE",{day:"2-digit",month:"long",year:"numeric"})}</div>
+    </div>
+
   </div>
-  <div class="footer">Generated by Kadem &amp; Zetu School Management System &bull; Powered by CBC Kenya &bull; ${new Date().toLocaleDateString("en-KE",{day:"2-digit",month:"long",year:"numeric"})}</div>
+  <div class="footer">Generated by ${esc(rc.school_name || "School Management System")} &bull; Powered by Kenya CBC &bull; ${new Date().toLocaleDateString("en-KE",{day:"2-digit",month:"long",year:"numeric"})}</div>
 </div>
+<script>
+  try{
+    new QRCode(document.getElementById('qrMini'), { text: ${JSON.stringify(qrPayload)}, width:46, height:46, correctLevel: QRCode.CorrectLevel.M });
+    new QRCode(document.getElementById('qrBig'),  { text: ${JSON.stringify(qrPayload)}, width:56, height:56, correctLevel: QRCode.CorrectLevel.M });
+  }catch(e){ /* QR lib failed to load (offline) — verification text still printed */ }
+</script>
 </body></html>`;
 
   // Use a new tab instead of popup — works with external printers and is not blocked
