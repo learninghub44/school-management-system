@@ -94,6 +94,11 @@ router.get("/", auth, roleM(READ_ROLES), async (req, res) => {
       p.push(classIds); where.push(`a.class_id = ANY($${p.length})`);
     }
 
+    const limit  = Math.min(parseInt(req.query.limit  || "200", 10), 500);
+    const offset = Math.max(parseInt(req.query.offset || "0",   10), 0);
+    p.push(limit);  const limitPh  = p.length;
+    p.push(offset); const offsetPh = p.length;
+
     const whereClause = where.length ? "WHERE " + where.join(" AND ") : "";
     const { rows } = await db.query(
       `SELECT a.*,
@@ -109,9 +114,9 @@ router.get("/", auth, roleM(READ_ROLES), async (req, res) => {
        LEFT JOIN teachers t ON t.id = a.teacher_id
        ${whereClause}
        ORDER BY a.created_at DESC
-       LIMIT 500`, p
+       LIMIT $${limitPh} OFFSET $${offsetPh}`, p
     );
-    return res.json({ success: true, data: rows, count: rows.length });
+    return res.json({ success: true, data: rows, count: rows.length, limit, offset });
   } catch (err) {
     console.error("GET /assessments:", err.message);
     return res.status(500).json({ success: false, message: "Server error." });
