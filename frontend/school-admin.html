@@ -1978,12 +1978,18 @@ function downloadCSV(filename, rows) {
 document.getElementById("exportStudents")?.addEventListener("click", async () => {
   const status = document.getElementById("backupStatus");
   status.innerHTML = '<div class="empty">Exporting students…</div>';
-  const r = await students.list({ school_id: me.school_id });
+  const r = await students.list({ export: "true", limit: 5000 });
   const data = r?.data || [];
   downloadCSV(`students_${new Date().toISOString().slice(0,10)}.csv`, [
-    ["Name","Admission No","UPI No","Gender","DOB","Class","Parent","Parent Phone","Status"],
-    ...data.map(s => [s.first_name+" "+s.last_name, s.admission_no, s.upi_no||"", s.gender||"",
-      s.date_of_birth||"", s.class_name||"", s.parent_name||"", s.parent_phone||"", s.is_active?"Active":"Inactive"])
+    ["First Name","Middle Name","Last Name","Admission No","UPI No","Gender","DOB","Admission Date","Class","Grade","Stream","Parent","Parent Phone","Address","Status"],
+    ...data.map(s => [
+      s.first_name||"", s.middle_name||"", s.last_name||"",
+      s.admission_number||"", s.upi_number||"", s.gender||"",
+      s.date_of_birth||"", s.admission_date||"",
+      s.class_label||"", s.grade||"", s.stream||"",
+      s.parent_name||"", s.parent_phone||"", s.address||"",
+      s.is_active?"Active":"Inactive"
+    ])
   ]);
   status.innerHTML = `<div style="color:var(--green);font-size:14px">✓ ${data.length} students exported.</div>`;
 });
@@ -1991,7 +1997,7 @@ document.getElementById("exportStudents")?.addEventListener("click", async () =>
 document.getElementById("exportTeachers")?.addEventListener("click", async () => {
   const status = document.getElementById("backupStatus");
   status.innerHTML = '<div class="empty">Exporting teachers…</div>';
-  const r = await teachers.list({ school_id: me.school_id });
+  const r = await teachers.list({ limit: 500 });
   const data = r?.data || [];
   downloadCSV(`teachers_${new Date().toISOString().slice(0,10)}.csv`, [
     ["Name","TSC Number","Phone","Email","Department","Designation","Status"],
@@ -2017,7 +2023,7 @@ document.getElementById("exportAttendance")?.addEventListener("click", async () 
 document.getElementById("exportFinance")?.addEventListener("click", async () => {
   const status = document.getElementById("backupStatus");
   status.innerHTML = '<div class="empty">Exporting payments…</div>';
-  const r = await finance?.payments?.({ school_id: me.school_id, academic_year: new Date().getFullYear().toString() }) || { data: [] };
+  const r = await finance?.payments?.({ academic_year: new Date().getFullYear().toString(), limit: 2000 }) || { data: [] };
   const data = r?.data || [];
   downloadCSV(`payments_${new Date().toISOString().slice(0,10)}.csv`, [
     ["Student","Admission No","Amount Paid","Balance","Term","Year","Method","Date","Receipt No"],
@@ -2030,12 +2036,13 @@ document.getElementById("exportFinance")?.addEventListener("click", async () => 
 document.getElementById("exportAssessments")?.addEventListener("click", async () => {
   const status = document.getElementById("backupStatus");
   status.innerHTML = '<div class="empty">Exporting assessments…</div>';
-  const r = await assessments.list({ school_id: me.school_id });
+  const r = await assessments.list({ limit: 5000 });
   const data = r?.data || [];
   downloadCSV(`assessments_${new Date().toISOString().slice(0,10)}.csv`, [
-    ["Student","Admission No","Class","Subject","Strand","Sub-Strand","Level","Term","Year","Teacher Comment"],
+    ["Student","Admission No","Class","Subject","Strand","Sub-Strand","Level","Score","Type","Date","Term","Year","Teacher Comment"],
     ...data.map(a => [a.student_name||"", a.admission_number||"", a.class_label||"",
       a.subject_name||"", a.strand||"", a.sub_strand||"", a.achievement_level||"",
+      a.score||"", a.assessment_type||"", a.assessment_date||"",
       a.term||"", a.academic_year||"", a.teacher_comment||""])
   ]);
   status.innerHTML = `<div style="color:var(--green);font-size:14px">✓ ${data.length} assessment records exported.</div>`;
