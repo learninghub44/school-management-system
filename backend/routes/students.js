@@ -29,18 +29,24 @@ router.get("/", auth, roleM(READ), async (req, res) => {
     if (!sid && req.user.role !== "SUPER_ADMIN")
       return res.status(403).json({ success: false, message: "School isolation error." });
 
-    // Safety: require at least one filter to prevent dumping entire student table
-    const hasFilter = req.query.class_id || req.query.search || req.query.is_active !== undefined || req.user.role === "SUPER_ADMIN";
+    // export=true: authorised roles can dump all school students for backup
+    const isExport = req.query.export === "true" &&
+      ["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL"].includes(req.user.role);
+
+    // Safety: require at least one filter to prevent full-table scans
+    const hasFilter = isExport || req.query.class_id || req.query.search ||
+      req.query.is_active !== undefined || req.user.role === "SUPER_ADMIN";
     if (!hasFilter) {
       return res.status(400).json({
         success: false,
-        message: "Provide at least one filter: class_id, search, or is_active."
+        message: "Provide at least one filter: class_id, search, is_active, or export=true."
       });
     }
 
     let q = `SELECT s.id, s.first_name, s.middle_name, s.last_name, s.admission_number,
                     s.gender, s.is_active, s.class_id, s.upi_number,
-                    s.parent_name, s.parent_phone,
+                    s.parent_name, s.parent_phone, s.date_of_birth,
+                    s.address, s.admission_date,
                     CONCAT(c.grade, COALESCE(' '||c.stream,'')) AS class_label,
                     c.grade, c.stream, c.stage
              FROM students s
@@ -65,8 +71,9 @@ router.get("/", auth, roleM(READ), async (req, res) => {
       q += ` AND (s.first_name ILIKE $${p.length} OR s.last_name ILIKE $${p.length} OR s.admission_number ILIKE $${p.length})`;
     }
 
-    // Hard cap — prevent memory exhaustion
-    const limit = Math.min(parseInt(req.query.limit || "100", 10), 200);
+    // Export mode: higher cap for backup; normal mode: paginated
+    const maxLimit = isExport ? 5000 : 200;
+    const limit  = Math.min(parseInt(req.query.limit  || (isExport ? "5000" : "100"), 10), maxLimit);
     const offset = Math.max(parseInt(req.query.offset || "0", 10), 0);
     p.push(limit);  q += ` ORDER BY s.last_name, s.first_name LIMIT $${p.length}`;
     p.push(offset); q += ` OFFSET $${p.length}`;
