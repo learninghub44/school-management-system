@@ -1,6 +1,7 @@
 /**
  * PostgreSQL connection pool
  * SSL forced in production; disabled for local dev
+ * Pool size configurable via DB_POOL_MIN / DB_POOL_MAX env vars
  */
 "use strict";
 const { Pool } = require("pg");
@@ -10,16 +11,15 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === "production"
     ? { rejectUnauthorized: false }
     : false,
-  min: 2,                          // keep 2 connections warm — avoids cold-start latency spike
-  max: 20,
+  min: parseInt(process.env.DB_POOL_MIN || "2", 10),
+  max: parseInt(process.env.DB_POOL_MAX || "20", 10),
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,   // fail fast if pool is exhausted
-  statement_timeout: 15000,        // kill runaway queries after 15s
-  query_timeout:    15000,         // covers both idle + running
+  connectionTimeoutMillis: 8000,
+  statement_timeout: 20000,
+  query_timeout:    20000,
 });
 
 pool.on("error", (err) => {
-  // Log but don't crash — the pool will reconnect automatically
   console.error("[db] Unexpected pool error:", err.message);
 });
 
@@ -27,13 +27,22 @@ pool.on("connect", () => {
   if (process.env.NODE_ENV !== "production") console.log("[db] New client connected");
 });
 
-// Warm-up: verify connection on startup
-pool.query("SELECT 1").then(() => {
-  console.log("[db] Connection pool ready");
-}).catch(err => {
-  console.error("[db] Connection failed on startup:", err.message);
-  // Don't exit — Render may start the DB after the web service
-});
+// Warm-up with retry — Render sometimes starts DB after web service
+async function warmUp(retries = 5, delayMs = 3000) {
+  for (let i = 1; i <= retries; i++) {
+    try {
+      await pool.query("SELECT 1");
+      console.log("[db] Connection pool ready");
+      return;
+    } catch (err) {
+      console.error(`[db] Connection attempt ${i}/${retries} failed: ${err.message}`);
+      if (i < retries) await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+  console.error("[db] All connection attempts failed — server will retry on first request");
+}
+
+warmUp();
 
 module.exports = {
   query: (text, params) => pool.query(text, params),

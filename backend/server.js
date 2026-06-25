@@ -21,7 +21,8 @@ process.on("unhandledRejection", (reason) => {
 });
 const { startCleanupJob } = require("./jobs/cleanupTokens");
 const express    = require("express");
-const cors       = require("cors");
+const cors        = require("cors");
+const compression = require("compression");
 const helmet     = require("helmet");
 const rateLimit  = require("express-rate-limit");
 const morgan     = require("morgan");
@@ -60,6 +61,9 @@ const app = express();
 // ── Trust proxy (for Render / Cloudflare) ────────────────────────
 app.set("trust proxy", 1);
 
+// ── Gzip compression ─────────────────────────────────────────────
+app.use(compression());
+
 // ── Security headers ─────────────────────────────────────────────
 app.use(helmet({
   contentSecurityPolicy: {
@@ -69,7 +73,7 @@ app.use(helmet({
       styleSrc:    ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
       fontSrc:     ["'self'", "https://fonts.gstatic.com"],
       imgSrc:      ["'self'", "data:", "https:"],
-      connectSrc:  ["'self'"],
+      connectSrc:  ["'self'", "https:"],
       objectSrc:   ["'none'"],
       frameAncestors: ["'none'"],
     },

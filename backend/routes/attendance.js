@@ -4,6 +4,11 @@
  * BURSAR: read-only (for fee-default correlation)
  * TEACHER: scoped to own assigned classes only
  * All isolation from DB-verified req.user.school_id
+ *
+ * Production fixes:
+ * - bulk insert now uses a single parameterised multi-row VALUES clause
+ *   wrapped in a transaction — atomic, fast, no N+1 DB round-trips
+ * - all student ownership checks batched before any write
  */
 "use strict";
 const express = require("express");
@@ -34,21 +39,18 @@ router.get("/", auth, roleM(READ_ROLES), async (req, res) => {
     const p = [], where = [];
     if (schoolId) { p.push(schoolId); where.push(`a.school_id=$${p.length}`); }
 
-    // Date filter — validated
     if (req.query.date) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(req.query.date))
         return res.status(400).json({ success: false, message: "Invalid date format. Use YYYY-MM-DD." });
       p.push(req.query.date); where.push(`a.date=$${p.length}`);
     }
 
-    // class_id filter
     if (req.query.class_id) {
       if (!/^\d+$/.test(req.query.class_id))
         return res.status(400).json({ success: false, message: "Invalid class_id." });
       p.push(req.query.class_id); where.push(`a.class_id=$${p.length}`);
     }
 
-    // Status filter
     if (req.query.status) {
       if (!VALID_STATUSES.includes(req.query.status))
         return res.status(400).json({ success: false, message: `Invalid status. Use: ${VALID_STATUSES.join(", ")}` });
@@ -71,6 +73,9 @@ router.get("/", auth, roleM(READ_ROLES), async (req, res) => {
       where.push(`a.class_id = ANY($${p.length})`);
     }
 
+    const limit  = Math.min(parseInt(req.query.limit  || "200", 10), 500);
+    const offset = Math.max(parseInt(req.query.offset || "0",   10), 0);
+
     const whereClause = where.length ? "WHERE " + where.join(" AND ") : "";
     const { rows } = await db.query(
       `SELECT a.*,
@@ -84,9 +89,9 @@ router.get("/", auth, roleM(READ_ROLES), async (req, res) => {
        LEFT JOIN teachers t ON t.id = a.teacher_id
        ${whereClause}
        ORDER BY a.date DESC, s.last_name
-       LIMIT 1000`, p
+       LIMIT ${limit} OFFSET ${offset}`, p
     );
-    return res.json({ success: true, data: rows, count: rows.length });
+    return res.json({ success: true, data: rows, count: rows.length, limit, offset });
   } catch (err) {
     console.error("GET /attendance:", err.message);
     return res.status(500).json({ success: false, message: "Server error." });
@@ -121,6 +126,7 @@ router.get("/summary", auth, roleM(READ_ROLES), async (req, res) => {
 });
 
 // ── POST /api/attendance/bulk — record whole class at once ────────
+// Uses a single multi-row upsert in a transaction — O(1) round-trips not O(N)
 router.post("/bulk", auth, roleM(WRITE_ROLES), async (req, res) => {
   const { class_id, date, records } = req.body;
 
@@ -130,7 +136,10 @@ router.post("/bulk", auth, roleM(WRITE_ROLES), async (req, res) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
     return res.status(400).json({ success: false, message: "Invalid date. Use YYYY-MM-DD." });
 
-  // Validate all statuses up-front — reject entire request if any are wrong
+  if (records.length > 300)
+    return res.status(400).json({ success: false, message: "Maximum 300 records per bulk request." });
+
+  // Validate all statuses up-front
   for (const r of records) {
     if (!r.student_id)
       return res.status(400).json({ success: false, message: "Each record must have student_id." });
@@ -152,6 +161,8 @@ router.post("/bulk", auth, roleM(WRITE_ROLES), async (req, res) => {
     if (req.user.role !== "SUPER_ADMIN" && cls[0].school_id !== schoolId)
       return res.status(403).json({ success: false, message: "Class does not belong to your school." });
 
+    const resolvedSchoolId = cls[0].school_id;
+
     // TEACHER: verify they are assigned to this class
     let teacherId = null;
     if (req.user.role === "TEACHER") {
@@ -170,7 +181,7 @@ router.post("/bulk", auth, roleM(WRITE_ROLES), async (req, res) => {
         return res.status(403).json({ success: false, message: "You are not assigned to this class." });
     }
 
-    // Verify ALL student_ids belong to this school before inserting any
+    // Batch verify ALL student_ids belong to this school
     const studentIds = records.map(r => r.student_id);
     const { rows: studs } = await db.query(
       "SELECT id, school_id FROM students WHERE id = ANY($1)", [studentIds]
@@ -184,22 +195,48 @@ router.post("/bulk", auth, roleM(WRITE_ROLES), async (req, res) => {
         return res.status(403).json({ success: false, message: `Student ${sid} does not belong to your school.` });
     }
 
-    // Bulk upsert — atomically
-    let saved = 0;
-    for (const r of records) {
-      await db.query(
+    // Build a single multi-row upsert inside a transaction
+    const client = await db.pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // Build VALUES ($1,$2,...), ($N+1,...) for all rows
+      const vals = [];
+      const placeholders = records.map((r, i) => {
+        const base = i * 6;
+        vals.push(resolvedSchoolId, r.student_id, class_id, teacherId, date, r.status, r.remarks || null);
+        // 7 columns per row
+        const b = i * 7;
+        return `($${b+1},$${b+2},$${b+3},$${b+4},$${b+5},$${b+6},$${b+7})`;
+      });
+
+      // Rebuild correctly (7 params per row, not 6)
+      const vals2 = [];
+      const ph2 = records.map((r, i) => {
+        const b = i * 7;
+        vals2.push(resolvedSchoolId, r.student_id, class_id, teacherId, date, r.status, r.remarks || null);
+        return `($${b+1},$${b+2},$${b+3},$${b+4},$${b+5},$${b+6},$${b+7})`;
+      });
+
+      await client.query(
         `INSERT INTO attendance (school_id, student_id, class_id, teacher_id, date, status, remarks)
-         VALUES ($1,$2,$3,$4,$5,$6,$7)
+         VALUES ${ph2.join(",")}
          ON CONFLICT (school_id, student_id, date)
          DO UPDATE SET status=EXCLUDED.status, remarks=EXCLUDED.remarks, teacher_id=EXCLUDED.teacher_id`,
-        [cls[0].school_id, r.student_id, class_id, teacherId, date, r.status, r.remarks || null]
+        vals2
       );
-      saved++;
+
+      await client.query("COMMIT");
+    } catch (txErr) {
+      await client.query("ROLLBACK");
+      throw txErr;
+    } finally {
+      client.release();
     }
 
     await audit(req, "BULK_ATTENDANCE", "attendance", null, null,
-      { class_id, date, count: saved });
-    return res.json({ success: true, message: `${saved} record(s) saved.`, count: saved });
+      { class_id, date, count: records.length });
+    return res.json({ success: true, message: `${records.length} record(s) saved.`, count: records.length });
   } catch (err) {
     console.error("POST /attendance/bulk:", err.message);
     return res.status(500).json({ success: false, message: "Server error." });
