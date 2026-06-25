@@ -26,9 +26,9 @@ router.get("/", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD",
 
       const p = [schoolId];
       let extra = "";
-      if (req.query.term)          { p.push(req.query.term);          extra += ` AND term=$${p.length}`; }
-      if (req.query.academic_year) { p.push(req.query.academic_year); extra += ` AND academic_year=$${p.length}`; }
-      if (req.query.class_id)      { p.push(req.query.class_id);      extra += ` AND class_id=$${p.length}`; }
+      if (req.query.term)          { p.push(req.query.term);          extra += ` AND e.term=$${p.length}`; }
+      if (req.query.academic_year) { p.push(req.query.academic_year); extra += ` AND e.academic_year=$${p.length}`; }
+      if (req.query.class_id)      { p.push(req.query.class_id);      extra += ` AND e.class_id=$${p.length}`; }
 
       const { rows } = await db.query(
         `SELECT e.*,
