@@ -46,9 +46,20 @@ export async function onRequest({ request, env }) {
     );
   }
 
-  const targetUrl    = backendUrl + url.pathname + url.search;
-  const proxyHeaders = new Headers(request.headers);
-  proxyHeaders.delete("Origin");
+  const targetUrl = backendUrl + url.pathname + url.search;
+
+  // Explicitly forward only the headers we need.
+  // Cloudflare Workers can silently drop Authorization when using
+  // new Headers(request.headers) for cross-origin upstream fetches.
+  const proxyHeaders = new Headers();
+  const forwardHeaders = [
+    "authorization", "content-type", "accept", "accept-language",
+    "x-requested-with", "cache-control",
+  ];
+  for (const h of forwardHeaders) {
+    const val = request.headers.get(h);
+    if (val) proxyHeaders.set(h, val);
+  }
 
   const subdomain = url.hostname.replace(`.${ROOT_DOMAIN}`, "").toUpperCase();
   if (subdomain && subdomain !== ROOT_DOMAIN.toUpperCase()) {
