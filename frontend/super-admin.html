@@ -123,8 +123,8 @@ label{display:block;font-size:11.5px;font-weight:600;color:var(--text3);letter-s
 /* ── MOBILE SIDEBAR ── */
 @media(max-width:768px){
   #app{display:block;overflow-x:hidden}
-  .sidebar{position:fixed;left:-240px;top:0;height:100vh;width:228px;z-index:200;transition:left .25s ease;visibility:hidden}
-  .sidebar.mob-open{left:0;visibility:visible;box-shadow:4px 0 24px rgba(0,0,0,.3)}
+  .sidebar{position:fixed;left:-240px;top:0;height:100vh;width:228px;z-index:200;transition:left .25s ease;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+  .sidebar.mob-open{left:0;box-shadow:4px 0 24px rgba(0,0,0,.3)}
   .main{margin-left:0!important;width:100%!important;max-width:100vw!important;overflow-x:hidden!important}
   .mob-menu-btn{display:flex!important;align-items:center;justify-content:center}
   .topbar{padding:10px 14px!important}

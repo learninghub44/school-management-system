@@ -69,7 +69,7 @@ tr:hover td{background:#fafbff}
 .bpurple{background:#f3e8ff;color:#7e22ce}.bgray{background:#f1f5f9;color:#64748b}
 .bteal{background:#ccfbf1;color:#0f766e}
 /* ── Modals — perfectly centred on every screen ── */
-.modal-bg{display:none;position:fixed!important;inset:0!important;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.modal-bg{display:none;position:fixed!important;inset:0!important;background:rgba(0,0,0,.55);z-index:10000;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
 .modal-bg.open{display:flex}
 .modal{background:#fff;border-radius:18px;padding:28px;width:100%;max-width:540px;box-shadow:0 24px 48px rgba(0,0,0,.18);margin:auto;position:relative;max-height:calc(100vh - 32px);overflow-y:auto}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
@@ -88,13 +88,13 @@ tr:hover td{background:#fafbff}
 .mob-menu-btn:hover{background:#f1f5f9}
 .mob-menu-btn .icon-svg{width:22px;height:22px}
 /* ── Sidebar overlay for mobile ── */
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:199}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:199;touch-action:none}
 .sidebar-overlay.show{display:block}
 /* ── Responsive breakpoints ── */
 @media(max-width:768px){
   #app{flex-direction:column}
-  .sidebar{position:fixed;left:-300px;top:0;height:100vh;width:265px;z-index:200;transition:left .25s ease;box-shadow:none;visibility:hidden}
-  .sidebar.mob-open{left:0;box-shadow:4px 0 24px rgba(0,0,0,.15);visibility:visible}
+  .sidebar{position:fixed;left:-300px;top:0;height:100vh;width:265px;z-index:200;transition:left .25s ease;box-shadow:none;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+  .sidebar.mob-open{left:0;box-shadow:4px 0 24px rgba(0,0,0,.15)}
   .mob-menu-btn{display:flex;align-items:center;justify-content:center}
   .main{width:100%;min-height:100vh;overflow-x:hidden}
   /* Topbar */
@@ -331,6 +331,8 @@ export function hoistModals() {
 export function openModal(id)  {
   const el = document.getElementById(id);
   if (!el) return;
+  // Close mobile sidebar if open (prevents overflow conflict)
+  closeSidebar();
   // Ensure it's a direct body child every time (safe to call repeatedly)
   document.body.appendChild(el);
   el.classList.add("open");
