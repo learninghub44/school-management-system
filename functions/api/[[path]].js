@@ -2,10 +2,8 @@
  * Kadem & Zetu School Management System
  * Cloudflare Pages Function — proxies /api/* to Render backend
  *
- * This replaces _worker.js. Pages Functions only run on matched routes
- * and do NOT intercept static asset requests — no redirect loops possible.
- *
- * Set BACKEND_URL in Cloudflare Pages → Settings → Environment Variables
+ * BACKEND_URL = https://xxx.onrender.com  (no trailing /api)
+ * Requests to /api/auth/login → forwarded as /api/auth/login
  */
 
 const ROOT_DOMAIN = "cbc-school-erp.pages.dev";
@@ -13,16 +11,14 @@ const ROOT_DOMAIN = "cbc-school-erp.pages.dev";
 function getAllowedOrigin(requestOrigin) {
   if (!requestOrigin) return `https://${ROOT_DOMAIN}`;
   if (requestOrigin === `https://${ROOT_DOMAIN}`) return requestOrigin;
-  if (requestOrigin.match(new RegExp(`^https://[a-z0-9-]+\\.${ROOT_DOMAIN.replace(".", "\\.")}$`))) {
-    return requestOrigin;
-  }
+  if (requestOrigin.match(new RegExp(`^https://[a-z0-9-]+\\.${ROOT_DOMAIN.replace(".", "\\.")}$`))) return requestOrigin;
   if (requestOrigin.match(/^http:\/\/localhost(:\d+)?$/)) return requestOrigin;
   return `https://${ROOT_DOMAIN}`;
 }
 
 export async function onRequest({ request, env }) {
-  const url    = new URL(request.url);
-  const origin = request.headers.get("Origin") || "";
+  const url         = new URL(request.url);
+  const origin      = request.headers.get("Origin") || "";
   const allowOrigin = getAllowedOrigin(origin);
 
   const corsHeaders = {
@@ -38,7 +34,6 @@ export async function onRequest({ request, env }) {
   }
 
   const backendUrl = (env.BACKEND_URL || "").replace(/\/$/, "");
-
   if (!backendUrl) {
     return new Response(
       JSON.stringify({ success: false, message: "BACKEND_URL not configured." }),
@@ -46,17 +41,14 @@ export async function onRequest({ request, env }) {
     );
   }
 
+  // BACKEND_URL has no /api suffix; url.pathname is /api/...
+  // so targetUrl = https://xxx.onrender.com/api/auth/login ✓
   const targetUrl = backendUrl + url.pathname + url.search;
 
-  // Explicitly forward only the headers we need.
-  // Cloudflare Workers can silently drop Authorization when using
-  // new Headers(request.headers) for cross-origin upstream fetches.
+  // Explicitly whitelist headers — CF Workers silently drops Authorization
+  // when copying all headers via new Headers(request.headers) for cross-origin fetches.
   const proxyHeaders = new Headers();
-  const forwardHeaders = [
-    "authorization", "content-type", "accept", "accept-language",
-    "x-requested-with", "cache-control",
-  ];
-  for (const h of forwardHeaders) {
+  for (const h of ["authorization", "content-type", "accept", "accept-language", "x-requested-with", "cache-control"]) {
     const val = request.headers.get(h);
     if (val) proxyHeaders.set(h, val);
   }
