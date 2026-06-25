@@ -43,7 +43,9 @@ router.get("/", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD"]
     console.error("GET /api/moderation error:", err);
     return res.status(500).json({ success: false, message: "Server error.", detail: err.message, code: err.code });
   }
-}); — lock or unlock a term's assessments
+});
+
+// POST /api/moderation/:class_id/lock — lock or unlock a term's assessments
 router.post("/:class_id/lock", auth, roleM(ADMIN_ROLES),
   [
     body("term").isInt({ min: 1, max: 3 }),
