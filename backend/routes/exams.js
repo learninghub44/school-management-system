@@ -44,8 +44,8 @@ router.get("/", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD",
       );
       return res.json({ success: true, data: rows });
     } catch (err) {
-      console.error(err);
-      return res.status(500).json({ success: false, message: "Server error." });
+      console.error("GET /api/exams error:", err);
+      return res.status(500).json({ success: false, message: "Server error.", detail: err.message, code: err.code });
     }
   }
 );

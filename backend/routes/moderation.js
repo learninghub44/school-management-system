@@ -40,11 +40,10 @@ router.get("/", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD"]
     );
     return res.json({ success: true, data: rows });
   } catch (err) {
-    return res.status(500).json({ success: false, message: "Server error." });
+    console.error("GET /api/moderation error:", err);
+    return res.status(500).json({ success: false, message: "Server error.", detail: err.message, code: err.code });
   }
-});
-
-// POST /api/moderation/:class_id/lock — lock or unlock a term's assessments
+}); — lock or unlock a term's assessments
 router.post("/:class_id/lock", auth, roleM(ADMIN_ROLES),
   [
     body("term").isInt({ min: 1, max: 3 }),
@@ -121,10 +120,22 @@ router.get("/academic-years", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRI
     const p = [], where = [];
     if (sid) { p.push(sid); where.push(`school_id=$${p.length}`); }
     const wc = where.length ? "WHERE " + where.join(" AND ") : "";
-    const { rows } = await db.query(`SELECT * FROM academic_years ${wc} ORDER BY year_label DESC`, p);
+    // Try year_label first, fall back to name column for older schemas
+    let rows;
+    try {
+      ({ rows } = await db.query(`SELECT * FROM academic_years ${wc} ORDER BY year_label DESC`, p));
+    } catch (colErr) {
+      if (colErr.code === "42703") {
+        // year_label column doesn't exist yet — fall back to name column
+        ({ rows } = await db.query(`SELECT *, name AS year_label FROM academic_years ${wc} ORDER BY name DESC`, p));
+      } else {
+        throw colErr;
+      }
+    }
     return res.json({ success: true, data: rows });
   } catch (err) {
-    return res.status(500).json({ success: false, message: "Server error." });
+    console.error("GET /api/moderation/academic-years error:", err);
+    return res.status(500).json({ success: false, message: "Server error.", detail: err.message, code: err.code });
   }
 });
 
