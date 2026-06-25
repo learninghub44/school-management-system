@@ -71,6 +71,36 @@ nav{
 }
 .nav-cta:hover{background:#86efac;transform:translateY(-1px)}
 
+/* ── HAMBURGER ── */
+.nav-hamburger{
+  display:none;flex-direction:column;justify-content:center;gap:5px;
+  background:none;border:none;cursor:pointer;padding:6px;z-index:200;
+}
+.nav-hamburger span{
+  display:block;width:24px;height:2px;
+  background:var(--text-mid);border-radius:2px;
+  transition:transform .3s ease, opacity .3s ease;
+}
+.nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.nav-hamburger.open span:nth-child(2){opacity:0}
+.nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+/* ── MOBILE MENU DRAWER ── */
+.mobile-menu{
+  display:none;
+  position:fixed;top:0;left:0;right:0;bottom:0;z-index:150;
+  background:rgba(2,12,4,0.97);backdrop-filter:blur(16px);
+  flex-direction:column;align-items:center;justify-content:center;gap:36px;
+  opacity:0;pointer-events:none;transition:opacity .3s ease;
+}
+.mobile-menu.open{opacity:1;pointer-events:all}
+.mobile-menu a{
+  font-size:24px;font-weight:700;color:var(--text-mid);
+  text-decoration:none;letter-spacing:-0.5px;transition:color .2s;
+}
+.mobile-menu a:hover{color:var(--accent)}
+.mobile-menu .nav-cta{font-size:18px;padding:14px 32px;margin-top:8px}
+
 /* ── HERO ── */
 .hero{
   min-height:100vh;
@@ -421,6 +451,7 @@ footer{
 @media(max-width:900px){
   nav{padding:16px 24px}
   .nav-links{display:none}
+  .nav-hamburger{display:flex}
   .hero{padding:100px 24px 60px}
   .hero-inner{grid-template-columns:1fr;gap:48px}
   .hero-right{display:flex;justify-content:center}
@@ -452,7 +483,53 @@ footer{
     <a href="#testimonials">Schools</a>
   </div>
   <a href="/login.html" class="nav-cta">Sign In →</a>
+  <button class="nav-hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu" role="dialog" aria-modal="true">
+  <a href="#features" class="mobile-link">Features</a>
+  <a href="#cbc" class="mobile-link">CBC Aligned</a>
+  <a href="#testimonials" class="mobile-link">Schools</a>
+  <a href="/login.html" class="nav-cta">Sign In →</a>
+</div>
+
+<script>
+(function(){
+  var btn = document.getElementById('hamburger');
+  var menu = document.getElementById('mobileMenu');
+  menu.style.display = 'flex';
+
+  function openMenu(){
+    btn.classList.add('open');
+    menu.classList.add('open');
+    btn.setAttribute('aria-expanded','true');
+    document.body.style.overflow='hidden';
+  }
+  function closeMenu(){
+    btn.classList.remove('open');
+    menu.classList.remove('open');
+    btn.setAttribute('aria-expanded','false');
+    document.body.style.overflow='';
+  }
+
+  btn.addEventListener('click', function(){
+    menu.classList.contains('open') ? closeMenu() : openMenu();
+  });
+
+  // Close when a link is tapped
+  menu.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', closeMenu);
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeMenu();
+  });
+})();
+</script>
 
 <!-- HERO -->
 <section class="hero">
