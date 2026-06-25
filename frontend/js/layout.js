@@ -279,11 +279,17 @@ export function buildSidebar(navItems, activePanel) {
 
 // ── Mobile sidebar helpers ────────────────────────────────────────
 function openSidebar() {
-  document.body.classList.add("sidebar-open");
+  const sidebar = document.getElementById("mainSidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  sidebar?.classList.add("mob-open");
+  overlay?.classList.add("show");
   document.body.style.overflow = "hidden";
 }
 function closeSidebar() {
-  document.body.classList.remove("sidebar-open");
+  const sidebar = document.getElementById("mainSidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  sidebar?.classList.remove("mob-open");
+  overlay?.classList.remove("show");
   document.body.style.overflow = "";
 }
 
