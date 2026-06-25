@@ -130,10 +130,10 @@ router.post("/login",
         academic_year: user.academic_year,
         current_term:  user.current_term,
         logo_url:      user.logo_url,
-        subscription_status: user.subscription_status || null,
-        subscription_expires_at: user.subscription_expires_at || null,
+        subscription_status: "active", // manual activation — payment bypassed
+        subscription_expires_at: null,
         subscription_plan: user.subscription_plan || null,
-        ai_enabled: user.ai_enabled || false,
+        ai_enabled: true,
         name:          user.name,
         email:         user.email,
         username:      user.username,
@@ -204,7 +204,7 @@ router.get("/verify", auth, async (req, res) => {
       return res.status(401).json({ success: false, message: "Session invalid." });
     if (user.school_id && user.school_active === false)
       return res.status(403).json({ success: false, message: "School deactivated." });
-    return res.json({ success: true, user });
+    return res.json({ success: true, user: { ...user, subscription_status: "active", subscription_expires_at: null, ai_enabled: true } });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Server error." });
   }

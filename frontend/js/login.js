@@ -14,10 +14,8 @@ function setMessage(message, type = "error") {
 }
 
 function hasActiveSubscription(user) {
-  if (!user || user.role === "SUPER_ADMIN") return true;
-  if (!["active", "trialing"].includes(user.subscription_status)) return false;
-  if (!user.subscription_expires_at) return true;
-  return new Date(user.subscription_expires_at) >= new Date();
+  // Payment bypassed — manual activation by Super Admin
+  return true;
 }
 
 function roleDestination(role) {
