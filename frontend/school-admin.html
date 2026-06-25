@@ -12,9 +12,7 @@
 body{overflow-x:hidden;max-width:100vw}
 @media(max-width:768px){
   #app{display:block;overflow-x:hidden}
-  .sidebar{display:none!important}
   .main{width:100%!important;min-width:0!important;max-width:100vw!important;overflow-x:hidden!important}
-  .mob-menu-btn{display:flex!important;align-items:center;justify-content:center}
   .topbar{padding:10px 14px!important}
   .content{padding:12px!important;overflow-x:hidden!important}
   .fg-row{grid-template-columns:1fr!important}
@@ -2507,43 +2505,6 @@ makeStudentPicker("int-student-picker",  {});
 
 // ── Initial load ──────────────────────────────────────────────────
 loadOverview();
-
-// ── Mobile sidebar toggle ─────────────────────────────────────────
-(function(){
-  const btn = document.getElementById('mobMenuBtn');
-  const appEl = document.getElementById('app');
-  if (!btn || !appEl) return;
-
-  // Inject overlay element
-  const overlay = document.createElement('div');
-  overlay.className = 'sidebar-overlay';
-  appEl.appendChild(overlay);
-
-  function openSidebar() {
-    appEl.classList.add('sidebar-open');
-    btn.setAttribute('aria-expanded', 'true');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeSidebar() {
-    appEl.classList.remove('sidebar-open');
-    btn.setAttribute('aria-expanded', 'false');
-    document.body.style.overflow = '';
-  }
-
-  btn.addEventListener('click', () =>
-    appEl.classList.contains('sidebar-open') ? closeSidebar() : openSidebar()
-  );
-  overlay.addEventListener('click', closeSidebar);
-
-  // Close sidebar when a nav item is tapped on mobile
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', () => {
-      if (window.innerWidth <= 768) closeSidebar();
-    });
-  });
-
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
-})();
 
 </script>
 </body>
