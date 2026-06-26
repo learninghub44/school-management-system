@@ -78,7 +78,10 @@ router.get("/cards",
                 CONCAT(c.grade, COALESCE(' '||c.stream,'')) AS class_label,
                 u.name AS generated_by_name,
                 sc.name AS school_name, sc.logo_url AS school_logo_url,
-                sc.address AS school_address, sc.phone AS school_phone, sc.email AS school_email
+                sc.address AS school_address, sc.phone AS school_phone, sc.email AS school_email,
+                sc.motto AS school_motto, sc.theme_color AS school_theme_color,
+                sc.report_card_footer AS school_report_card_footer,
+                sc.principal_signature_name AS school_principal_signature_name
          FROM report_cards rc
          JOIN students s ON s.id = rc.student_id
          JOIN classes c ON c.id = rc.class_id
