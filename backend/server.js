@@ -20,6 +20,7 @@ process.on("unhandledRejection", (reason) => {
   // but we want them visible in logs
 });
 const { startCleanupJob } = require("./jobs/cleanupTokens");
+const { startSweepJob }   = require("./jobs/sweepExpiredSubscriptions");
 const express    = require("express");
 const cors        = require("cors");
 const compression = require("compression");
@@ -220,6 +221,7 @@ app.use((err, req, res, next) => {
 });
 
 startCleanupJob();
+startSweepJob();
 const PORT = parseInt(process.env.PORT || "5000", 10);
 const server = app.listen(PORT, () =>
   console.log(`Kadem & Zetu School Management System v4.2 running on port ${PORT} [${process.env.NODE_ENV || "development"}]`)

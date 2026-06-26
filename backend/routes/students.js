@@ -172,6 +172,32 @@ router.post("/", auth, roleM(MANAGE),
         parent_name, parent_phone, address
       } = req.body;
 
+      // ── Enforce student limit from subscription plan ──────────────
+      if (req.user.role !== "SUPER_ADMIN") {
+        const { rows: subRows } = await db.query(
+          `SELECT pp.student_limit
+           FROM school_subscriptions ss
+           JOIN payment_plans pp ON pp.id = ss.plan_id
+           WHERE ss.school_id = $1 AND ss.status IN ('active','trialing')
+           LIMIT 1`,
+          [sid]
+        );
+        const limit = subRows[0]?.student_limit;
+        if (limit) {
+          const { rows: countRows } = await db.query(
+            "SELECT COUNT(*) AS total FROM students WHERE school_id=$1 AND is_active=TRUE",
+            [sid]
+          );
+          if (parseInt(countRows[0].total) >= limit) {
+            return res.status(403).json({
+              success: false,
+              code: "STUDENT_LIMIT_REACHED",
+              message: `Your plan allows a maximum of ${limit} students. Upgrade your plan to enroll more.`,
+            });
+          }
+        }
+      }
+
       // Auto-generate admission number if not supplied
       let admission_number = req.body.admission_number?.trim();
       if (!admission_number) {
