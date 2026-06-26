@@ -841,7 +841,9 @@ document.getElementById("app").innerHTML =
         <div class="card-hdr"><h4>School Profile</h4></div>
         <div class="card-body">
           <div class="fg-row">
-            <div class="fg"><label>School Name</label><input id="set-name" maxlength="255"></div>
+            <div class="fg"><label>School Name</label><input id="set-name" maxlength="255" disabled style="background:#f1f5f9;color:#64748b;cursor:not-allowed">
+              <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Locked — contact the platform admin to change your school's registered name.</div>
+            </div>
             <div class="fg"><label>Logo URL (https only)</label><input id="set-logo" maxlength="500" placeholder="https://…"></div>
           </div>
           <div class="fg-row">
