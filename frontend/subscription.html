@@ -45,7 +45,10 @@ h1{font-size:28px;line-height:1.2}
       <h1>Subscription</h1>
       <p class="muted">Choose a plan to unlock all ERP modules for your school.</p>
     </div>
-    <button class="btn" id="logoutBtn">Sign Out</button>
+    <div style="display:flex;gap:10px">
+      <button class="btn" id="backBtn">Back to Dashboard</button>
+      <button class="btn" id="logoutBtn">Sign Out</button>
+    </div>
   </div>
 
   <div class="result-screen" id="resultScreen">
@@ -210,6 +213,20 @@ async function load() {
   });
 }
 
+function dashboardDestination(role) {
+  return {
+    SUPER_ADMIN: "/super-admin.html",
+    PRINCIPAL: "/school-admin.html",
+    DEPUTY_PRINCIPAL: "/school-admin.html",
+    HOD: "/school-admin.html",
+    TEACHER: "/teacher.html",
+    BURSAR: "/bursar.html",
+  }[role] || "/school-admin.html";
+}
+
+document.getElementById("backBtn").addEventListener("click", () => {
+  window.location.href = dashboardDestination(user?.role);
+});
 document.getElementById("logoutBtn").addEventListener("click", logout);
 load();
 </script>

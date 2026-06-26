@@ -132,6 +132,12 @@ router.put("/:id", auth, roleM(["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL"])
       }
     }),
     body("county").optional().trim().isLength({ max: 100 }),
+    // Cosmetic branding fields — never affect system behaviour
+    body("motto").optional({ nullable: true }).trim().isLength({ max: 255 }),
+    body("theme_color").optional({ nullable: true }).matches(/^#[0-9A-Fa-f]{6}$/)
+      .withMessage("theme_color must be a hex color like #4f46e5"),
+    body("report_card_footer").optional({ nullable: true }).trim().isLength({ max: 500 }),
+    body("principal_signature_name").optional({ nullable: true }).trim().isLength({ max: 150 }),
   ],
   async (req, res) => {
     const errs = validationResult(req);
@@ -152,27 +158,35 @@ router.put("/:id", auth, roleM(["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL"])
 
       const {
         name, address, phone, email, logo_url,
-        county, academic_year, current_term, level
+        county, academic_year, current_term, level,
+        motto, theme_color, report_card_footer, principal_signature_name
       } = req.body;
 
       const { rows } = await db.query(
         `UPDATE schools SET
-           name          = COALESCE($1,  name),
-           address       = COALESCE($2,  address),
-           phone         = COALESCE($3,  phone),
-           email         = COALESCE($4,  email),
-           logo_url      = COALESCE($5,  logo_url),
-           county        = COALESCE($6,  county),
-           academic_year = COALESCE($7,  academic_year),
-           current_term  = COALESCE($8,  current_term),
-           level         = COALESCE($9,  level),
-           updated_at    = NOW()
-         WHERE id = $10
+           name                     = COALESCE($1,  name),
+           address                  = COALESCE($2,  address),
+           phone                    = COALESCE($3,  phone),
+           email                    = COALESCE($4,  email),
+           logo_url                 = COALESCE($5,  logo_url),
+           county                   = COALESCE($6,  county),
+           academic_year            = COALESCE($7,  academic_year),
+           current_term             = COALESCE($8,  current_term),
+           level                    = COALESCE($9,  level),
+           motto                    = COALESCE($10, motto),
+           theme_color              = COALESCE($11, theme_color),
+           report_card_footer       = COALESCE($12, report_card_footer),
+           principal_signature_name = COALESCE($13, principal_signature_name),
+           updated_at               = NOW()
+         WHERE id = $14
          RETURNING *`,
         [
           name || null, address || null, phone || null, email || null,
           logo_url || null, county || null, academic_year || null,
-          current_term ?? null, level || null, req.params.id
+          current_term ?? null, level || null,
+          motto ?? null, theme_color || null, report_card_footer ?? null,
+          principal_signature_name ?? null,
+          req.params.id
         ]
       );
       await audit(req, "UPDATE_SCHOOL", "schools", req.params.id, ex[0], rows[0]);

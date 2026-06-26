@@ -493,6 +493,9 @@ const NAV = [
   { panel: "timetable",     icon: "calendar",   label: "Timetable"         },
   { panel: "exams",         icon: "assessment", label: "Exam Schedule"     },
   { panel: "backup",        icon: "chart",      label: "Data Backup"       },
+  ...(["PRINCIPAL", "DEPUTY_PRINCIPAL"].includes(me.role)
+    ? [{ panel: "settings", icon: "school", label: "School Settings" }]
+    : []),
 ];
 
 // ── Render shell ──────────────────────────────────────────────────
@@ -832,6 +835,43 @@ document.getElementById("app").innerHTML =
       </div>
     </div>
 
+    <!-- SCHOOL SETTINGS — cosmetic/branding only, never touches system config -->
+    <div class="panel" id="panel-settings">
+      <div class="card">
+        <div class="card-hdr"><h4>School Profile</h4></div>
+        <div class="card-body">
+          <div class="fg-row">
+            <div class="fg"><label>School Name</label><input id="set-name" maxlength="255"></div>
+            <div class="fg"><label>Logo URL (https only)</label><input id="set-logo" maxlength="500" placeholder="https://…"></div>
+          </div>
+          <div class="fg-row">
+            <div class="fg"><label>Phone</label><input id="set-phone" maxlength="20"></div>
+            <div class="fg"><label>Email</label><input id="set-email" type="email" maxlength="255"></div>
+          </div>
+          <div class="fg-row">
+            <div class="fg"><label>County</label><input id="set-county" maxlength="100"></div>
+            <div class="fg"><label>Address</label><input id="set-address" maxlength="300"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><h4>Report Card Branding</h4></div>
+        <div class="card-body">
+          <p style="color:var(--muted);font-size:13px;margin-bottom:16px">These only change how your report cards and dashboard look — they don't affect grading, system rules, or any other school's account.</p>
+          <div class="fg-row">
+            <div class="fg"><label>School Motto</label><input id="set-motto" maxlength="255" placeholder="e.g. Knowledge for Service"></div>
+            <div class="fg"><label>Theme Color</label><input id="set-theme" type="color" value="#4f46e5" style="height:42px;padding:4px"></div>
+          </div>
+          <div class="fg"><label>Principal's Signature Name</label><input id="set-sig" maxlength="150" placeholder="Name printed under the signature line on report cards"></div>
+          <div class="fg"><label>Report Card Footer Note</label><textarea id="set-footer" maxlength="500" placeholder="e.g. This report card is digitally verified — contact the school office for queries."></textarea></div>
+          <div id="set-alert"></div>
+          <div class="modal-actions" style="justify-content:flex-start">
+            <button class="btn btn-primary" id="btnSaveSettings">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 ${buildAiWidget()}`;
@@ -861,6 +901,7 @@ const loaders = {
   interventions: loadInterventions,
   moderation:    () => {},       // triggered by filter
   academicyears: loadAcademicYears,
+  settings:      loadSettings,
 };
 setupNav(loaders);
 setupAiWidget();
@@ -969,7 +1010,52 @@ async function loadOverview() {
       <div style="font-weight:700;font-size:15px">${nextExamLabel}</div></div>`;
 }
 
-// ── Billing ───────────────────────────────────────────────────────
+// ── School Settings (cosmetic/branding only) ─────────────────────
+async function loadSettings() {
+  const r = await schools.me();
+  const s = r?.data || {};
+  document.getElementById("set-name").value    = s.name || "";
+  document.getElementById("set-logo").value    = s.logo_url || "";
+  document.getElementById("set-phone").value   = s.phone || "";
+  document.getElementById("set-email").value   = s.email || "";
+  document.getElementById("set-county").value  = s.county || "";
+  document.getElementById("set-address").value = s.address || "";
+  document.getElementById("set-motto").value   = s.motto || "";
+  document.getElementById("set-theme").value   = s.theme_color || "#4f46e5";
+  document.getElementById("set-sig").value     = s.principal_signature_name || "";
+  document.getElementById("set-footer").value  = s.report_card_footer || "";
+}
+
+document.getElementById("btnSaveSettings")?.addEventListener("click", async () => {
+  const btn = document.getElementById("btnSaveSettings");
+  const alertEl = document.getElementById("set-alert");
+  setLoading(btn, true);
+  try {
+    const r = await schools.update(me.school_id, {
+      name:                     document.getElementById("set-name").value.trim() || undefined,
+      logo_url:                 document.getElementById("set-logo").value.trim() || undefined,
+      phone:                    document.getElementById("set-phone").value.trim() || undefined,
+      email:                    document.getElementById("set-email").value.trim() || undefined,
+      county:                   document.getElementById("set-county").value.trim() || undefined,
+      address:                  document.getElementById("set-address").value.trim() || undefined,
+      motto:                    document.getElementById("set-motto").value.trim(),
+      theme_color:              document.getElementById("set-theme").value,
+      principal_signature_name: document.getElementById("set-sig").value.trim(),
+      report_card_footer:       document.getElementById("set-footer").value.trim(),
+    });
+    if (r?.success) {
+      showAlert(alertEl, "Settings saved.", "ok");
+    } else {
+      showAlert(alertEl, r?.message || (r?.errors?.[0]?.msg) || "Could not save settings.");
+    }
+  } catch (e) {
+    showAlert(alertEl, "Network error — please try again.");
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+
 const CAN_PAY = ["PRINCIPAL", "DEPUTY_PRINCIPAL"].includes(me.role);
 
 function billingStatusBadge(status) {
