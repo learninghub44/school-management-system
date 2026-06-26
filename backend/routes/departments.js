@@ -8,6 +8,12 @@ const { audit } = require("../middleware/auditLog");
 const router = express.Router();
 const MANAGE = ["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL"];
 
+function validateIntId(req, res, next) {
+  if (!/^\d+$/.test(req.params.id))
+    return res.status(400).json({ success: false, message: "Invalid ID." });
+  next();
+}
+
 function getSchoolId(req) {
   return req.user.role === "SUPER_ADMIN" ? (req.query.school_id || null) : req.user.school_id;
 }
@@ -48,7 +54,7 @@ router.post("/", auth, roleM(MANAGE),
   }
 );
 
-router.put("/:id", auth, roleM(MANAGE), async (req, res) => {
+router.put("/:id", auth, roleM(MANAGE), validateIntId, async (req, res) => {
   try {
     const { rows: ex } = await db.query("SELECT * FROM departments WHERE id=$1", [req.params.id]);
     if (!ex.length) return res.status(404).json({ success: false, message: "Not found." });
@@ -63,7 +69,7 @@ router.put("/:id", auth, roleM(MANAGE), async (req, res) => {
   } catch (err) { return res.status(500).json({ success: false, message: "Server error." }); }
 });
 
-router.delete("/:id", auth, roleM(MANAGE), async (req, res) => {
+router.delete("/:id", auth, roleM(MANAGE), validateIntId, async (req, res) => {
   try {
     const { rows } = await db.query("SELECT school_id FROM departments WHERE id=$1", [req.params.id]);
     if (!rows.length) return res.status(404).json({ success: false, message: "Not found." });

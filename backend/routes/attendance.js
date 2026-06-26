@@ -20,6 +20,12 @@ const { audit }    = require("../middleware/auditLog");
 
 const router = express.Router();
 
+function validateIntId(req, res, next) {
+  if (!/^\d+$/.test(req.params.id))
+    return res.status(400).json({ success: false, message: "Invalid ID." });
+  next();
+}
+
 const VALID_STATUSES = ["Present", "Absent", "Late"];
 const READ_ROLES     = ["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL", "HOD", "TEACHER", "BURSAR"];
 const WRITE_ROLES    = ["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL", "HOD", "TEACHER"];
@@ -106,9 +112,21 @@ router.get("/summary", auth, roleM(READ_ROLES), async (req, res) => {
       return res.status(400).json({ success: false, message: "school_id required." });
 
     const p = [schoolId]; let where = "WHERE a.school_id=$1";
-    if (req.query.class_id) { p.push(req.query.class_id); where += ` AND a.class_id=$${p.length}`; }
-    if (req.query.date_from) { p.push(req.query.date_from); where += ` AND a.date>=$${p.length}`; }
-    if (req.query.date_to)   { p.push(req.query.date_to);   where += ` AND a.date<=$${p.length}`; }
+    if (req.query.class_id) {
+      if (!/^\d+$/.test(req.query.class_id))
+        return res.status(400).json({ success: false, message: "Invalid class_id." });
+      p.push(req.query.class_id); where += ` AND a.class_id=$${p.length}`;
+    }
+    if (req.query.date_from) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(req.query.date_from))
+        return res.status(400).json({ success: false, message: "Invalid date_from. Use YYYY-MM-DD." });
+      p.push(req.query.date_from); where += ` AND a.date>=$${p.length}`;
+    }
+    if (req.query.date_to) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(req.query.date_to))
+        return res.status(400).json({ success: false, message: "Invalid date_to. Use YYYY-MM-DD." });
+      p.push(req.query.date_to); where += ` AND a.date<=$${p.length}`;
+    }
 
     const { rows } = await db.query(
       `SELECT
@@ -244,7 +262,7 @@ router.post("/bulk", auth, roleM(WRITE_ROLES), async (req, res) => {
 });
 
 // ── PUT /api/attendance/:id ───────────────────────────────────────
-router.put("/:id", auth, roleM(WRITE_ROLES),
+router.put("/:id", auth, roleM(WRITE_ROLES), validateIntId,
   [body("status").optional().isIn(VALID_STATUSES)],
   async (req, res) => {
     const errs = validationResult(req);

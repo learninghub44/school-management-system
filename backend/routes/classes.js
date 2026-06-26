@@ -7,6 +7,13 @@ const roleM = require("../middleware/roleMiddleware");
 const { audit } = require("../middleware/auditLog");
 const router = express.Router();
 
+// Validate integer :id params (classes, departments, etc use SERIAL int PKs)
+function validateIntId(req, res, next) {
+  if (!/^\d+$/.test(req.params.id))
+    return res.status(400).json({ success: false, message: "Invalid ID." });
+  next();
+}
+
 const MANAGE = ["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL"];
 const READ   = [...MANAGE, "HOD", "TEACHER", "BURSAR"];
 const VALID_GRADES = ["PP1","PP2","Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9","Grade 10","Grade 11","Grade 12"];
@@ -27,25 +34,36 @@ router.get("/", auth, roleM(READ), async (req, res) => {
              FROM classes c LEFT JOIN teachers t ON t.id=c.class_teacher_id LEFT JOIN students s ON s.class_id=c.id AND s.is_active=TRUE WHERE 1=1`;
     const p = [];
     if (sid) { p.push(sid); q += ` AND c.school_id=$${p.length}`; }
-    if (req.query.academic_year) { p.push(req.query.academic_year); q += ` AND c.academic_year=$${p.length}`; }
-    if (req.query.stage) { p.push(req.query.stage); q += ` AND c.stage=$${p.length}`; }
+    if (req.query.academic_year) {
+      if (!/^\d{4}$/.test(req.query.academic_year))
+        return res.status(400).json({ success: false, message: "Invalid academic_year." });
+      p.push(req.query.academic_year); q += ` AND c.academic_year=$${p.length}`;
+    }
+    if (req.query.stage) {
+      const VALID_STAGES = ["ECDE","Lower Primary","Upper Primary","Junior Secondary","Senior Secondary"];
+      if (!VALID_STAGES.includes(req.query.stage))
+        return res.status(400).json({ success: false, message: "Invalid stage." });
+      p.push(req.query.stage); q += ` AND c.stage=$${p.length}`;
+    }
     q += " GROUP BY c.id, t.first_name, t.last_name ORDER BY c.stage, c.grade, c.stream";
     const { rows } = await db.query(q, p);
     return res.json({ success: true, data: rows, count: rows.length });
   } catch (err) { return res.status(500).json({ success: false, message: "Server error." }); }
 });
 
-router.get("/:id/students", auth, roleM(READ), async (req, res) => {
+router.get("/:id/students", auth, roleM(READ), validateIntId, async (req, res) => {
   try {
     const { rows: cls } = await db.query("SELECT school_id FROM classes WHERE id=$1", [req.params.id]);
     if (!cls.length) return res.status(404).json({ success: false, message: "Class not found." });
     if (req.user.role !== "SUPER_ADMIN" && cls[0].school_id !== req.user.school_id)
       return res.status(403).json({ success: false, message: "Access denied." });
+    const limit  = Math.min(parseInt(req.query.limit  || "500", 10), 500);
+    const offset = Math.max(parseInt(req.query.offset || "0",   10), 0);
     const { rows } = await db.query(
-      "SELECT * FROM students WHERE class_id=$1 AND is_active=TRUE ORDER BY last_name, first_name",
-      [req.params.id]
+      "SELECT id, first_name, middle_name, last_name, admission_number, gender, upi_number, date_of_birth, parent_name, parent_phone, is_active FROM students WHERE class_id=$1 AND is_active=TRUE ORDER BY last_name, first_name LIMIT $2 OFFSET $3",
+      [req.params.id, limit, offset]
     );
-    return res.json({ success: true, data: rows, count: rows.length });
+    return res.json({ success: true, data: rows, count: rows.length, limit, offset });
   } catch (err) { return res.status(500).json({ success: false, message: "Server error." }); }
 });
 
@@ -79,7 +97,7 @@ router.post("/", auth, roleM(MANAGE),
   }
 );
 
-router.put("/:id", auth, roleM(MANAGE), async (req, res) => {
+router.put("/:id", auth, roleM(MANAGE), validateIntId, async (req, res) => {
   try {
     const { rows: ex } = await db.query("SELECT * FROM classes WHERE id=$1", [req.params.id]);
     if (!ex.length) return res.status(404).json({ success: false, message: "Not found." });
@@ -101,7 +119,7 @@ router.put("/:id", auth, roleM(MANAGE), async (req, res) => {
   } catch (err) { return res.status(500).json({ success: false, message: "Server error." }); }
 });
 
-router.delete("/:id", auth, roleM(MANAGE), async (req, res) => {
+router.delete("/:id", auth, roleM(MANAGE), validateIntId, async (req, res) => {
   try {
     const { rows } = await db.query("SELECT school_id FROM classes WHERE id=$1", [req.params.id]);
     if (!rows.length) return res.status(404).json({ success: false, message: "Not found." });

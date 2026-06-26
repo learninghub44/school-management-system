@@ -7,6 +7,7 @@ const roleM = require("../middleware/roleMiddleware");
 const { audit } = require("../middleware/auditLog");
 
 const router = express.Router();
+const validateUUID = require("../middleware/validateUUID");
 
 const READ_ROLES  = ["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD","TEACHER"];
 const WRITE_ROLES = ["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD","TEACHER"];
@@ -172,7 +173,7 @@ router.post("/:id/updates", auth, roleM(WRITE_ROLES),
 );
 
 // DELETE /api/interventions/:id — admin only
-router.delete("/:id", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL"]), async (req, res) => {
+router.delete("/:id", validateUUID("id"), auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL"]), async (req, res) => {
   try {
     const { rows } = await db.query("SELECT school_id FROM interventions WHERE id=$1", [req.params.id]);
     if (!rows.length) return res.status(404).json({ success: false, message: "Not found." });

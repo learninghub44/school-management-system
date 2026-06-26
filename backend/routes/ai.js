@@ -62,11 +62,14 @@ function getGroqClient() {
   return _groqClient;
 }
 
-async function createGroqResponse(input) {
+async function createGroqResponse(input, systemPrompt = ASSISTANT_IDENTITY) {
   const client = getGroqClient();
   const response = await client.chat.completions.create({
     model: process.env.GROQ_MODEL || "llama3-8b-8192",
-    messages: [{ role: "user", content: input }],
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user",   content: input },
+    ],
     max_tokens: 1024,
     temperature: 0.7,
   });
@@ -94,7 +97,6 @@ router.post("/assist", auth, requireSubscription, requireAiEnabled, aiBurstLimit
     if (!errs.isEmpty()) return res.status(400).json({ success: false, errors: errs.array() });
     try {
       const input = [
-        ASSISTANT_IDENTITY,
         req.body.context ? `Context:\n${req.body.context}` : "",
         `Request:\n${req.body.prompt}`,
       ].filter(Boolean).join("\n\n");
@@ -143,8 +145,6 @@ router.post("/report-comment", auth, requireSubscription, requireAiEnabled, aiBu
       const toneLabel = tone || "encouraging";
 
       const input = [
-        ASSISTANT_IDENTITY,
-        "",
         `You are helping a ${roleLabel} at a Kenyan CBC school write a report card comment.`,
         `Write ONE short paragraph (2-4 sentences) in a ${toneLabel}, professional tone.`,
         "Do not invent facts not given below. If achievement data is sparse, keep the comment general but genuine.",
@@ -206,8 +206,6 @@ router.post("/competency-analysis", auth, requireSubscription, requireAiEnabled,
         .join("\n");
 
       const input = [
-        ASSISTANT_IDENTITY,
-        "",
         `Perform a CBC competency analysis for the following learner.`,
         `Student: ${student_name}`,
         grade          ? `Grade: ${grade}` : "",
@@ -260,8 +258,6 @@ router.post("/risk-detection", auth, requireSubscription, requireAiEnabled, aiBu
         .join("\n");
 
       const input = [
-        ASSISTANT_IDENTITY,
-        "",
         `Analyse the following learner data and identify academic risk indicators.`,
         `Student: ${student_name}`,
         grade                ? `Grade: ${grade}` : "",

@@ -7,6 +7,13 @@ const roleM = require("../middleware/roleMiddleware");
 const { audit } = require("../middleware/auditLog");
 const router = express.Router();
 const MANAGE = ["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL"];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function validateIntId(req, res, next) {
+  if (!/^\d+$/.test(req.params.id))
+    return res.status(400).json({ success: false, message: "Invalid ID." });
+  next();
+}
 
 function getSchoolId(req) {
   return req.user.role === "SUPER_ADMIN" ? (req.query.school_id || null) : req.user.school_id;
@@ -28,9 +35,21 @@ router.get("/", auth, roleM(READ), async (req, res) => {
              WHERE 1=1`;
     const p = [];
     if (sid) { p.push(sid); q += ` AND ta.school_id=$${p.length}`; }
-    if (req.query.teacher_id) { p.push(req.query.teacher_id); q += ` AND ta.teacher_id=$${p.length}`; }
-    if (req.query.class_id)   { p.push(req.query.class_id);   q += ` AND ta.class_id=$${p.length}`; }
-    if (req.query.academic_year) { p.push(req.query.academic_year); q += ` AND ta.academic_year=$${p.length}`; }
+    if (req.query.teacher_id) {
+      if (!UUID_RE.test(req.query.teacher_id))
+        return res.status(400).json({ success: false, message: "Invalid teacher_id." });
+      p.push(req.query.teacher_id); q += ` AND ta.teacher_id=$${p.length}`;
+    }
+    if (req.query.class_id) {
+      if (!/^\d+$/.test(req.query.class_id))
+        return res.status(400).json({ success: false, message: "Invalid class_id." });
+      p.push(req.query.class_id); q += ` AND ta.class_id=$${p.length}`;
+    }
+    if (req.query.academic_year) {
+      if (!/^\d{4}$/.test(req.query.academic_year))
+        return res.status(400).json({ success: false, message: "Invalid academic_year." });
+      p.push(req.query.academic_year); q += ` AND ta.academic_year=$${p.length}`;
+    }
     q += " ORDER BY c.grade, c.stream, la.sort_order";
     const { rows } = await db.query(q, p);
     return res.json({ success: true, data: rows, count: rows.length });
@@ -76,7 +95,7 @@ router.post("/", auth, roleM(MANAGE),
   }
 );
 
-router.delete("/:id", auth, roleM(MANAGE), async (req, res) => {
+router.delete("/:id", auth, roleM(MANAGE), validateIntId, async (req, res) => {
   try {
     const { rows } = await db.query("SELECT school_id FROM teacher_assignments WHERE id=$1", [req.params.id]);
     if (!rows.length) return res.status(404).json({ success: false, message: "Not found." });

@@ -12,6 +12,12 @@ const { audit } = require("../middleware/auditLog");
 
 const router = express.Router();
 
+function validateIntId(req, res, next) {
+  if (!/^\d+$/.test(req.params.id))
+    return res.status(400).json({ success: false, message: "Invalid ID." });
+  next();
+}
+
 function getSchoolId(req) {
   if (req.user.role === "SUPER_ADMIN") return req.query.school_id || req.body.school_id || null;
   return req.user.school_id;
@@ -26,9 +32,22 @@ router.get("/", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD",
 
       const p = [schoolId];
       let extra = "";
-      if (req.query.term)          { p.push(req.query.term);          extra += ` AND e.term=$${p.length}`; }
-      if (req.query.academic_year) { p.push(req.query.academic_year); extra += ` AND e.academic_year=$${p.length}`; }
-      if (req.query.class_id)      { p.push(req.query.class_id);      extra += ` AND e.class_id=$${p.length}`; }
+      if (req.query.term) {
+        const t = parseInt(req.query.term);
+        if (isNaN(t) || t < 1 || t > 3)
+          return res.status(400).json({ success: false, message: "term must be 1, 2, or 3." });
+        p.push(t); extra += ` AND e.term=$${p.length}`;
+      }
+      if (req.query.academic_year) {
+        if (!/^\d{4}$/.test(req.query.academic_year))
+          return res.status(400).json({ success: false, message: "Invalid academic_year." });
+        p.push(req.query.academic_year); extra += ` AND e.academic_year=$${p.length}`;
+      }
+      if (req.query.class_id) {
+        if (!/^\d+$/.test(req.query.class_id))
+          return res.status(400).json({ success: false, message: "Invalid class_id." });
+        p.push(req.query.class_id); extra += ` AND e.class_id=$${p.length}`;
+      }
 
       const { rows } = await db.query(
         `SELECT e.*,
@@ -109,7 +128,7 @@ router.post("/", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD"
 );
 
 // ── PUT /api/exams/:id ────────────────────────────────────────────
-router.put("/:id", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD"]),
+router.put("/:id", validateIntId, auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD"]),
   [
     body("title").optional().trim().notEmpty().isLength({ max: 200 }),
     body("exam_date").optional().isDate(),
@@ -173,7 +192,7 @@ router.put("/:id", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HO
 );
 
 // ── DELETE /api/exams/:id ─────────────────────────────────────────
-router.delete("/:id", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL"]),
+router.delete("/:id", validateIntId, auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL"]),
   async (req, res) => {
     try {
       const { rows } = await db.query("SELECT school_id FROM exams WHERE id=$1", [req.params.id]);

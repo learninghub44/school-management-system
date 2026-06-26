@@ -91,7 +91,7 @@ async function startCheckout(plan, btn) {
   statusEl.innerHTML = "";
 
   const base  = window.API_BASE || "/api";
-  const token = localStorage.getItem("cbc_erp_token") || sessionStorage.getItem("cbc_erp_token");
+  const token = localStorage.getItem("cbc_erp_token");
 
   try {
     const r = await fetch(`${base}/subscriptions/paystack/checkout`, {
@@ -127,7 +127,7 @@ async function handleCallback() {
   window.history.replaceState({}, "", window.location.pathname);
 
   const base  = window.API_BASE || "/api";
-  const token = localStorage.getItem("cbc_erp_token") || sessionStorage.getItem("cbc_erp_token");
+  const token = localStorage.getItem("cbc_erp_token");
 
   try {
     resultSub.textContent = "Confirming your Paystack payment…";
