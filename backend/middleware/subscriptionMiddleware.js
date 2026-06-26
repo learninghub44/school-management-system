@@ -4,14 +4,14 @@
  * Rules:
  * - SUPER_ADMIN: always passes (manages the platform)
  * - School staff: must have an active subscription with current_period_end in the future
- * - Grace period: 3 days after expiry before locking out (avoids midnight surprise)
+ * - Grace period: 7 days after expiry before locking out (avoids midnight surprise)
  * - Cache: 60s per school to avoid hammering DB on every request
  */
 "use strict";
 const db = require("../config/db");
 
 const CACHE_TTL  = 60 * 1000;   // 60 seconds
-const GRACE_DAYS = 3;            // days after expiry before lockout
+const GRACE_DAYS = 7;            // days after expiry before lockout
 const subCache   = new Map();    // schoolId → { status, expires_at, exp }
 
 function cacheGet(schoolId) {

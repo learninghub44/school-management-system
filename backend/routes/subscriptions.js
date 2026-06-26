@@ -25,7 +25,7 @@ const CHECKOUT_ROLES = ["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL"];
 function subscriptionEndDate(interval) {
   const end = new Date();
   if (interval === "month")     end.setMonth(end.getMonth() + 1);
-  else if (interval === "term") end.setMonth(end.getMonth() + 4);
+  else if (interval === "term") end.setMonth(end.getMonth() + 3);
   else                          end.setFullYear(end.getFullYear() + 1);
   return end;
 }
@@ -469,7 +469,7 @@ router.post("/paystack/webhook", express.raw({ type: "application/json" }), asyn
 
 router.post("/sweep-expired", auth, roleM(["SUPER_ADMIN"]), async (req, res) => {
   try {
-    const GRACE_DAYS = 3;
+    const GRACE_DAYS = 7;
     const { rows } = await db.query(
       `UPDATE school_subscriptions
        SET status = 'past_due', updated_at = NOW()
@@ -502,8 +502,8 @@ router.get("/debug-paystack", auth, roleM(["SUPER_ADMIN"]), async (req, res) => 
     key_mode:             mode,
     PAYSTACK_CALLBACK_URL: process.env.PAYSTACK_CALLBACK_URL || "(not set)",
     NODE_ENV:             process.env.NODE_ENV,
-    billing_periods:      { month: "+1 month", term: "+4 months", year: "+12 months" },
-    grace_period_days:    3,
+    billing_periods:      { month: "+1 month", term: "+3 months", year: "+12 months" },
+    grace_period_days:    7,
   };
   if (!key) return res.status(500).json({ success: false, config: info, error: "PAYSTACK_SECRET_KEY not set" });
   try {
