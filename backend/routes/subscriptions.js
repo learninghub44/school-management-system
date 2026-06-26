@@ -213,6 +213,36 @@ router.get("/me", auth, async (req, res) => {
 });
 
 // ════════════════════════════════════════════════════════════════
+// PAYMENT HISTORY — school staff track their own billing/payments
+// ════════════════════════════════════════════════════════════════
+
+router.get("/payments", auth, async (req, res) => {
+  try {
+    const schoolId = req.user.role === "SUPER_ADMIN"
+      ? (req.query.school_id || req.user.school_id)
+      : req.user.school_id;
+
+    if (!schoolId) return res.json({ success: true, data: [] });
+
+    const { rows } = await db.query(
+      `SELECT sp.id, sp.merchant_reference, sp.amount, sp.currency, sp.status,
+              sp.created_at, sp.updated_at,
+              pp.name AS plan_name, pp.billing_interval
+       FROM subscription_payments sp
+       JOIN payment_plans pp ON pp.id = sp.plan_id
+       WHERE sp.school_id = $1
+       ORDER BY sp.created_at DESC
+       LIMIT 50`,
+      [schoolId]
+    );
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error("[payments GET]", err.message);
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
 // MANUAL ACTIVATE (SUPER_ADMIN — for offline payments / adjustments)
 // ════════════════════════════════════════════════════════════════
 

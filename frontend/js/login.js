@@ -13,9 +13,23 @@ function setMessage(message, type = "error") {
   messageEl.style.display = "block";
 }
 
-function hasActiveSubscription(user) {
-  // Payment bypassed — manual activation by Super Admin
-  return true;
+async function hasActiveSubscription(user, token) {
+  // SUPER_ADMIN manages the platform and is exempt from subscription checks.
+  if (user?.role === "SUPER_ADMIN") return true;
+
+  try {
+    const base = window.API_BASE || "/api";
+    const res  = await fetch(`${base}/subscriptions/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    const sub  = data?.data;
+    return sub?.status === "active" || sub?.status === "trialing";
+  } catch (_) {
+    // Network error — don't block sign-in here; the dashboard's own
+    // subscription check will catch it once connectivity is back.
+    return true;
+  }
 }
 
 function roleDestination(role) {
@@ -87,9 +101,13 @@ if (loginForm) {
     setSession(result.token, result.user);
     setMessage("Login successful. Redirecting...", "success");
 
+    const activeSub = result.must_change_password
+      ? true // change-password page handles its own redirect afterward
+      : await hasActiveSubscription(result.user, result.token);
+
     window.location.href = result.must_change_password
       ? "/change-password.html"
-      : !hasActiveSubscription(result.user)
+      : !activeSub
       ? "/subscription.html"
       : roleDestination(result.user.role);
   });
@@ -102,7 +120,7 @@ if (registerForm) {
   });
 }
 
-function redirectExistingSession() {
+async function redirectExistingSession() {
   const user = getUser();
   const token = getToken();
 
@@ -121,7 +139,8 @@ function redirectExistingSession() {
     if (!payload.exp || payload.exp * 1000 > Date.now()) {
       // Mark that we are redirecting — if we come back, token was rejected
       sessionStorage.setItem("login_redirected", "1");
-      window.location.href = hasActiveSubscription(user)
+      const activeSub = await hasActiveSubscription(user, token);
+      window.location.href = activeSub
         ? roleDestination(user.role)
         : "/subscription.html";
       return;
