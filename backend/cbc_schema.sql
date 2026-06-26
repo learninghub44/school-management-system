@@ -465,7 +465,8 @@ INSERT INTO learning_areas (code, name, stage, department, is_core, sort_order, 
   ('JS-AG',    'Agriculture',                          'Junior Secondary', 'Science',       FALSE, 31, 'KICD/CBC/JS/010'),
   ('JS-CA',    'Creative Arts',                        'Junior Secondary', 'Arts',          FALSE, 32, 'KICD/CBC/JS/011'),
   ('JS-PHE',   'Physical & Health Education',          'Junior Secondary', 'Physical Ed',   TRUE,  33, 'KICD/CBC/JS/012'),
-  ('JS-ICT',   'Computer Science',                     'Junior Secondary', 'Technical',     TRUE,  34, 'KICD/CBC/JS/013');
+  ('JS-ICT',   'Computer Science',                     'Junior Secondary', 'Technical',     TRUE,  34, 'KICD/CBC/JS/013')
+ON CONFLICT (code) DO NOTHING;
 
 -- Senior Secondary (Grade 10-12) — core subjects (all pathways) + pathway electives
 INSERT INTO learning_areas (code, name, stage, department, is_core, sort_order, kicd_ref, pathway) VALUES
@@ -494,7 +495,8 @@ INSERT INTO learning_areas (code, name, stage, department, is_core, sort_order, 
   ('SS-ART-PER',  'Performing Arts',                 'Senior Secondary', 'Arts',           TRUE,  53, 'KICD/CBC/SS/ART/003',  'Arts & Sports'),
   ('SS-ART-SCI',  'Sports Science',                  'Senior Secondary', 'Physical Ed',    TRUE,  54, 'KICD/CBC/SS/ART/004',  'Arts & Sports'),
   ('SS-ART-FAS',  'Fashion & Design',                'Senior Secondary', 'Arts',           FALSE, 55, 'KICD/CBC/SS/ART/005',  'Arts & Sports'),
-  ('SS-ART-FIL',  'Film & Theatre',                  'Senior Secondary', 'Arts',           FALSE, 56, 'KICD/CBC/SS/ART/006',  'Arts & Sports');
+  ('SS-ART-FIL',  'Film & Theatre',                  'Senior Secondary', 'Arts',           FALSE, 56, 'KICD/CBC/SS/ART/006',  'Arts & Sports')
+ON CONFLICT (code) DO NOTHING;
 
 
 
