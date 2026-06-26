@@ -6,30 +6,30 @@
 -- ================================================================
 
 -- Drop in dependency order
-DROP TABLE IF EXISTS audit_logs          CASCADE;
-DROP TABLE IF EXISTS token_blocklist     CASCADE;
-DROP TABLE IF EXISTS subscription_payments CASCADE;
-DROP TABLE IF EXISTS school_subscriptions CASCADE;
-DROP TABLE IF EXISTS payment_plans       CASCADE;
-DROP TABLE IF EXISTS timetable           CASCADE;
-DROP TABLE IF EXISTS report_cards        CASCADE;
-DROP TABLE IF EXISTS assessments         CASCADE;
-DROP TABLE IF EXISTS attendance          CASCADE;
-DROP TABLE IF EXISTS payments            CASCADE;
-DROP TABLE IF EXISTS fee_structures      CASCADE;
-DROP TABLE IF EXISTS teacher_assignments CASCADE;
-DROP TABLE IF EXISTS students            CASCADE;
-DROP TABLE IF EXISTS classes             CASCADE;
-DROP TABLE IF EXISTS learning_areas      CASCADE;
-DROP TABLE IF EXISTS departments         CASCADE;
-DROP TABLE IF EXISTS teachers            CASCADE;
-DROP TABLE IF EXISTS users               CASCADE;
-DROP TABLE IF EXISTS schools             CASCADE;
+-- DROP TABLE IF EXISTS audit_logs          CASCADE;
+-- DROP TABLE IF EXISTS token_blocklist     CASCADE;
+-- DROP TABLE IF EXISTS subscription_payments CASCADE;
+-- DROP TABLE IF EXISTS school_subscriptions CASCADE;
+-- DROP TABLE IF EXISTS payment_plans       CASCADE;
+-- DROP TABLE IF EXISTS timetable           CASCADE;
+-- DROP TABLE IF EXISTS report_cards        CASCADE;
+-- DROP TABLE IF EXISTS assessments         CASCADE;
+-- DROP TABLE IF EXISTS attendance          CASCADE;
+-- DROP TABLE IF EXISTS payments            CASCADE;
+-- DROP TABLE IF EXISTS fee_structures      CASCADE;
+-- DROP TABLE IF EXISTS teacher_assignments CASCADE;
+-- DROP TABLE IF EXISTS students            CASCADE;
+-- DROP TABLE IF EXISTS classes             CASCADE;
+-- DROP TABLE IF EXISTS learning_areas      CASCADE;
+-- DROP TABLE IF EXISTS departments         CASCADE;
+-- DROP TABLE IF EXISTS teachers            CASCADE;
+-- DROP TABLE IF EXISTS users               CASCADE;
+-- DROP TABLE IF EXISTS schools             CASCADE;
 
 -- ================================================================
 -- SCHOOLS  (each row = one tenant)
 -- ================================================================
-CREATE TABLE schools (
+CREATE TABLE IF NOT EXISTS schools (
   id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   name           VARCHAR(255) NOT NULL,
   school_code    VARCHAR(20)  UNIQUE NOT NULL,   -- login identifier
@@ -50,7 +50,7 @@ CREATE TABLE schools (
 -- ================================================================
 -- USERS  (staff only — no student/parent logins per spec)
 -- ================================================================
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id                    UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   school_id             UUID         REFERENCES schools(id) ON DELETE CASCADE,
   username              VARCHAR(100) UNIQUE NOT NULL,
@@ -77,7 +77,7 @@ CREATE TABLE users (
 -- ================================================================
 -- DEPARTMENTS
 -- ================================================================
-CREATE TABLE departments (
+CREATE TABLE IF NOT EXISTS departments (
   id              SERIAL       PRIMARY KEY,
   school_id       UUID         NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   name            VARCHAR(100) NOT NULL,
@@ -90,7 +90,7 @@ CREATE TABLE departments (
 -- ================================================================
 -- TEACHERS  (profile record, linked to user account)
 -- ================================================================
-CREATE TABLE teachers (
+CREATE TABLE IF NOT EXISTS teachers (
   id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   school_id     UUID         NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   user_id       UUID         UNIQUE REFERENCES users(id) ON DELETE SET NULL,
@@ -111,7 +111,7 @@ CREATE TABLE teachers (
 -- ================================================================
 -- CLASSES  (PP1..Grade 12, per school per year)
 -- ================================================================
-CREATE TABLE classes (
+CREATE TABLE IF NOT EXISTS classes (
   id               SERIAL       PRIMARY KEY,
   school_id        UUID         NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   grade            VARCHAR(20)  NOT NULL,   -- PP1, PP2, Grade 1 … Grade 12
@@ -129,7 +129,7 @@ CREATE TABLE classes (
 -- ================================================================
 -- LEARNING AREAS  (KICD CBC — global reference, no school_id)
 -- ================================================================
-CREATE TABLE learning_areas (
+CREATE TABLE IF NOT EXISTS learning_areas (
   id           SERIAL       PRIMARY KEY,
   code         VARCHAR(20)  UNIQUE NOT NULL,
   name         VARCHAR(120) NOT NULL,
@@ -145,7 +145,7 @@ CREATE TABLE learning_areas (
 -- ================================================================
 -- STUDENTS
 -- ================================================================
-CREATE TABLE students (
+CREATE TABLE IF NOT EXISTS students (
   id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   school_id       UUID         NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   class_id        INTEGER      REFERENCES classes(id) ON DELETE SET NULL,
@@ -170,7 +170,7 @@ CREATE TABLE students (
 -- ================================================================
 -- TEACHER ASSIGNMENTS  (which teacher teaches which subject in which class)
 -- ================================================================
-CREATE TABLE teacher_assignments (
+CREATE TABLE IF NOT EXISTS teacher_assignments (
   id                SERIAL      PRIMARY KEY,
   school_id         UUID        NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   teacher_id        UUID        NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
@@ -185,7 +185,7 @@ CREATE TABLE teacher_assignments (
 -- ================================================================
 -- ATTENDANCE
 -- ================================================================
-CREATE TABLE attendance (
+CREATE TABLE IF NOT EXISTS attendance (
   id          SERIAL       PRIMARY KEY,
   school_id   UUID         NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   student_id  UUID         NOT NULL REFERENCES students(id) ON DELETE CASCADE,
@@ -201,7 +201,7 @@ CREATE TABLE attendance (
 -- ================================================================
 -- FEE STRUCTURES  (per class per term)
 -- ================================================================
-CREATE TABLE fee_structures (
+CREATE TABLE IF NOT EXISTS fee_structures (
   id          SERIAL         PRIMARY KEY,
   school_id   UUID           NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   class_id    INTEGER        REFERENCES classes(id) ON DELETE SET NULL,
@@ -216,7 +216,7 @@ CREATE TABLE fee_structures (
 -- ================================================================
 -- PAYMENTS
 -- ================================================================
-CREATE TABLE payments (
+CREATE TABLE IF NOT EXISTS payments (
   id              UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
   school_id       UUID           NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   student_id      UUID           NOT NULL REFERENCES students(id) ON DELETE CASCADE,
@@ -237,7 +237,7 @@ CREATE TABLE payments (
 -- ================================================================
 -- SUBSCRIPTION PLANS AND PESAPAL PAYMENTS
 -- ================================================================
-CREATE TABLE payment_plans (
+CREATE TABLE IF NOT EXISTS payment_plans (
   id               SERIAL        PRIMARY KEY,
   name             VARCHAR(100)  UNIQUE NOT NULL,
   amount           NUMERIC(12,2) NOT NULL CHECK (amount > 0),
@@ -252,7 +252,7 @@ CREATE TABLE payment_plans (
 );
 
 -- AI usage log — backs the daily per-school request quota
-CREATE TABLE ai_usage_log (
+CREATE TABLE IF NOT EXISTS ai_usage_log (
   id           BIGSERIAL    PRIMARY KEY,
   school_id    UUID         NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   user_id      UUID         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -263,7 +263,7 @@ CREATE TABLE ai_usage_log (
 CREATE INDEX idx_ai_usage_school_day ON ai_usage_log(school_id, created_at);
 CREATE INDEX idx_ai_usage_user_day   ON ai_usage_log(user_id, created_at);
 
-CREATE TABLE school_subscriptions (
+CREATE TABLE IF NOT EXISTS school_subscriptions (
   id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   school_id            UUID        UNIQUE NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   plan_id              INTEGER     NOT NULL REFERENCES payment_plans(id),
@@ -276,7 +276,7 @@ CREATE TABLE school_subscriptions (
   updated_at           TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE subscription_payments (
+CREATE TABLE IF NOT EXISTS subscription_payments (
   id                 UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
   school_id          UUID          NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   plan_id            INTEGER       NOT NULL REFERENCES payment_plans(id),
@@ -300,7 +300,7 @@ ALTER TABLE school_subscriptions
 -- ================================================================
 -- CBC ASSESSMENTS
 -- ================================================================
-CREATE TABLE assessments (
+CREATE TABLE IF NOT EXISTS assessments (
   id                SERIAL       PRIMARY KEY,
   school_id         UUID         NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   student_id        UUID         NOT NULL REFERENCES students(id) ON DELETE CASCADE,
@@ -323,7 +323,7 @@ CREATE TABLE assessments (
 -- ================================================================
 -- REPORT CARDS
 -- ================================================================
-CREATE TABLE report_cards (
+CREATE TABLE IF NOT EXISTS report_cards (
   id                    SERIAL      PRIMARY KEY,
   school_id             UUID        NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   student_id            UUID        NOT NULL REFERENCES students(id) ON DELETE CASCADE,
@@ -341,7 +341,7 @@ CREATE TABLE report_cards (
 -- ================================================================
 -- TIMETABLE
 -- ================================================================
-CREATE TABLE timetable (
+CREATE TABLE IF NOT EXISTS timetable (
   id               SERIAL      PRIMARY KEY,
   school_id        UUID        NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   class_id         INTEGER     NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
@@ -358,7 +358,7 @@ CREATE TABLE timetable (
 -- ================================================================
 -- TOKEN BLOCKLIST  (revoked JWTs)
 -- ================================================================
-CREATE TABLE token_blocklist (
+CREATE TABLE IF NOT EXISTS token_blocklist (
   id         SERIAL      PRIMARY KEY,
   jti        VARCHAR(64) UNIQUE NOT NULL,
   user_id    UUID        REFERENCES users(id) ON DELETE CASCADE,
@@ -369,7 +369,7 @@ CREATE TABLE token_blocklist (
 -- ================================================================
 -- AUDIT LOGS
 -- ================================================================
-CREATE TABLE audit_logs (
+CREATE TABLE IF NOT EXISTS audit_logs (
   id            SERIAL       PRIMARY KEY,
   school_id     UUID         REFERENCES schools(id) ON DELETE SET NULL,
   user_id       UUID         REFERENCES users(id) ON DELETE SET NULL,
