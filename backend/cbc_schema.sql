@@ -964,3 +964,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_school_time
 CREATE INDEX IF NOT EXISTS idx_report_cards_school_term
   ON report_cards (school_id, term, academic_year);
 
+
+-- Paystack webhook/verify: merchant_reference looked up on every callback
+CREATE INDEX IF NOT EXISTS idx_sub_payments_merchant_ref
+  ON subscription_payments (merchant_reference);

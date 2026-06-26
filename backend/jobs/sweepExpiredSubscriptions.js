@@ -7,7 +7,7 @@
 const db = require("../config/db");
 const { subCacheBust } = require("../middleware/subscriptionMiddleware");
 
-const GRACE_DAYS = 3;
+const GRACE_DAYS = 7;
 
 async function sweep() {
   try {
