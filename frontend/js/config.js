@@ -4,7 +4,7 @@
  * SIMPLIFIED APPROACH:
  * - SUPER_ADMIN always uses key "cbc_token_SUPER_ADMIN" regardless of URL
  * - School staff always use "cbc_token_SCHOOL" (single shared key per browser)
- * - No subdomain requirement — works on plain pages.dev
+ * - No subdomain requirement — works on plain Vercel deployment URL
  *
  * Login URL:
  *   All staff use /login.html

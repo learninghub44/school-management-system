@@ -84,10 +84,10 @@ app.use(helmet({
 
 // ── CORS ─────────────────────────────────────────────────────────
 // ALLOWED_ORIGINS env var: comma-separated list of allowed origins.
-// Always includes the Cloudflare Pages production domain by default.
+// Set this in Railway to your Vercel domain (and custom domain if any).
 const allowedOrigins = (
   process.env.ALLOWED_ORIGINS ||
-  "http://localhost:3000,http://localhost:5500,https://cbc-school-erp.pages.dev"
+  "http://localhost:3000,http://localhost:5500"
 )
   .split(",")
   .map(o => o.trim())
