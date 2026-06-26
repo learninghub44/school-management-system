@@ -7,6 +7,7 @@ const roleM = require("../middleware/roleMiddleware");
 const { audit } = require("../middleware/auditLog");
 
 const router = express.Router();
+const validateUUID = require("../middleware/validateUUID");
 
 function schoolId(req) {
   return req.user.role === "SUPER_ADMIN" ? (req.query.school_id || req.body.school_id || null) : req.user.school_id;
@@ -95,7 +96,7 @@ router.post("/", auth, roleM(WRITE_ROLES),
 );
 
 // DELETE /api/portfolio/:id
-router.delete("/:id", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD","TEACHER"]),
+router.delete("/:id", validateUUID("id"), auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD","TEACHER"]),
   async (req, res) => {
     try {
       const { rows } = await db.query("SELECT school_id FROM portfolio_items WHERE id=$1", [req.params.id]);

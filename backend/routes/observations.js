@@ -7,6 +7,7 @@ const roleM = require("../middleware/roleMiddleware");
 const { audit } = require("../middleware/auditLog");
 
 const router = express.Router();
+const validateUUID = require("../middleware/validateUUID");
 
 const OBS_TYPES = ["Behaviour","Skill Development","Participation","Social Interaction","Leadership","General"];
 const READ_ROLES  = ["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD","TEACHER"];
@@ -95,7 +96,7 @@ router.post("/", auth, roleM(WRITE_ROLES),
 );
 
 // DELETE /api/observations/:id
-router.delete("/:id", auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD","TEACHER"]),
+router.delete("/:id", validateUUID("id"), auth, roleM(["SUPER_ADMIN","PRINCIPAL","DEPUTY_PRINCIPAL","HOD","TEACHER"]),
   async (req, res) => {
     try {
       const { rows } = await db.query("SELECT school_id FROM teacher_observations WHERE id=$1", [req.params.id]);

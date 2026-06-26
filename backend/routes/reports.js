@@ -460,7 +460,8 @@ router.get("/progress/:student_id",
            FROM assessments a
            JOIN learning_areas la ON la.id = a.learning_area_id
            WHERE a.student_id=$1 ${schoolId ? "AND a.school_id=$2" : ""}
-           ORDER BY a.academic_year, a.term, la.name`,
+           ORDER BY a.academic_year DESC, a.term DESC, la.name
+           LIMIT 500`,
           schoolId ? [sid, schoolId] : [sid]
         ),
         db.query(

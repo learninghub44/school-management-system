@@ -12,7 +12,7 @@ const pool = new Pool({
     ? { rejectUnauthorized: false }
     : false,
   min: parseInt(process.env.DB_POOL_MIN || "2", 10),
-  max: parseInt(process.env.DB_POOL_MAX || "20", 10),
+  max: parseInt(process.env.DB_POOL_MAX || "10", 10),
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 8000,
   statement_timeout: 20000,

@@ -13,6 +13,7 @@ const roleM     = require("../middleware/roleMiddleware");
 const { audit } = require("../middleware/auditLog");
 
 const router = express.Router();
+const validateUUID = require("../middleware/validateUUID");
 
 // ── GET /api/schools — SUPER_ADMIN only ──────────────────────────
 router.get("/", auth, roleM(["SUPER_ADMIN"]), async (req, res) => {
@@ -111,7 +112,7 @@ router.post("/", auth, roleM(["SUPER_ADMIN"]),
 );
 
 // ── PUT /api/schools/:id — SUPER_ADMIN or own school ─────────────
-router.put("/:id", auth, roleM(["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL"]),
+router.put("/:id", validateUUID("id"), auth, roleM(["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL"]),
   [
     body("name").optional().trim().isLength({ max: 255 }),
     body("email").optional().isEmail().normalizeEmail(),
@@ -215,7 +216,7 @@ router.put("/:id", auth, roleM(["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL"])
 );
 
 // ── PATCH /api/schools/:id/toggle — SUPER_ADMIN only ────────────
-router.patch("/:id/toggle", auth, roleM(["SUPER_ADMIN"]), async (req, res) => {
+router.patch("/:id/toggle", validateUUID("id"), auth, roleM(["SUPER_ADMIN"]), async (req, res) => {
   try {
     const { rows } = await db.query(
       "UPDATE schools SET is_active = NOT is_active, updated_at = NOW() WHERE id=$1 RETURNING id, name, is_active",
