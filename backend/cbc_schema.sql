@@ -609,16 +609,11 @@ CREATE TABLE IF NOT EXISTS subscription_payments (
   updated_at         TIMESTAMPTZ   DEFAULT NOW()
 );
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'school_subscriptions_last_payment_fk'
-  ) THEN
-    -- Constraint added safely above via DO block
-    -- ALTER TABLE school_subscriptions
-    --   ADD CONSTRAINT school_subscriptions_last_payment_fk
-      FOREIGN KEY (last_payment_id) REFERENCES subscription_payments(id) ON DELETE SET NULL;
-  END IF;
+DO $$ BEGIN
+  ALTER TABLE school_subscriptions
+    ADD CONSTRAINT school_subscriptions_last_payment_fk
+    FOREIGN KEY (last_payment_id) REFERENCES subscription_payments(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_payment_plans_active  ON payment_plans(is_active);
