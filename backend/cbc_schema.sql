@@ -260,8 +260,8 @@ CREATE TABLE IF NOT EXISTS ai_usage_log (
   prompt_chars INTEGER,
   created_at   TIMESTAMPTZ  DEFAULT NOW()
 );
-CREATE INDEX idx_ai_usage_school_day ON ai_usage_log(school_id, created_at);
-CREATE INDEX idx_ai_usage_user_day   ON ai_usage_log(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_ai_usage_school_day ON ai_usage_log(school_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_ai_usage_user_day   ON ai_usage_log(user_id, created_at);
 
 CREATE TABLE IF NOT EXISTS school_subscriptions (
   id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -389,37 +389,37 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 -- ================================================================
 -- INDEXES
 -- ================================================================
-CREATE INDEX idx_users_school          ON users(school_id);
-CREATE INDEX idx_users_email           ON users(email);
-CREATE INDEX idx_users_role            ON users(role);
-CREATE INDEX idx_teachers_school       ON teachers(school_id);
-CREATE INDEX idx_teachers_user         ON teachers(user_id);
-CREATE INDEX idx_teachers_dept         ON teachers(department_id);
-CREATE INDEX idx_classes_school        ON classes(school_id);
-CREATE INDEX idx_classes_year          ON classes(academic_year);
-CREATE INDEX idx_students_school       ON students(school_id);
-CREATE INDEX idx_students_class        ON students(class_id);
-CREATE INDEX idx_students_adm          ON students(school_id, admission_number);
-CREATE INDEX idx_attendance_school     ON attendance(school_id);
-CREATE INDEX idx_attendance_date       ON attendance(date);
-CREATE INDEX idx_attendance_student    ON attendance(student_id);
-CREATE INDEX idx_attendance_class      ON attendance(class_id);
-CREATE INDEX idx_payments_school       ON payments(school_id);
-CREATE INDEX idx_payments_student      ON payments(student_id);
-CREATE INDEX idx_payments_date         ON payments(payment_date);
-CREATE INDEX idx_payment_plans_active  ON payment_plans(is_active);
-CREATE INDEX idx_school_subs_school    ON school_subscriptions(school_id);
-CREATE INDEX idx_school_subs_status    ON school_subscriptions(status);
-CREATE INDEX idx_sub_payments_school   ON subscription_payments(school_id);
-CREATE INDEX idx_sub_payments_tracking ON subscription_payments(order_tracking_id);
-CREATE INDEX idx_assessments_school    ON assessments(school_id);
-CREATE INDEX idx_assessments_student   ON assessments(student_id);
-CREATE INDEX idx_assessments_term      ON assessments(term, academic_year);
-CREATE INDEX idx_report_cards_student  ON report_cards(student_id);
-CREATE INDEX idx_timetable_class       ON timetable(class_id);
-CREATE INDEX idx_token_blocklist_jti   ON token_blocklist(jti);
-CREATE INDEX idx_audit_logs_school     ON audit_logs(school_id);
-CREATE INDEX idx_audit_logs_created    ON audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_users_school          ON users(school_id);
+CREATE INDEX IF NOT EXISTS idx_users_email           ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role            ON users(role);
+CREATE INDEX IF NOT EXISTS idx_teachers_school       ON teachers(school_id);
+CREATE INDEX IF NOT EXISTS idx_teachers_user         ON teachers(user_id);
+CREATE INDEX IF NOT EXISTS idx_teachers_dept         ON teachers(department_id);
+CREATE INDEX IF NOT EXISTS idx_classes_school        ON classes(school_id);
+CREATE INDEX IF NOT EXISTS idx_classes_year          ON classes(academic_year);
+CREATE INDEX IF NOT EXISTS idx_students_school       ON students(school_id);
+CREATE INDEX IF NOT EXISTS idx_students_class        ON students(class_id);
+CREATE INDEX IF NOT EXISTS idx_students_adm          ON students(school_id, admission_number);
+CREATE INDEX IF NOT EXISTS idx_attendance_school     ON attendance(school_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_date       ON attendance(date);
+CREATE INDEX IF NOT EXISTS idx_attendance_student    ON attendance(student_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_class      ON attendance(class_id);
+CREATE INDEX IF NOT EXISTS idx_payments_school       ON payments(school_id);
+CREATE INDEX IF NOT EXISTS idx_payments_student      ON payments(student_id);
+CREATE INDEX IF NOT EXISTS idx_payments_date         ON payments(payment_date);
+CREATE INDEX IF NOT EXISTS idx_payment_plans_active  ON payment_plans(is_active);
+CREATE INDEX IF NOT EXISTS idx_school_subs_school    ON school_subscriptions(school_id);
+CREATE INDEX IF NOT EXISTS idx_school_subs_status    ON school_subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_sub_payments_school   ON subscription_payments(school_id);
+CREATE INDEX IF NOT EXISTS idx_sub_payments_tracking ON subscription_payments(order_tracking_id);
+CREATE INDEX IF NOT EXISTS idx_assessments_school    ON assessments(school_id);
+CREATE INDEX IF NOT EXISTS idx_assessments_student   ON assessments(student_id);
+CREATE INDEX IF NOT EXISTS idx_assessments_term      ON assessments(term, academic_year);
+CREATE INDEX IF NOT EXISTS idx_report_cards_student  ON report_cards(student_id);
+CREATE INDEX IF NOT EXISTS idx_timetable_class       ON timetable(class_id);
+CREATE INDEX IF NOT EXISTS idx_token_blocklist_jti   ON token_blocklist(jti);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_school     ON audit_logs(school_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created    ON audit_logs(created_at DESC);
 
 -- ================================================================
 -- SEED: KICD CBC LEARNING AREAS
