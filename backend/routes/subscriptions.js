@@ -11,102 +11,35 @@ const router = express.Router();
 const PLAN_ROLES = ["SUPER_ADMIN"];
 const CHECKOUT_ROLES = ["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL"];
 
-const pesapalBase = () =>
-  (process.env.PESAPAL_BASE_URL || "https://cybqa.pesapal.com/pesapalv3/api").replace(/\/$/, "");
+// ════════════════════════════════════════════════════════════════
+// PAYSTACK
+// ════════════════════════════════════════════════════════════════
 
-async function pesapalFetch(path, options = {}) {
-  const url = `${pesapalBase()}${path}`;
+async function paystackFetch(path, options = {}) {
+  const key = process.env.PAYSTACK_SECRET_KEY;
+  if (!key) throw new Error("PAYSTACK_SECRET_KEY is not configured.");
+  const url = `https://api.paystack.co${path}`;
   let res;
   try {
     res = await fetch(url, {
       ...options,
-      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+        ...(options.headers || {}),
+      },
     });
   } catch (networkErr) {
-    console.error(`[Pesapal] Network error calling ${path}:`, networkErr.message);
-    throw new Error(`Pesapal network error: ${networkErr.message}`);
+    throw new Error(`Paystack network error: ${networkErr.message}`);
   }
-
   const raw = await res.text().catch(() => "");
   let data = {};
   try { data = JSON.parse(raw); } catch { data = {}; }
-
-  console.log(`[Pesapal] ${path} → HTTP ${res.status}`, raw.slice(0, 500));
-
-  // Pesapal sometimes returns HTTP 200 with status:"500" and an error in the body
-  const pesapalStatus = String(data.status || "");
-  const hasError = !res.ok || pesapalStatus === "500" || pesapalStatus.startsWith("4");
-  if (hasError) {
-    const msg =
-      data.error?.message ||
-      data.message ||
-      data.error ||
-      data.error_description ||
-      (typeof data === "string" ? data : null) ||
-      `Pesapal HTTP ${res.status} (status:${pesapalStatus})`;
-    throw new Error(msg);
+  console.log(`[Paystack] ${path} → HTTP ${res.status}`, raw.slice(0, 400));
+  if (!res.ok || data.status === false) {
+    throw new Error(data.message || `Paystack HTTP ${res.status}`);
   }
   return data;
-}
-
-async function getPesapalToken() {
-  if (!process.env.PESAPAL_CONSUMER_KEY || !process.env.PESAPAL_CONSUMER_SECRET) {
-    throw new Error("Pesapal credentials are not configured (missing PESAPAL_CONSUMER_KEY or PESAPAL_CONSUMER_SECRET).");
-  }
-  console.log("[Pesapal] Requesting token with key:", process.env.PESAPAL_CONSUMER_KEY?.slice(0, 8) + "...");
-  console.log("[Pesapal] Base URL:", pesapalBase());
-  const data = await pesapalFetch("/Auth/RequestToken", {
-    method: "POST",
-    body: JSON.stringify({
-      consumer_key: process.env.PESAPAL_CONSUMER_KEY,
-      consumer_secret: process.env.PESAPAL_CONSUMER_SECRET,
-    }),
-  });
-  if (!data.token) {
-    console.error("[Pesapal] Token response had no token field:", JSON.stringify(data));
-    throw new Error(`Pesapal did not return a token. Response: ${JSON.stringify(data)}`);
-  }
-  console.log("[Pesapal] Token obtained successfully");
-  return data.token;
-}
-
-let _cachedIpnId = null;
-
-async function getNotificationId(token) {
-  if (_cachedIpnId) return _cachedIpnId;
-  if (process.env.PESAPAL_IPN_ID) {
-    _cachedIpnId = process.env.PESAPAL_IPN_ID;
-    return _cachedIpnId;
-  }
-  if (!process.env.PESAPAL_IPN_URL) throw new Error("PESAPAL_IPN_URL or PESAPAL_IPN_ID is required.");
-
-  // Try to reuse existing registered IPN
-  try {
-    const existing = await pesapalFetch("/URLSetup/GetIpnList", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const list = Array.isArray(existing) ? existing : (existing.data || []);
-    const match = list.find(i => i.url === process.env.PESAPAL_IPN_URL);
-    if (match?.ipn_id) {
-      console.log("[Pesapal] Reusing existing IPN ID:", match.ipn_id);
-      _cachedIpnId = match.ipn_id;
-      return _cachedIpnId;
-    }
-  } catch (e) {
-    console.warn("[Pesapal] Could not fetch IPN list:", e.message);
-  }
-
-  const data = await pesapalFetch("/URLSetup/RegisterIPN", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      url: process.env.PESAPAL_IPN_URL,
-      ipn_notification_type: "GET",
-    }),
-  });
-  console.log("[Pesapal] Registered IPN ID:", data.ipn_id, "— set PESAPAL_IPN_ID=" + data.ipn_id + " in Render env");
-  _cachedIpnId = data.ipn_id;
-  return _cachedIpnId;
 }
 
 function subscriptionEndDate(interval) {
@@ -115,44 +48,6 @@ function subscriptionEndDate(interval) {
   else if (interval === "term") end.setMonth(end.getMonth() + 4);
   else end.setFullYear(end.getFullYear() + 1);
   return end;
-}
-
-function splitName(name) {
-  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return { first_name: "School", middle_name: "", last_name: "Account" };
-  if (parts.length === 1) return { first_name: parts[0], middle_name: "", last_name: "School" };
-  return {
-    first_name: parts[0],
-    middle_name: parts.length > 2 ? parts.slice(1, -1).join(" ") : "",
-    last_name: parts[parts.length - 1],
-  };
-}
-
-function buildPesapalRecurringOrder({ reference, plan, school, user, callbackUrl, notificationId }) {
-  const contactName = splitName(user?.name || school.name);
-  return {
-    id: reference,
-    currency: plan.currency,
-    amount: Number(plan.amount),
-    description: `${plan.name} subscription for ${school.name}`,
-    callback_url: callbackUrl,
-    notification_id: notificationId,
-    billing_address: {
-      email_address: school.email || user.email || "",
-      phone_number: school.phone || user.phone || "",
-      country_code: "KE",
-      first_name: contactName.first_name,
-      middle_name: contactName.middle_name,
-      last_name: contactName.last_name,
-      line_1: school.address || school.name || "",
-      line_2: "",
-      city: school.sub_county || "",
-      state: school.county || "",
-      postal_code: "",
-      zip_code: "",
-    },
-    account_number: school.school_code || String(school.id),
-  };
 }
 
 async function activateSubscription(paymentId) {
@@ -183,124 +78,32 @@ async function activateSubscription(paymentId) {
   return rows[0];
 }
 
-// ── DEBUG endpoints — SUPER_ADMIN only, disabled in production ────
-router.get("/debug-pesapal", auth, roleM(["SUPER_ADMIN"]), async (req, res) => {
+// ── Debug endpoint (SUPER_ADMIN only, disabled in production) ────
+router.get("/debug-paystack", auth, roleM(["SUPER_ADMIN"]), async (req, res) => {
   if (process.env.NODE_ENV === "production")
     return res.status(403).json({ success: false, message: "Debug endpoints disabled in production." });
-  const rawCallback = process.env.PESAPAL_CALLBACK_URL || "https://cbc-school-erp.pages.dev/subscription.html";
-  const callbackUrl = rawCallback.replace(/^https?:\/\/https?:\/\//, "https://").replace(/([^:])\/\/+/g, "$1/").replace(/\/$/, "");
-
+  const key = process.env.PAYSTACK_SECRET_KEY || "";
+  const mode = !key ? "missing" : key.startsWith("sk_live_") ? "live" : key.startsWith("sk_test_") ? "test" : "unknown";
   const info = {
-    PESAPAL_BASE_URL: process.env.PESAPAL_BASE_URL || "(not set, using sandbox default)",
-    PESAPAL_CONSUMER_KEY: process.env.PESAPAL_CONSUMER_KEY ? process.env.PESAPAL_CONSUMER_KEY.slice(0, 8) + "..." : "(NOT SET)",
-    PESAPAL_CONSUMER_SECRET: process.env.PESAPAL_CONSUMER_SECRET ? process.env.PESAPAL_CONSUMER_SECRET.slice(0, 4) + "..." : "(NOT SET)",
-    PESAPAL_IPN_ID: process.env.PESAPAL_IPN_ID || "(not set)",
-    PESAPAL_IPN_URL: process.env.PESAPAL_IPN_URL || "(not set)",
-    PESAPAL_CALLBACK_URL_RAW: rawCallback,
-    PESAPAL_CALLBACK_URL_SANITIZED: callbackUrl,
+    PAYSTACK_SECRET_KEY: key ? key.slice(0, 12) + "..." : "(NOT SET)",
+    key_mode: mode,
+    PAYSTACK_CALLBACK_URL: process.env.PAYSTACK_CALLBACK_URL || "(not set)",
     NODE_ENV: process.env.NODE_ENV,
   };
-
-  const steps = {};
+  if (!key) return res.status(500).json({ success: false, config: info, error: "PAYSTACK_SECRET_KEY not set" });
   try {
-    // Step 1: Get token
-    const token = await getPesapalToken();
-    steps.token = "OK";
-
-    // Step 2: Get/register IPN
-    let ipnId;
-    try {
-      ipnId = await getNotificationId(token);
-      steps.ipn_id = ipnId || "EMPTY - this is the problem";
-    } catch (e) {
-      steps.ipn_id = "FAILED: " + e.message;
-      return res.status(500).json({ success: false, config: info, steps });
-    }
-
-    if (!ipnId) {
-      steps.ipn_id = "NULL/UNDEFINED - Pesapal returned no ipn_id";
-      return res.status(500).json({ success: false, config: info, steps });
-    }
-
-    // Step 3: Try submitting a dummy order
-    const dummyOrder = {
-      id: "TEST-" + Date.now(),
-      currency: "KES",
-      amount: 1,
-      description: "Test order",
-      callback_url: callbackUrl,
-      notification_id: ipnId,
-      billing_address: {
-        email_address: "test@school.com",
-        phone_number: "254700000000",
-        country_code: "KE",
-        first_name: "Test",
-        middle_name: "",
-        last_name: "School",
-        line_1: "Nairobi",
-        line_2: "",
-        city: "Nairobi",
-        state: "Nairobi",
-        postal_code: "",
-        zip_code: "",
-      },
-      account_number: "TEST001",
-    };
-
-    try {
-      const order = await pesapalFetch("/Transactions/SubmitOrderRequest", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify(dummyOrder),
-      });
-      steps.order_submission = "OK";
-      steps.redirect_url = order.redirect_url || order.redirectUrl || "(none)";
-      return res.json({ success: true, config: info, steps });
-    } catch (e) {
-      steps.order_submission = "FAILED: " + e.message;
-      return res.status(500).json({ success: false, config: info, steps });
-    }
-
+    const data = await paystackFetch("/bank?country=kenya&perPage=1");
+    return res.json({ success: true, config: info, connectivity: "OK", sample: data?.data?.[0] || null });
   } catch (err) {
-    steps.token = "FAILED: " + err.message;
-    return res.status(500).json({ success: false, config: info, steps });
+    return res.status(500).json({ success: false, config: info, connectivity: "FAILED", error: err.message });
   }
 });
-// ── DB CHECK DEBUG ───────────────────────────────────────────────
-router.get("/debug-db", auth, roleM(["SUPER_ADMIN"]), async (req, res) => {
-  if (process.env.NODE_ENV === "production")
-    return res.status(403).json({ success: false, message: "Debug endpoints disabled in production." });
-  try {
-    const tables = await db.query(`
-      SELECT table_name FROM information_schema.tables
-      WHERE table_schema = 'public'
-      AND table_name IN ('payment_plans','school_subscriptions','subscription_payments','schools','users')
-      ORDER BY table_name
-    `);
-    const existing = tables.rows.map(r => r.table_name);
-    const required = ['payment_plans','school_subscriptions','subscription_payments'];
-    const missing = required.filter(t => !existing.includes(t));
 
-    // Check payment_plans has data
-    let plans = [];
-    if (existing.includes('payment_plans')) {
-      const r = await db.query('SELECT id, name, amount, is_active FROM payment_plans LIMIT 10');
-      plans = r.rows;
-    }
-
-    return res.json({ existing_tables: existing, missing_tables: missing, payment_plans: plans });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-// ── END DEBUG ─────────────────────────────────────────────────────
-
+// ── Plans ────────────────────────────────────────────────────────
 router.get("/plans", auth, async (req, res) => {
   try {
     const where = req.user.role === "SUPER_ADMIN" ? "" : "WHERE is_active = TRUE";
-    const { rows } = await db.query(
-      `SELECT * FROM payment_plans ${where} ORDER BY amount, name`
-    );
+    const { rows } = await db.query(`SELECT * FROM payment_plans ${where} ORDER BY amount, name`);
     return res.json({ success: true, data: rows });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Server error." });
@@ -371,6 +174,7 @@ router.put("/plans/:id", auth, roleM(PLAN_ROLES), async (req, res) => {
   }
 });
 
+// ── Current subscription ─────────────────────────────────────────
 router.get("/me", auth, async (req, res) => {
   try {
     if (!req.user.school_id) return res.json({ success: true, data: null });
@@ -389,69 +193,7 @@ router.get("/me", auth, async (req, res) => {
   }
 });
 
-router.post("/checkout", auth, roleM(CHECKOUT_ROLES),
-  [body("plan_id").isInt({ min: 1 }), body("school_id").optional().isUUID()],
-  async (req, res) => {
-    const errs = validationResult(req);
-    if (!errs.isEmpty()) return res.status(400).json({ success: false, errors: errs.array() });
-    try {
-      const schoolId = req.user.role === "SUPER_ADMIN" ? req.body.school_id : req.user.school_id;
-      if (!schoolId) return res.status(400).json({ success: false, message: "school_id required." });
-
-      const [{ rows: schools }, { rows: plans }] = await Promise.all([
-        db.query("SELECT * FROM schools WHERE id=$1", [schoolId]),
-        db.query("SELECT * FROM payment_plans WHERE id=$1 AND is_active=TRUE", [req.body.plan_id]),
-      ]);
-      if (!schools.length) return res.status(404).json({ success: false, message: "School not found." });
-      if (!plans.length) return res.status(404).json({ success: false, message: "Plan not found." });
-
-      const school = schools[0];
-      const plan = plans[0];
-      const reference = `SUB-${Date.now()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
-      // Sanitize callback URL — fix double-https:// and double-slash bugs in env var
-      const rawCallback = process.env.PESAPAL_CALLBACK_URL || `${req.protocol}://${req.get("host")}/subscription.html`;
-      const callbackUrl = rawCallback.replace(/^https?:\/\/https?:\/\//, "https://").replace(/([^:])\/\/+/g, "$1/").replace(/\/$/, "") + (rawCallback.includes("subscription.html") ? "" : "");
-      console.log("[Pesapal] Callback URL:", callbackUrl);
-      const token = await getPesapalToken();
-      const notificationId = await getNotificationId(token);
-      const pesapalOrder = buildPesapalRecurringOrder({
-        reference,
-        plan,
-        school,
-        user: req.user,
-        callbackUrl,
-        notificationId,
-      });
-      const order = await pesapalFetch("/Transactions/SubmitOrderRequest", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify(pesapalOrder),
-      });
-
-      const redirectUrl = order.redirect_url || order.redirectUrl;
-      const trackingId = order.order_tracking_id || order.orderTrackingId || null;
-      const { rows } = await db.query(
-        `INSERT INTO subscription_payments
-         (school_id, plan_id, merchant_reference, order_tracking_id, amount, currency, status, checkout_url, created_by)
-         VALUES ($1,$2,$3,$4,$5,$6,'pending',$7,$8)
-         RETURNING *`,
-        [schoolId, plan.id, reference, trackingId, plan.amount, plan.currency, redirectUrl, req.user.id]
-      );
-      await audit(req, "CREATE_SUBSCRIPTION_CHECKOUT", "subscription_payments", rows[0].id, null, rows[0]);
-      return res.status(201).json({ success: true, data: rows[0], redirect_url: redirectUrl });
-    } catch (err) {
-      console.error("[Pesapal] Checkout error:", err.message, err.stack);
-      // Only expose Pesapal-originated messages; never leak DB internals
-      const isPesapalError = err.message?.toLowerCase().includes("pesapal") ||
-        err.message?.toLowerCase().includes("token") ||
-        err.message?.toLowerCase().includes("ipn") ||
-        err.message?.toLowerCase().includes("credentials");
-      const userMsg = isPesapalError ? err.message : "Unable to start checkout. Please try again.";
-      return res.status(500).json({ success: false, message: userMsg });
-    }
-  }
-);
-
+// ── Manual activate (SUPER_ADMIN) ────────────────────────────────
 router.post("/payments/:id/activate", auth, roleM(PLAN_ROLES), async (req, res) => {
   try {
     const { rows: payments } = await db.query("SELECT * FROM subscription_payments WHERE id=$1", [req.params.id]);
@@ -465,101 +207,7 @@ router.post("/payments/:id/activate", auth, roleM(PLAN_ROLES), async (req, res) 
   }
 });
 
-// IPN is unauthenticated (called by payment provider) — rate-limited to prevent abuse
-const ipnLimiter = require("express-rate-limit")({
-  windowMs: 60 * 1000,
-  max: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-router.get("/ipn", ipnLimiter, async (req, res) => {
-  try {
-    const trackingId = req.query.OrderTrackingId || req.query.orderTrackingId;
-    const merchantReference = req.query.OrderMerchantReference || req.query.orderMerchantReference;
-    if (!trackingId && !merchantReference) return res.status(400).json({ success: false });
-
-    const token = await getPesapalToken();
-    const statusPath = trackingId
-      ? `/Transactions/GetTransactionStatus?orderTrackingId=${encodeURIComponent(trackingId)}`
-      : `/Transactions/GetTransactionStatus?orderMerchantReference=${encodeURIComponent(merchantReference)}`;
-    const status = await pesapalFetch(statusPath, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const normalized = String(status.payment_status_description || status.status || "").toLowerCase();
-    const paid = normalized.includes("completed") || normalized.includes("paid");
-    const { rows } = await db.query(
-      `UPDATE subscription_payments SET
-         status=$1, provider_payload=$2, updated_at=NOW()
-       WHERE order_tracking_id=$3 OR merchant_reference=$4
-       RETURNING id`,
-      [paid ? "completed" : normalized || "pending", JSON.stringify(status), trackingId || null, merchantReference || null]
-    );
-    if (paid && rows[0]?.id) await activateSubscription(rows[0].id);
-    return res.json({ success: true });
-  } catch (err) {
-    console.error("Pesapal IPN:", err.message);
-    return res.status(500).json({ success: false });
-  }
-});
-
-
-// ════════════════════════════════════════════════════════════════
-// PAYSTACK INTEGRATION
-// ════════════════════════════════════════════════════════════════
-
-function paystackBase() {
-  return "https://api.paystack.co";
-}
-
-async function paystackFetch(path, options = {}) {
-  const key = process.env.PAYSTACK_SECRET_KEY;
-  if (!key) throw new Error("PAYSTACK_SECRET_KEY is not configured.");
-  const url = `${paystackBase()}${path}`;
-  let res;
-  try {
-    res = await fetch(url, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${key}`,
-        ...(options.headers || {}),
-      },
-    });
-  } catch (networkErr) {
-    throw new Error(`Paystack network error: ${networkErr.message}`);
-  }
-  const raw = await res.text().catch(() => "");
-  let data = {};
-  try { data = JSON.parse(raw); } catch { data = {}; }
-  console.log(`[Paystack] ${path} → HTTP ${res.status}`, raw.slice(0, 400));
-  if (!res.ok || data.status === false) {
-    throw new Error(data.message || `Paystack HTTP ${res.status}`);
-  }
-  return data;
-}
-
-// GET /api/subscriptions/debug-paystack — verify key mode and connectivity (SUPER_ADMIN only)
-router.get("/debug-paystack", auth, roleM(["SUPER_ADMIN"]), async (req, res) => {
-  const key = process.env.PAYSTACK_SECRET_KEY || "";
-  const mode = !key ? "missing" : key.startsWith("sk_live_") ? "live" : key.startsWith("sk_test_") ? "test" : "unknown";
-  const info = {
-    PAYSTACK_SECRET_KEY: key ? key.slice(0, 12) + "..." : "(NOT SET)",
-    key_mode: mode,
-    PAYSTACK_CALLBACK_URL: process.env.PAYSTACK_CALLBACK_URL || "(not set — using default)",
-    NODE_ENV: process.env.NODE_ENV,
-  };
-  if (!key) return res.status(500).json({ success: false, config: info, error: "PAYSTACK_SECRET_KEY not set" });
-
-  try {
-    // Ping Paystack — list banks (lightweight, no side effects)
-    const data = await paystackFetch("/bank?country=kenya&perPage=1");
-    return res.json({ success: true, config: info, connectivity: "OK", sample: data?.data?.[0] || null });
-  } catch (err) {
-    return res.status(500).json({ success: false, config: info, connectivity: "FAILED", error: err.message });
-  }
-});
-
-// POST /api/subscriptions/paystack/checkout
+// ── Paystack checkout ────────────────────────────────────────────
 router.post("/paystack/checkout", auth, roleM(CHECKOUT_ROLES),
   [body("plan_id").isInt({ min: 1 }), body("school_id").optional().isUUID()],
   async (req, res) => {
@@ -574,19 +222,17 @@ router.post("/paystack/checkout", auth, roleM(CHECKOUT_ROLES),
         db.query("SELECT * FROM payment_plans WHERE id=$1 AND is_active=TRUE", [req.body.plan_id]),
       ]);
       if (!schools.length) return res.status(404).json({ success: false, message: "School not found." });
-      if (!plans.length) return res.status(404).json({ success: false, message: "Plan not found." });
+      if (!plans.length) return res.status(404).json({ success: false, message: "Plan not found or inactive." });
 
       const school = schools[0];
       const plan = plans[0];
       const reference = `PS-${Date.now()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
-      const callbackUrl = (process.env.PAYSTACK_CALLBACK_URL || `https://cbc-school-erp.pages.dev/subscription.html`)
+      const callbackUrl = (process.env.PAYSTACK_CALLBACK_URL || `${req.protocol}://${req.get("host")}/subscription.html`)
         .replace(/^https?:\/\/https?:\/\//, "https://")
         .replace(/([^:])\/\/+/g, "$1/")
         .replace(/\/$/, "");
 
-      // Paystack amount is in kobo (KES * 100)
       const amountKobo = Math.round(Number(plan.amount) * 100);
-
       const email = school.email || req.user.email || "school@cbcerp.co.ke";
 
       const data = await paystackFetch("/transaction/initialize", {
@@ -610,7 +256,6 @@ router.post("/paystack/checkout", auth, roleM(CHECKOUT_ROLES),
       const redirectUrl = data.data?.authorization_url;
       const accessCode  = data.data?.access_code;
 
-      // Save pending payment
       const { rows } = await db.query(
         `INSERT INTO subscription_payments
          (school_id, plan_id, merchant_reference, order_tracking_id, amount, currency, status, checkout_url, created_by)
@@ -622,20 +267,18 @@ router.post("/paystack/checkout", auth, roleM(CHECKOUT_ROLES),
       return res.status(201).json({ success: true, data: rows[0], redirect_url: redirectUrl });
     } catch (err) {
       console.error("[Paystack] Checkout error:", err.message, err.stack);
-      return res.status(500).json({ success: false, message: err.message || "Unable to start Paystack checkout." });
+      return res.status(500).json({ success: false, message: err.message || "Unable to start checkout." });
     }
   }
 );
 
-// GET /api/subscriptions/paystack/verify/:reference
-// Frontend hits this after Paystack redirects back — verifies and activates
+// ── Paystack verify (frontend callback) ──────────────────────────
 router.get("/paystack/verify/:reference", auth, async (req, res) => {
   try {
     const { reference } = req.params;
     if (!reference || !/^[A-Z0-9\-]{10,80}$/i.test(reference))
       return res.status(400).json({ success: false, message: "Invalid reference." });
 
-    // Verify the payment record belongs to the requesting school (prevents cross-school activation)
     const { rows: existing } = await db.query(
       "SELECT id, school_id, status FROM subscription_payments WHERE merchant_reference=$1",
       [reference]
@@ -673,17 +316,13 @@ router.get("/paystack/verify/:reference", auth, async (req, res) => {
   }
 });
 
-// POST /api/subscriptions/paystack/webhook  (Paystack server-to-server webhook)
+// ── Paystack webhook (server-to-server) ──────────────────────────
 router.post("/paystack/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   try {
     const secret = process.env.PAYSTACK_SECRET_KEY;
     if (!secret) return res.status(500).end();
 
-    // Verify Paystack signature
-    const hash = crypto
-      .createHmac("sha512", secret)
-      .update(req.body)
-      .digest("hex");
+    const hash = crypto.createHmac("sha512", secret).update(req.body).digest("hex");
     if (hash !== req.headers["x-paystack-signature"]) {
       console.warn("[Paystack] Webhook signature mismatch");
       return res.status(400).end();

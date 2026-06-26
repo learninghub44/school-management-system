@@ -49,16 +49,10 @@ if (!paystackKey) {
   console.log("[Paystack] Live key detected ✓");
 }
 
-const pesapalBase = process.env.PESAPAL_BASE_URL || "";
-if (pesapalBase.includes("cybqa")) {
-  console.warn("WARN: PESAPAL_BASE_URL points to the sandbox (cybqa). Use https://pay.pesapal.com/v3/api in production.");
-} else if (pesapalBase.includes("pay.pesapal.com")) {
-  console.log("[Pesapal] Live endpoint detected ✓");
-}
 
 const app = express();
 
-// ── Trust proxy (for Render / Cloudflare) ────────────────────────
+// ── Trust proxy (Railway) ─────────────────────────────────────────
 app.set("trust proxy", 1);
 
 // ── Gzip compression ─────────────────────────────────────────────
