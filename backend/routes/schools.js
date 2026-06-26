@@ -156,11 +156,28 @@ router.put("/:id", auth, roleM(["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL"])
       if (!ex.length)
         return res.status(404).json({ success: false, message: "School not found." });
 
+      const isSuperAdmin = req.user.role === "SUPER_ADMIN";
+
+      // CRITICAL FIELDS — name, level, academic_year, current_term define the
+      // school's identity and drive system-wide behaviour (which term/year
+      // records belong to). Only SUPER_ADMIN may change these. School staff
+      // (PRINCIPAL/DEPUTY_PRINCIPAL) requests for these fields are ignored,
+      // not silently coerced — explicitly null them out below.
       const {
         name, address, phone, email, logo_url,
         county, academic_year, current_term, level,
         motto, theme_color, report_card_footer, principal_signature_name
       } = req.body;
+
+      const safeName         = isSuperAdmin ? name : null;
+      const safeLevel        = isSuperAdmin ? level : null;
+      const safeAcademicYear = isSuperAdmin ? academic_year : null;
+      const safeCurrentTerm  = isSuperAdmin ? current_term : null;
+
+      if (!isSuperAdmin && (name || level || academic_year || current_term !== undefined)) {
+        await audit(req, "BLOCKED_CRITICAL_SCHOOL_EDIT", "schools", req.params.id, null,
+          { attempted: { name, level, academic_year, current_term } });
+      }
 
       const { rows } = await db.query(
         `UPDATE schools SET
@@ -181,9 +198,9 @@ router.put("/:id", auth, roleM(["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL"])
          WHERE id = $14
          RETURNING *`,
         [
-          name || null, address || null, phone || null, email || null,
-          logo_url || null, county || null, academic_year || null,
-          current_term ?? null, level || null,
+          safeName || null, address || null, phone || null, email || null,
+          logo_url || null, county || null, safeAcademicYear || null,
+          safeCurrentTerm ?? null, safeLevel || null,
           motto ?? null, theme_color || null, report_card_footer ?? null,
           principal_signature_name ?? null,
           req.params.id
