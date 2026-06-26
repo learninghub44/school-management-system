@@ -293,9 +293,12 @@ CREATE TABLE IF NOT EXISTS subscription_payments (
   updated_at         TIMESTAMPTZ   DEFAULT NOW()
 );
 
-ALTER TABLE school_subscriptions
-  ADD CONSTRAINT school_subscriptions_last_payment_fk
-  FOREIGN KEY (last_payment_id) REFERENCES subscription_payments(id) ON DELETE SET NULL;
+DO $$ BEGIN
+  ALTER TABLE school_subscriptions
+    ADD CONSTRAINT school_subscriptions_last_payment_fk
+    FOREIGN KEY (last_payment_id) REFERENCES subscription_payments(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ================================================================
 -- CBC ASSESSMENTS
@@ -609,8 +612,9 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint WHERE conname = 'school_subscriptions_last_payment_fk'
   ) THEN
-    ALTER TABLE school_subscriptions
-      ADD CONSTRAINT school_subscriptions_last_payment_fk
+    -- Constraint added safely above via DO block
+    -- ALTER TABLE school_subscriptions
+    --   ADD CONSTRAINT school_subscriptions_last_payment_fk
       FOREIGN KEY (last_payment_id) REFERENCES subscription_payments(id) ON DELETE SET NULL;
   END IF;
 END $$;
