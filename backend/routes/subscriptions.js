@@ -287,18 +287,19 @@ router.post("/paystack/checkout", auth, roleM(CHECKOUT_ROLES),
         : req.user.school_id;
       if (!schoolId) return res.status(400).json({ success: false, message: "school_id required." });
 
-      // Prevent duplicate pending checkouts — block if one already exists in last 15 minutes
+      // Allow up to 3 checkout attempts in a 15-minute window before
+      // blocking — only then enforce the 15-minute cooldown.
       const { rows: pending } = await db.query(
         `SELECT id FROM subscription_payments
          WHERE school_id = $1 AND status = 'pending'
            AND created_at > NOW() - INTERVAL '15 minutes'
-         LIMIT 1`,
+         ORDER BY created_at ASC`,
         [schoolId]
       );
-      if (pending.length) {
-        return res.status(409).json({
+      if (pending.length >= 3) {
+        return res.status(429).json({
           success: false,
-          message: "A checkout is already in progress for this school. Please complete or wait 15 minutes before trying again.",
+          message: "Too many checkout attempts. Please wait 15 minutes before trying again.",
         });
       }
 

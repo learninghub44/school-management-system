@@ -49,7 +49,6 @@ h1{font-size:28px;line-height:1.2}
   </div>
 
   <div class="result-screen" id="resultScreen">
-    <div class="result-icon" id="resultIcon">⏳</div>
     <div class="result-title" id="resultTitle">Verifying payment...</div>
     <div class="result-sub" id="resultSub">Please wait while we confirm your payment.</div>
     <div class="spinner" id="resultSpinner"></div>
@@ -70,15 +69,13 @@ const plansEl     = document.getElementById("plans");
 const statusEl    = document.getElementById("status");
 const resultScreen= document.getElementById("resultScreen");
 const plansSection= document.getElementById("plansSection");
-const resultIcon  = document.getElementById("resultIcon");
 const resultTitle = document.getElementById("resultTitle");
 const resultSub   = document.getElementById("resultSub");
 const resultSpinner=document.getElementById("resultSpinner");
 const resultBtn   = document.getElementById("resultBtn");
 
 function showAlert(msg, type = "err") {
-  const icons = { err:"⚠️", ok:"✅", warn:"⏳", info:"ℹ️" };
-  statusEl.innerHTML = `<div class="alert ${type}"><span class="alert-icon">${icons[type]||"ℹ️"}</span><span>${msg}</span></div>`;
+  statusEl.innerHTML = `<div class="alert ${type}"><span>${msg}</span></div>`;
 }
 
 function canPay() {
@@ -145,14 +142,12 @@ async function handleCallback() {
     resultBtn.style.display     = "inline-block";
 
     if (sub?.status === "active" || sub?.status === "trialing") {
-      resultIcon.textContent  = "🎉";
       resultTitle.textContent = "Payment Successful!";
       const end = new Date(sub.current_period_end).toLocaleDateString("en-KE", { day:"numeric", month:"long", year:"numeric" });
       resultSub.textContent   = `Your school is on the ${sub.plan_name} plan, active until ${end}.`;
       resultBtn.textContent   = "Go to Dashboard";
       resultBtn.onclick       = () => window.location.href = "/index.html";
     } else {
-      resultIcon.textContent  = "⏳";
       resultTitle.textContent = "Payment Received — Awaiting Confirmation";
       resultSub.innerHTML     = `Your payment is being processed. This usually takes a few seconds.<br><br>Refresh this page in a moment if your subscription doesn't activate.`;
       resultBtn.textContent   = "Refresh";
@@ -160,7 +155,6 @@ async function handleCallback() {
     }
   } catch (err) {
     resultSpinner.style.display = "none";
-    resultIcon.textContent      = "❌";
     resultTitle.textContent     = "Payment Verification Failed";
     resultSub.textContent       = "We couldn't confirm your payment. If you were charged, your subscription will activate shortly. Contact support if it doesn't.";
     resultBtn.style.display     = "inline-block";
@@ -199,7 +193,7 @@ async function load() {
         <span class="chip">${p.student_limit ? `Up to ${esc(String(p.student_limit))} students` : "Unlimited students"}</span>
         <span class="chip">${p.ai_enabled ? "AI included" : "No AI"}</span>
       </div>
-      <div class="badge-paystack">🟢 Pay via Paystack · M-Pesa, Cards & Bank</div>
+      <div class="badge-paystack">Pay via Paystack · M-Pesa, Cards & Bank</div>
       ${canPay()
         ? `<button class="btn btn-primary" data-plan='${JSON.stringify({id:p.id,name:p.name,amount:p.amount,billing_interval:p.billing_interval})}'>Pay Now</button>`
         : `<button class="btn" disabled>Pay Now</button>
