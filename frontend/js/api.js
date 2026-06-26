@@ -235,7 +235,8 @@ export const subscriptions = {
   createPlan:     (d)     => apiFetch("/subscriptions/plans",       { method: "POST", body: d }),
   updatePlan:     (id, d) => apiFetch(`/subscriptions/plans/${id}`, { method: "PUT",  body: d }),
   me:             ()      => apiFetch("/subscriptions/me"),
-  checkout:       (d)     => apiFetch("/subscriptions/checkout",     { method: "POST", body: d }),
+  payments:       ()      => apiFetch("/subscriptions/payments"),
+  checkout:       (d)     => apiFetch("/subscriptions/paystack/checkout", { method: "POST", body: d }),
   activatePayment:(id)    => apiFetch(`/subscriptions/payments/${id}/activate`, { method: "POST" }),
 };
 

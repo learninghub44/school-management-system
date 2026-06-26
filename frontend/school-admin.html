@@ -447,7 +447,7 @@ import {
   guardPage, esc, logout, apiFetch, clearSession,
   users, teachers, classes, students, departments,
   assignments, attendance, assessments, reports, schools, verifySession, exams, finance, ai,
-  portfolio, observations, interventions, moderation
+  portfolio, observations, interventions, moderation, subscriptions
 } from "/js/api.js";
 import { buildSidebar, setupNav,
   openModal, closeModal, resetModal,
@@ -475,6 +475,7 @@ if (vRes.ok) me = vRes.user;
 // ── Nav items ─────────────────────────────────────────────────────
 const NAV = [
   { panel: "overview",      icon: "chart",      label: "Dashboard"         },
+  { panel: "billing",       icon: "card",       label: "Billing"           },
   { panel: "students",      icon: "student",    label: "Students"          },
   { panel: "teachers",      icon: "teacher",    label: "Teachers"          },
   { panel: "classes",       icon: "school",     label: "Classes"           },
@@ -505,12 +506,28 @@ document.getElementById("app").innerHTML =
     <h3 id="pageTitle">Dashboard</h3>
     <div class="topbar-right">${esc(me.school_name || "")} · ${esc(me.role || "")}</div>
   </header>
+  <div id="billingBanner"></div>
   <div class="content">
 
     <!-- OVERVIEW -->
     <div class="panel active" id="panel-overview">
       <div class="stat-grid" id="statsGrid"><div class="empty">Loading…</div></div>
     </div>
+
+    <!-- BILLING -->
+    <div class="panel" id="panel-billing">
+      <div class="card">
+        <div class="card-hdr"><h4>Current Plan</h4></div>
+        <div class="card-body" id="billingStatusCard"><div class="empty">Loading…</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><h4>Payment History</h4></div>
+        <div class="card-body">
+          <div class="table-wrap" id="billingHistoryTbl"><div class="empty">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
 
     <!-- STUDENTS -->
     <div class="panel" id="panel-students">
@@ -826,6 +843,7 @@ let allTeachers = [];
 // ── Nav & logout ──────────────────────────────────────────────────
 const loaders = {
   overview:      loadOverview,
+  billing:       loadBilling,
   students:      loadStudents,
   teachers:      loadTeachers,
   classes:       loadClasses,
@@ -951,7 +969,93 @@ async function loadOverview() {
       <div style="font-weight:700;font-size:15px">${nextExamLabel}</div></div>`;
 }
 
-// ── Students ──────────────────────────────────────────────────────
+// ── Billing ───────────────────────────────────────────────────────
+const CAN_PAY = ["PRINCIPAL", "DEPUTY_PRINCIPAL"].includes(me.role);
+
+function billingStatusBadge(status) {
+  const map = {
+    active:    { cls: "bg", label: "Active"     },
+    trialing:  { cls: "bb", label: "Trial"       },
+    past_due:  { cls: "by", label: "Past Due"    },
+    cancelled: { cls: "br", label: "Cancelled"   },
+  };
+  const m = map[status] || { cls: "bgray", label: "No Plan" };
+  return `<span class="badge ${m.cls}">${esc(m.label)}</span>`;
+}
+
+async function loadBilling() {
+  const statusEl  = document.getElementById("billingStatusCard");
+  const historyEl = document.getElementById("billingHistoryTbl");
+  statusEl.innerHTML  = '<div class="empty">Loading…</div>';
+  historyEl.innerHTML = '<div class="empty">Loading…</div>';
+
+  const [rSub, rHist] = await Promise.all([
+    subscriptions.me(),
+    subscriptions.payments(),
+  ]);
+  const sub  = rSub?.data || null;
+  const hist = rHist?.data || [];
+
+  if (!sub) {
+    statusEl.innerHTML = `
+      <p style="margin-bottom:16px;color:var(--muted)">This school doesn't have a payment plan yet. ${CAN_PAY ? "Pick a plan to unlock full access for your staff." : "Ask your Principal or Deputy Principal to subscribe to a plan."}</p>
+      ${CAN_PAY ? `<a class="btn btn-primary" href="/subscription.html">Choose a Plan</a>` : ""}`;
+  } else {
+    const end = sub.current_period_end
+      ? new Date(sub.current_period_end).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })
+      : "–";
+    const amountStr = `${esc(sub.currency || "KES")} ${Number(sub.amount || 0).toLocaleString("en-KE")} / ${esc(sub.billing_interval || "")}`;
+    statusEl.innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;justify-content:space-between">
+        <div>
+          <div style="font-size:17px;font-weight:800;margin-bottom:6px">${esc(sub.plan_name || "Plan")} ${billingStatusBadge(sub.is_expired ? "past_due" : sub.status)}</div>
+          <div style="color:var(--muted);font-size:13.5px">${amountStr}</div>
+          <div style="color:var(--muted);font-size:13.5px;margin-top:4px">Renews / expires: <strong style="color:#0f172a">${end}</strong></div>
+        </div>
+        ${CAN_PAY ? `<a class="btn btn-primary" href="/subscription.html">Manage / Renew</a>` : `<span class="badge bgray" style="align-self:flex-start">View only — only Principal/Deputy can pay</span>`}
+      </div>
+      ${sub.is_expired || sub.status === "past_due" ? `<div style="margin-top:16px"><div class="alert" style="background:#fef9c3;color:#854d0e;border:1px solid #fde68a;padding:12px 14px;border-radius:10px;font-size:13.5px">Your plan has expired. Staff access may be restricted until you renew.</div></div>` : ""}`;
+  }
+
+  if (!hist.length) {
+    historyEl.innerHTML = '<div class="empty">No payments recorded yet.</div>';
+  } else {
+    historyEl.innerHTML = `
+      <table>
+        <thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Reference</th><th>Status</th></tr></thead>
+        <tbody>
+          ${hist.map(p => `
+            <tr>
+              <td>${new Date(p.created_at).toLocaleDateString("en-KE", { day: "2-digit", month: "short", year: "numeric" })}</td>
+              <td>${esc(p.plan_name)}</td>
+              <td>${esc(p.currency || "KES")} ${Number(p.amount).toLocaleString("en-KE")}</td>
+              <td style="font-family:var(--mono);font-size:12px">${esc(p.merchant_reference || "–")}</td>
+              <td>${p.status === "completed" ? '<span class="badge bg">Completed</span>' : p.status === "pending" ? '<span class="badge by">Pending</span>' : '<span class="badge br">Failed</span>'}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>`;
+  }
+}
+
+// Surface plan status right away, regardless of which panel the user lands on.
+(async function checkSubscriptionBanner() {
+  const r   = await subscriptions.me();
+  const sub = r?.data;
+  const banner = document.getElementById("billingBanner");
+  if (!banner) return;
+  const active = sub && (sub.status === "active" || sub.status === "trialing") && !sub.is_expired;
+  if (active) return;
+  banner.innerHTML = `
+    <div style="background:#fef3c7;color:#92400e;border-bottom:1px solid #fde68a;padding:10px 28px;font-size:13.5px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <span>${sub ? "Your school's subscription has expired or lapsed." : "This school doesn't have an active payment plan yet."} ${CAN_PAY ? "Renew it to keep full access for your staff." : "Contact your Principal or Deputy Principal."}</span>
+      <button class="btn btn-sm" id="billingBannerBtn" style="background:#92400e;color:#fff">View Billing</button>
+    </div>`;
+  document.getElementById("billingBannerBtn")?.addEventListener("click", () => {
+    document.querySelector('.nav-item[data-panel="billing"]')?.click();
+  });
+})();
+
+
 async function loadStudents() {
   document.getElementById("studentsTbl").innerHTML = '<div class="empty">Loading…</div>';
   const q = document.getElementById("filterStudentQ").value.trim();
