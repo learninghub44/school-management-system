@@ -377,9 +377,17 @@ async function submitRegistration() {
       return;
     }
 
-    // Show success
+    // Show success (handles both fresh registration and resume)
     checkoutUrl = data.data.checkout_url;
-    const plan  = plansData.find(p => p.id === selectedPlanId);
+    const isResumed = data.data.resumed === true;
+
+    // Update success heading if resuming
+    if (isResumed) {
+      document.querySelector("#stepSuccess h2").textContent = "Complete Your Payment";
+      document.querySelector("#stepSuccess p").textContent =
+        "Your school was already registered but payment wasn\'t completed. Pay now to activate your account.";
+    }
+
     document.getElementById("credsBox").innerHTML = `
       <div class="cred-row"><span class="cred-label">School Code</span><span class="cred-val">${data.data.school_code}</span></div>
       <div class="cred-row"><span class="cred-label">Username</span><span class="cred-val">${data.data.username}</span></div>
@@ -387,7 +395,7 @@ async function submitRegistration() {
       <div class="cred-row"><span class="cred-label">Plan</span><span class="cred-val">${data.data.plan}</span></div>
     `;
     if (!checkoutUrl) {
-      document.getElementById("btnPay").textContent = "Payment unavailable — login and pay from dashboard";
+      document.getElementById("btnPay").textContent = "Payment unavailable — contact support";
       document.getElementById("btnPay").disabled = true;
     }
     document.getElementById("stepsBar").style.display = "none";

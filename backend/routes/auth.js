@@ -337,18 +337,74 @@ router.post("/register",
         return res.status(404).json({ success: false, message: "Plan not found or unavailable." });
       const plan = plans[0];
 
-      // 2. Check uniqueness (school_code + email)
+      // 2. Check uniqueness — allow resume if school exists with no active subscription
       const { rows: existing } = await db.query(
-        "SELECT id FROM schools WHERE school_code=$1", [upperCode]
+        `SELECT s.id, s.name,
+                ss.status AS sub_status,
+                u.id AS admin_id, u.username, u.email AS admin_email
+         FROM schools s
+         LEFT JOIN school_subscriptions ss ON ss.school_id = s.id
+         LEFT JOIN users u ON u.school_id = s.id AND u.role = 'PRINCIPAL'
+         WHERE s.school_code = $1`, [upperCode]
       );
-      if (existing.length)
-        return res.status(409).json({ success: false, message: "School code already taken." });
+
+      if (existing.length) {
+        const ex = existing[0];
+        const hasActiveSub = ex.sub_status === "active";
+
+        if (hasActiveSub)
+          return res.status(409).json({ success: false, message: "School code already taken by an active school." });
+
+        // School exists but payment not completed — verify email matches then resume
+        if (ex.admin_email && ex.admin_email !== admin_email)
+          return res.status(409).json({ success: false, message: "School exists but email doesn\'t match. Contact support." });
+
+        const reference = `REG-${Date.now()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+        const callbackUrl = (process.env.PAYSTACK_CALLBACK_URL || `${req.protocol}://${req.get("host")}/subscription.html`)
+          .replace(/^https?:\/\/https?:\/\//, "https://").replace(/([^:])\/\/+/g, "$1/").replace(/\/$/, "");
+
+        let checkoutUrl = null;
+        try {
+          const psRes = await fetch("https://api.paystack.co/transaction/initialize", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` },
+            body: JSON.stringify({
+              email: admin_email,
+              amount: Math.round(Number(plan.amount) * 100),
+              currency: plan.currency || "KES",
+              reference,
+              callback_url: callbackUrl,
+              metadata: { school_id: ex.id, plan_id: plan.id, school_name: ex.name, plan_name: plan.name,
+                          interval: plan.billing_interval, created_by: ex.admin_id, self_registered: true },
+            }),
+          });
+          const psData = await psRes.json();
+          if (psData.status) {
+            checkoutUrl = psData.data?.authorization_url;
+            await db.query(
+              `INSERT INTO subscription_payments
+                 (school_id, plan_id, merchant_reference, order_tracking_id, amount, currency, status, checkout_url, created_by)
+               VALUES ($1,$2,$3,$4,$5,$6,'pending',$7,$8)`,
+              [ex.id, plan.id, reference, psData.data?.access_code || null, plan.amount, plan.currency, checkoutUrl, ex.admin_id]
+            );
+          }
+        } catch (psErr) {
+          console.error("[register-resume] Paystack error:", psErr.message);
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: "Registration found but payment incomplete. Complete payment to activate.",
+          data: { school_code: upperCode, school_name: ex.name, username: ex.username,
+                  plan: plan.name, checkout_url: checkoutUrl, resumed: true },
+        });
+      }
 
       const { rows: existingEmail } = await db.query(
         "SELECT id FROM users WHERE email=$1", [admin_email]
       );
       if (existingEmail.length)
-        return res.status(409).json({ success: false, message: "Email already registered." });
+        return res.status(409).json({ success: false, message: "Email already registered to another school." });
 
       // 3. Hash password
       const password_hash = await bcrypt.hash(admin_password, 12);
