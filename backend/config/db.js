@@ -1,53 +1,40 @@
-/**
- * PostgreSQL connection — Neon-compatible
- *
- * Neon serverless Postgres requires SSL and works best with their
- * HTTP-based driver in Workers. We use @neondatabase/serverless which
- * speaks the Postgres wire protocol over WebSockets (Workers-compatible)
- * AND falls back to the standard pg Pool for local Node.js dev.
- *
- * Connection string format (set as DATABASE_URL secret):
- *   postgresql://user:pass@ep-xxx.region.aws.neon.tech/dbname?sslmode=require
- *
- * For Workers: use the POOLED endpoint (port 5432, hostname ending in -pooler.* or standard).
- * Neon provides a connection pooler (PgBouncer) — use that URL for Workers.
- */
 "use strict";
 
-const isWorker = typeof WebSocketPair !== "undefined" ||
-                 (typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers");
+/**
+ * DB connection — Neon HTTP for Workers, pg Pool for Node.js.
+ *
+ * Workers detection: nodejs_compat does NOT define WebSocketPair.
+ * Use navigator.userAgent or the WORKER_RUNTIME env flag instead.
+ * Safest: set a [vars] flag in wrangler.toml → WORKER_RUNTIME=true.
+ */
+
+const isWorker = globalThis.WORKER_RUNTIME === true ||
+                 process.env.WORKER_RUNTIME === "true";
 
 let query, pool;
 
 if (isWorker) {
-  // ── Cloudflare Workers: use @neondatabase/serverless ─────────────
-  // This uses WebSockets under the hood — compatible with Workers runtime.
-  const { Pool: NeonPool, neonConfig } = require("@neondatabase/serverless");
-  const { WebSocket } = require("ws"); // bundled via nodejs_compat
+  // ── Cloudflare Workers: @neondatabase/serverless HTTP mode ────────
+  // HTTP mode (neon tagged template) works without WebSockets.
+  // For Workers, use neon() for single queries — no persistent pool needed.
+  const { neon, neonConfig } = require("@neondatabase/serverless");
 
-  // Workers need to use the global WebSocket
-  neonConfig.webSocketConstructor = globalThis.WebSocket || WebSocket;
-  neonConfig.useSecureWebSocket = true;
-  neonConfig.pipelineConnect = false;
+  neonConfig.fetchConnectionCache = true;
 
-  const neonPool = new NeonPool({
-    connectionString: process.env.DATABASE_URL,
-    max: 5, // Keep low — Workers are short-lived
-    idleTimeoutMillis: 10000,
-    connectionTimeoutMillis: 8000,
-  });
+  const sql = neon(process.env.DATABASE_URL);
 
-  pool  = neonPool;
-  query = (text, params) => neonPool.query(text, params);
+  // Wrap to match pg's { rows } interface
+  query = async (text, params) => {
+    const rows = await sql(text, params || []);
+    return { rows, rowCount: rows.length };
+  };
 
-  neonPool.on("error", (err) => {
-    console.error("[db/neon] Pool error:", err.message);
-  });
+  pool = { query };
 
-  console.log("[db] Using @neondatabase/serverless (Workers mode)");
+  console.log("[db] Using @neondatabase/serverless HTTP mode (Workers)");
 
 } else {
-  // ── Node.js / local dev: standard pg Pool ─────────────────────────
+  // ── Node.js / local dev: standard pg Pool ────────────────────────
   const { Pool } = require("pg");
 
   const pgPool = new Pool({
@@ -63,31 +50,23 @@ if (isWorker) {
     query_timeout:     20000,
   });
 
-  pgPool.on("error", (err) => {
-    console.error("[db] Unexpected pool error:", err.message);
-  });
-
+  pgPool.on("error", (err) => console.error("[db] Pool error:", err.message));
   pgPool.on("connect", () => {
     if (process.env.NODE_ENV !== "production") console.log("[db] New client connected");
   });
 
-  // Warm-up with retry — useful on Render/Railway cold starts
   async function warmUp(retries = 5, delayMs = 3000) {
     for (let i = 1; i <= retries; i++) {
-      try {
-        await pgPool.query("SELECT 1");
-        console.log("[db] Connection pool ready");
-        return;
-      } catch (err) {
-        console.error(`[db] Attempt ${i}/${retries} failed: ${err.message}`);
+      try { await pgPool.query("SELECT 1"); console.log("[db] Pool ready"); return; }
+      catch (err) {
+        console.error(`[db] Attempt ${i}/${retries}: ${err.message}`);
         if (i < retries) await new Promise(r => setTimeout(r, delayMs));
       }
     }
-    console.error("[db] All attempts failed — will retry on first request");
+    console.error("[db] All warmup attempts failed");
   }
 
   warmUp();
-
   pool  = pgPool;
   query = (text, params) => pgPool.query(text, params);
 }

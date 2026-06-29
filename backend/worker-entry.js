@@ -15,6 +15,7 @@ import app        from "./server.js";
 
 // ── Inject Workers env bindings → process.env per request ─────────
 function injectEnv(env) {
+  globalThis.WORKER_RUNTIME = true;
   if (!globalThis.process)     globalThis.process     = {};
   if (!globalThis.process.env) globalThis.process.env = {};
   const keys = [
