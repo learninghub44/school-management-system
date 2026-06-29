@@ -372,7 +372,7 @@ router.post("/register",
 
         const username = `${upperCode.toLowerCase()}_admin`;
         const { rows: u } = await db.query(
-          `INSERT INTO users (school_id, username, email, full_name, password_hash, role, is_active, must_change_password)
+          `INSERT INTO users (school_id, username, email, name, password_hash, role, is_active, must_change_password)
            VALUES ($1, $2, $3, $4, $5, 'PRINCIPAL', TRUE, TRUE)
            RETURNING *`,
           [school.id, username, admin_email, admin_name, password_hash]
