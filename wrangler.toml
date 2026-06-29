@@ -10,7 +10,7 @@ GROQ_MODEL = "llama3-8b-8192"
 PLATFORM_SUPPORT_EMAIL = "support@cbcerp.co.ke"
 PAYSTACK_CALLBACK_URL = "https://cbc-school-erp.pages.dev/subscription.html"
 
-# Secrets — set via: wrangler secret put SECRET_NAME
+# Secrets — set via: wrangler secret put <NAME>
 # JWT_SECRET
 # DATABASE_URL
 # ALLOWED_ORIGINS
