@@ -14,14 +14,19 @@ if (typeof WebSocketPair === "undefined") {
   require("dotenv").config();
 }
 
-// ── Global crash guards ───────────────────────────────────────────
-process.on("uncaughtException", (err) => {
-  console.error(`[FATAL] uncaughtException at ${new Date().toISOString()}:`, err.message);
-  setTimeout(() => process.exit(1), 500);
-});
-process.on("unhandledRejection", (reason) => {
-  console.error(`[ERROR] unhandledRejection at ${new Date().toISOString()}:`, reason);
-});
+// ── Global crash guards (Node.js only — Workers don't support these) ─
+const isWorkerRuntime = typeof WebSocketPair !== "undefined" ||
+  (typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers");
+
+if (!isWorkerRuntime && process.on) {
+  process.on("uncaughtException", (err) => {
+    console.error(`[FATAL] uncaughtException at ${new Date().toISOString()}:`, err.message);
+    setTimeout(() => process.exit(1), 500);
+  });
+  process.on("unhandledRejection", (reason) => {
+    console.error(`[ERROR] unhandledRejection at ${new Date().toISOString()}:`, reason);
+  });
+}
 
 const { startCleanupJob } = require("./jobs/cleanupTokens");
 const { startSweepJob }   = require("./jobs/sweepExpiredSubscriptions");
