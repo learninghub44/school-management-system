@@ -18,6 +18,7 @@ JWT_EXPIRES = "10h"
 GROQ_MODEL = "llama3-8b-8192"
 PLATFORM_SUPPORT_EMAIL = "support@cbcerp.co.ke"
 PAYSTACK_CALLBACK_URL = "https://cbc-school-erp.pages.dev/subscription.html"
+ALLOWED_ORIGINS = "https://cbc-school-erp.pages.dev,https://school-management-system.chrisodhiambo444.workers.dev"
 DATABASE_URL = "DATABASE_URL_REDACTED_ROTATE_YOUR_NEON_PASSWORD"
 
 # Other secrets set in Cloudflare dashboard → Worker → Settings → Variables:
