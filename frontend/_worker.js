@@ -1,20 +1,19 @@
 /**
  * Cloudflare Pages Worker — API proxy
  *
- * Proxies all /api/* requests to the Render backend.
- * Set BACKEND_URL in your Cloudflare Pages environment variables:
- *   BACKEND_URL=https://kadem-zetu-sms-api.onrender.com
+ * Proxies all /api/* requests to the Cloudflare Workers backend.
+ * Set BACKEND_URL in Cloudflare Pages → Settings → Environment Variables:
+ *   BACKEND_URL=https://cbc-school-erp-api.<your-subdomain>.workers.dev
  *
- * Everything else is served as a static asset from the Pages build.
+ * Everything else is served as a static asset from Pages.
  */
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Only intercept /api/* paths
+    // Serve static assets for non-API paths
     if (!url.pathname.startsWith("/api")) {
-      // Let Cloudflare Pages serve the static asset
       return env.ASSETS.fetch(request);
     }
 
@@ -26,10 +25,9 @@ export default {
       );
     }
 
-    // Build the proxied URL
+    // Build proxied URL
     const target = backendUrl.replace(/\/$/, "") + url.pathname + url.search;
 
-    // Clone the request with the new URL, forwarding all headers and body
     const proxied = new Request(target, {
       method:  request.method,
       headers: request.headers,
@@ -39,11 +37,8 @@ export default {
 
     try {
       const response = await fetch(proxied);
-
-      // Pass through the response, adding CORS headers just in case
       const newHeaders = new Headers(response.headers);
       newHeaders.set("X-Proxied-By", "CF-Pages-Worker");
-
       return new Response(response.body, {
         status:  response.status,
         headers: newHeaders,

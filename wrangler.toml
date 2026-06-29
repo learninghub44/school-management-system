@@ -1,0 +1,21 @@
+name = "cbc-school-erp-api"
+main = "backend/worker-entry.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+NODE_ENV = "production"
+JWT_EXPIRES = "10h"
+GROQ_MODEL = "llama3-8b-8192"
+PLATFORM_SUPPORT_EMAIL = "support@cbcerp.co.ke"
+PAYSTACK_CALLBACK_URL = "https://cbc-school-erp.pages.dev/subscription.html"
+
+# Secrets — set via: wrangler secret put SECRET_NAME
+# JWT_SECRET
+# DATABASE_URL          ← Neon connection string (pooled)
+# ALLOWED_ORIGINS       ← https://cbc-school-erp.pages.dev (comma-separated)
+# PAYSTACK_SECRET_KEY
+# GROQ_API_KEY
+
+[observability]
+enabled = true
