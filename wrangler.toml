@@ -18,13 +18,10 @@ JWT_EXPIRES = "10h"
 GROQ_MODEL = "llama3-8b-8192"
 PLATFORM_SUPPORT_EMAIL = "support@cbcerp.co.ke"
 PAYSTACK_CALLBACK_URL = "https://cbc-school-erp.pages.dev/subscription.html"
+DATABASE_URL = "REPLACE_WITH_NEON_POOLED_URL"
 
-# Secrets — set via: wrangler secret put <NAME>
-# JWT_SECRET
-# DATABASE_URL
-# ALLOWED_ORIGINS
-# PAYSTACK_SECRET_KEY
-# GROQ_API_KEY
+# Other secrets set in Cloudflare dashboard → Worker → Settings → Variables:
+# JWT_SECRET, ALLOWED_ORIGINS, PAYSTACK_SECRET_KEY, GROQ_API_KEY
 
 [observability]
 enabled = true
