@@ -293,8 +293,6 @@ router.get("/audit-log", auth, async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // ── POST /api/auth/register — Public self-registration ───────────────────────
 // Creates school + PRINCIPAL user + pending subscription in one transaction.
 // Returns school_code, temp credentials, and a Paystack checkout URL.
@@ -523,3 +521,5 @@ router.get("/register/plans", async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error." });
   }
 });
+
+module.exports = router;

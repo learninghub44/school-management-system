@@ -124,6 +124,14 @@ app.use("/api/auth/login", rateLimit({
   message: { success: false, message: "Too many login attempts. Try again in 15 minutes." },
 }));
 
+app.use("/api/auth/register", rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many registration attempts. Try again in an hour." },
+}));
+
 app.use("/api/", rateLimit({
   windowMs: 60 * 1000,
   max: 300,
