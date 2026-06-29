@@ -1,4 +1,4 @@
-name = "cbc-school-erp-api"
+name = "school-management-system"
 main = "backend/worker-entry.js"
 compatibility_date = "2025-06-01"
 compatibility_flags = ["nodejs_compat"]
@@ -12,8 +12,8 @@ PAYSTACK_CALLBACK_URL = "https://cbc-school-erp.pages.dev/subscription.html"
 
 # Secrets — set via: wrangler secret put SECRET_NAME
 # JWT_SECRET
-# DATABASE_URL          ← Neon pooled connection string
-# ALLOWED_ORIGINS       ← https://cbc-school-erp.pages.dev
+# DATABASE_URL
+# ALLOWED_ORIGINS
 # PAYSTACK_SECRET_KEY
 # GROQ_API_KEY
 

@@ -1,17 +1,15 @@
 /**
- * Cloudflare Workers entry — CJS wrapper around the Express app.
- * nodejs_compat mode: supports Node.js core APIs, crypto, Buffer, pg, etc.
- *
- * The module type is "commonjs" (set in package.json), so we export
- * the fetch handler via module.exports. Wrangler picks this up correctly.
+ * Cloudflare Workers entry — ESM wrapper around the CJS Express app.
+ * Must use ESM (export default) so wrangler treats it as ES Module Worker.
+ * nodejs_compat flag gives us Node.js core APIs (crypto, Buffer, stream, etc.)
  */
-"use strict";
 
-// ── Inject Workers env bindings → process.env ────────────────────
-// Must happen before any require() that reads process.env at load time.
+// ── Inject Workers env → process.env before any require() ────────
 function injectEnv(env) {
-  const p = globalThis.process || (globalThis.process = { env: {}, on() {}, exit() {} });
-  if (!p.env) p.env = {};
+  if (!globalThis.process) globalThis.process = {};
+  if (!globalThis.process.env) globalThis.process.env = {};
+  if (!globalThis.process.on) globalThis.process.on = () => {};
+  if (!globalThis.process.exit) globalThis.process.exit = () => {};
   const keys = [
     "NODE_ENV","JWT_SECRET","JWT_EXPIRES","DATABASE_URL",
     "ALLOWED_ORIGINS","PAYSTACK_SECRET_KEY","PAYSTACK_CALLBACK_URL",
@@ -19,182 +17,164 @@ function injectEnv(env) {
     "DB_POOL_MIN","DB_POOL_MAX",
   ];
   for (const k of keys) {
-    if (env[k] !== undefined) p.env[k] = env[k];
+    if (env[k] !== undefined) globalThis.process.env[k] = env[k];
   }
 }
 
-// ── Build complete duck-typed ServerResponse ──────────────────────
+// ── Complete ServerResponse shim ──────────────────────────────────
 function makeNodeRes(resolve) {
   const chunks = [];
-  const headers = {};
-
-  const res = {
+  const hdrs   = {};
+  const res    = {
     statusCode: 200,
     statusMessage: "OK",
     finished: false,
     headersSent: false,
     writableEnded: false,
+    locals: {},
 
-    // Header methods
-    getHeaders()       { return { ...headers }; },
-    getHeader(k)       { return headers[k.toLowerCase()]; },
-    getHeaderNames()   { return Object.keys(headers); },
-    hasHeader(k)       { return k.toLowerCase() in headers; },
-    setHeader(k, v)    { headers[k.toLowerCase()] = v; return res; },
-    removeHeader(k)    { delete headers[k.toLowerCase()]; },
-    writeHead(code, msg, hdrs) {
-      if (typeof msg === "object") { hdrs = msg; msg = undefined; }
+    getHeaders()    { return { ...hdrs }; },
+    getHeader(k)    { return hdrs[k.toLowerCase()]; },
+    getHeaderNames(){ return Object.keys(hdrs); },
+    hasHeader(k)    { return k.toLowerCase() in hdrs; },
+    setHeader(k,v)  { hdrs[k.toLowerCase()] = v; return res; },
+    removeHeader(k) { delete hdrs[k.toLowerCase()]; },
+    writeHead(code, msg, h) {
+      if (typeof msg === "object") { h = msg; }
       res.statusCode = code;
-      if (hdrs) Object.entries(hdrs).forEach(([k,v]) => res.setHeader(k, v));
+      if (h) Object.entries(h).forEach(([k,v]) => res.setHeader(k,v));
       res.headersSent = true;
       return res;
     },
-
-    // Body methods
-    write(chunk, encoding, cb) {
-      if (chunk) {
-        const buf = typeof chunk === "string" ? Buffer.from(chunk, encoding || "utf8") : chunk;
-        chunks.push(buf);
-      }
-      if (typeof encoding === "function") encoding();
+    write(chunk, enc, cb) {
+      if (chunk) chunks.push(typeof chunk === "string" ? Buffer.from(chunk, enc||"utf8") : chunk);
+      if (typeof enc === "function") enc();
       else if (typeof cb === "function") cb();
       return true;
     },
-    end(chunk, encoding, cb) {
-      if (chunk) {
-        const buf = typeof chunk === "string" ? Buffer.from(chunk, encoding || "utf8") : chunk;
-        chunks.push(buf);
+    end(chunk, enc, cb) {
+      if (chunk) chunks.push(typeof chunk === "string" ? Buffer.from(chunk, enc||"utf8") : chunk);
+      res.finished = res.writableEnded = true;
+      const body    = chunks.length ? Buffer.concat(chunks) : null;
+      const headers = new Headers();
+      for (const [k,v] of Object.entries(hdrs)) {
+        if (Array.isArray(v)) v.forEach(val => headers.append(k, String(val)));
+        else if (v != null) headers.set(k, String(v));
       }
-      res.finished = true;
-      res.writableEnded = true;
-
-      const body = chunks.length ? Buffer.concat(chunks) : null;
-      const resHeaders = new Headers();
-      for (const [k, v] of Object.entries(headers)) {
-        if (Array.isArray(v)) v.forEach(val => resHeaders.append(k, String(val)));
-        else if (v != null) resHeaders.set(k, String(v));
-      }
-
-      resolve(new Response(body, { status: res.statusCode, headers: resHeaders }));
-
-      if (typeof encoding === "function") encoding();
+      resolve(new Response(body, { status: res.statusCode, headers }));
+      if (typeof enc === "function") enc();
       else if (typeof cb === "function") cb();
       return res;
     },
-
-    // Event emitter stubs (Express calls these)
-    on()         { return res; },
-    once()       { return res; },
-    emit()       { return true; },
-    off()        { return res; },
-    addListener(){ return res; },
-    removeListener(){ return res; },
-
-    // Express-specific
-    locals: {},
-    app: null,
-    req: null,
+    on()             { return res; },
+    once()           { return res; },
+    emit()           { return true; },
+    off()            { return res; },
+    addListener()    { return res; },
+    removeListener() { return res; },
+    removeAllListeners() { return res; },
+    flushHeaders()   {},
+    cork()           {},
+    uncork()         {},
   };
-
   return res;
 }
 
-// ── Build duck-typed IncomingMessage ─────────────────────────────
-function makeNodeReq(url, method, headers, body, ip) {
+// ── IncomingMessage shim with streaming body ─────────────────────
+function makeNodeReq(url, method, headers, bodyBuf, ip) {
   const parsed = new URL(url);
+  const rawHeaders = {};
+  for (const [k,v] of headers) rawHeaders[k.toLowerCase()] = v;
+
+  const listeners = {};
+  function on(evt, cb) {
+    if (!listeners[evt]) listeners[evt] = [];
+    listeners[evt].push(cb);
+    if (evt === "data" && bodyBuf && bodyBuf.length) {
+      setImmediate(() => cb(bodyBuf));
+    }
+    if (evt === "end") {
+      setImmediate(() => cb());
+    }
+    return req;
+  }
+
   const req = {
     method,
-    url:          parsed.pathname + parsed.search,
-    originalUrl:  parsed.pathname + parsed.search,
-    path:         parsed.pathname,
-    query:        Object.fromEntries(parsed.searchParams),
-    headers:      Object.fromEntries([...headers].map(([k,v]) => [k.toLowerCase(), v])),
-    rawHeaders:   [],
-    httpVersion:  "1.1",
-    connection:   { remoteAddress: ip },
-    socket:       { remoteAddress: ip },
-    body:         undefined,  // express.json() will set this
-    _body:        false,
-    complete:     true,
-    readable:     true,
+    url:         parsed.pathname + parsed.search,
+    originalUrl: parsed.pathname + parsed.search,
+    path:        parsed.pathname,
+    headers:     rawHeaders,
+    rawHeaders:  [],
+    httpVersion: "1.1",
+    socket:      { remoteAddress: ip, encrypted: true },
+    connection:  { remoteAddress: ip },
+    complete:    true,
+    readable:    true,
+    _body:       false,
+    body:        undefined,
 
-    // Stream methods (express body parser reads the stream)
-    pipe()    { return req; },
-    resume()  { return req; },
-    pause()   { return req; },
-    destroy() { return req; },
-    setEncoding() { return req; },
-
-    // Event emitter stubs
-    on(event, cb) {
-      if (event === "data" && body && body.length) {
-        // Emit body chunks synchronously — body parsers read this
-        setImmediate(() => cb(body));
-      }
-      if (event === "end") {
-        setImmediate(() => cb());
-      }
-      return req;
-    },
-    once(event, cb) { return req.on(event, cb); },
-    emit()    { return true; },
-    off()     { return req; },
-    removeListener() { return req; },
-    addListener(event, cb) { return req.on(event, cb); },
-    removeAllListeners() { return req; },
-
-    // Express reads these
-    app: null,
-    res: null,
+    on,
+    once: on,
+    addListener: on,
+    off()              { return req; },
+    removeListener()   { return req; },
+    removeAllListeners(){ return req; },
+    emit()             { return true; },
+    pipe()             { return req; },
+    resume()           { return req; },
+    pause()            { return req; },
+    destroy()          { return req; },
+    setEncoding()      { return req; },
+    unpipe()           { return req; },
   };
   return req;
 }
 
-// ── Lazy-load Express app ─────────────────────────────────────────
+// ── Lazy-loaded app ───────────────────────────────────────────────
 let _app = null;
-function getApp(env) {
-  if (_app) return _app;
-  injectEnv(env);
-  _app = require("./server.js");
+function getApp() {
+  if (!_app) _app = require("./server.js");
   return _app;
 }
 
-// ── Fetch handler ─────────────────────────────────────────────────
-async function handleFetch(request, env) {
-  const app = getApp(env);
+// ── ESM default export — required for ES Module Workers ──────────
+export default {
+  async fetch(request, env) {
+    // Inject env FIRST, before getApp() triggers any require()
+    injectEnv(env);
 
-  const ip = request.headers.get("cf-connecting-ip") || "127.0.0.1";
-  const bodyBuf = ["GET","HEAD","OPTIONS"].includes(request.method)
-    ? null
-    : Buffer.from(await request.arrayBuffer());
+    const app = getApp();
+    const ip  = request.headers.get("cf-connecting-ip") || "127.0.0.1";
+    const bodyBuf = ["GET","HEAD","OPTIONS"].includes(request.method)
+      ? null
+      : Buffer.from(await request.arrayBuffer());
 
-  const nodeReq = makeNodeReq(request.url, request.method, request.headers, bodyBuf, ip);
+    const nodeReq = makeNodeReq(request.url, request.method, request.headers, bodyBuf, ip);
 
-  return new Promise((resolve) => {
-    const nodeRes = makeNodeRes(resolve);
-    nodeRes.req = nodeReq;
-    nodeReq.res = nodeRes;
+    return new Promise((resolve) => {
+      const nodeRes = makeNodeRes(resolve);
+      nodeRes.req = nodeReq;
+      nodeReq.res = nodeRes;
 
-    try {
-      app(nodeReq, nodeRes, (err) => {
-        // Express called next() with no handler — 404
-        const msg = err
-          ? (process.env.NODE_ENV === "production" ? "Internal server error." : err.message)
-          : "Not found.";
-        const status = err ? (err.status || 500) : 404;
+      try {
+        app(nodeReq, nodeRes, (err) => {
+          const status  = err ? (err.status || 500) : 404;
+          const message = err
+            ? (globalThis.process?.env?.NODE_ENV === "production" ? "Internal server error." : err.message)
+            : "Not found.";
+          resolve(new Response(
+            JSON.stringify({ success: false, message }),
+            { status, headers: { "Content-Type": "application/json" } }
+          ));
+        });
+      } catch (err) {
+        console.error("[worker] Exception:", err.message);
         resolve(new Response(
-          JSON.stringify({ success: false, message: msg }),
-          { status, headers: { "Content-Type": "application/json" } }
+          JSON.stringify({ success: false, message: "Worker exception." }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
         ));
-      });
-    } catch (err) {
-      console.error("[worker] Unhandled exception:", err.message, err.stack);
-      resolve(new Response(
-        JSON.stringify({ success: false, message: "Worker exception." }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      ));
-    }
-  });
-}
-
-module.exports = { fetch: handleFetch };
+      }
+    });
+  },
+};
