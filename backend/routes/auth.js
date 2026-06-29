@@ -294,3 +294,176 @@ router.get("/audit-log", auth, async (req, res) => {
 });
 
 module.exports = router;
+
+// ── POST /api/auth/register — Public self-registration ───────────────────────
+// Creates school + PRINCIPAL user + pending subscription in one transaction.
+// Returns school_code, temp credentials, and a Paystack checkout URL.
+router.post("/register",
+  [
+    // School fields
+    body("school_name").trim().notEmpty().isLength({ max: 255 }).withMessage("School name required"),
+    body("school_code").trim().notEmpty().matches(/^[A-Z0-9]{2,20}$/i).withMessage("Code must be 2–20 alphanumeric chars"),
+    body("county").optional().trim().isLength({ max: 100 }),
+    body("sub_county").optional().trim().isLength({ max: 100 }),
+    body("level").optional().isIn(["ECDE","Primary","Junior Secondary","Senior Secondary","Mixed"]),
+    body("phone").optional().matches(/^\+?[\d\s\-]{7,20}$/),
+    // Admin user fields
+    body("admin_name").trim().notEmpty().isLength({ max: 255 }).withMessage("Admin name required"),
+    body("admin_email").isEmail().normalizeEmail().withMessage("Valid email required"),
+    body("admin_password").isLength({ min: 8, max: 72 })
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .withMessage("Password min 8 chars with uppercase, lowercase and number"),
+    // Subscription
+    body("plan_id").isInt({ min: 1 }).withMessage("Plan required"),
+  ],
+  async (req, res) => {
+    const errs = validationResult(req);
+    if (!errs.isEmpty())
+      return res.status(400).json({ success: false, errors: errs.array() });
+
+    const {
+      school_name, school_code, county, sub_county, level, phone,
+      admin_name, admin_email, admin_password, plan_id,
+    } = req.body;
+
+    const upperCode = school_code.trim().toUpperCase();
+
+    try {
+      // 1. Check plan exists
+      const { rows: plans } = await db.query(
+        "SELECT * FROM payment_plans WHERE id=$1 AND is_active=TRUE", [plan_id]
+      );
+      if (!plans.length)
+        return res.status(404).json({ success: false, message: "Plan not found or unavailable." });
+      const plan = plans[0];
+
+      // 2. Check uniqueness (school_code + email)
+      const { rows: existing } = await db.query(
+        "SELECT id FROM schools WHERE school_code=$1", [upperCode]
+      );
+      if (existing.length)
+        return res.status(409).json({ success: false, message: "School code already taken." });
+
+      const { rows: existingEmail } = await db.query(
+        "SELECT id FROM users WHERE email=$1", [admin_email]
+      );
+      if (existingEmail.length)
+        return res.status(409).json({ success: false, message: "Email already registered." });
+
+      // 3. Hash password
+      const password_hash = await bcrypt.hash(admin_password, 12);
+
+      // 4. Transaction: insert school → insert user → insert pending subscription
+      await db.query("BEGIN");
+      let school, adminUser;
+      try {
+        const { rows: s } = await db.query(
+          `INSERT INTO schools (name, school_code, phone, county, sub_county, level, academic_year, current_term, is_active)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 1, TRUE)
+           RETURNING *`,
+          [
+            school_name, upperCode,
+            phone || null, county || null, sub_county || null,
+            level || "Primary",
+            new Date().getFullYear().toString(),
+          ]
+        );
+        school = s[0];
+
+        const username = `${upperCode.toLowerCase()}_admin`;
+        const { rows: u } = await db.query(
+          `INSERT INTO users (school_id, username, email, full_name, password_hash, role, is_active, must_change_password)
+           VALUES ($1, $2, $3, $4, $5, 'PRINCIPAL', TRUE, TRUE)
+           RETURNING *`,
+          [school.id, username, admin_email, admin_name, password_hash]
+        );
+        adminUser = u[0];
+
+        await db.query("COMMIT");
+      } catch (txErr) {
+        await db.query("ROLLBACK");
+        throw txErr;
+      }
+
+      // 5. Initiate Paystack checkout
+      const reference = `REG-${Date.now()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+      const callbackUrl = (process.env.PAYSTACK_CALLBACK_URL || `${req.protocol}://${req.get("host")}/subscription.html`)
+        .replace(/^https?:\/\/https?:\/\//, "https://")
+        .replace(/([^:])\/\/+/g, "$1/")
+        .replace(/\/$/, "");
+
+      let checkoutUrl = null;
+      try {
+        const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          },
+          body: JSON.stringify({
+            email: admin_email,
+            amount: Math.round(Number(plan.amount) * 100),
+            currency: plan.currency || "KES",
+            reference,
+            callback_url: callbackUrl,
+            metadata: {
+              school_id:   school.id,
+              plan_id:     plan.id,
+              school_name: school.name,
+              plan_name:   plan.name,
+              interval:    plan.billing_interval,
+              created_by:  adminUser.id,
+              self_registered: true,
+            },
+          }),
+        });
+        const psData = await paystackRes.json();
+        if (psData.status) {
+          checkoutUrl = psData.data?.authorization_url;
+          // Save pending payment
+          await db.query(
+            `INSERT INTO subscription_payments
+               (school_id, plan_id, merchant_reference, order_tracking_id, amount, currency, status, checkout_url, created_by)
+             VALUES ($1,$2,$3,$4,$5,$6,'pending',$7,$8)`,
+            [school.id, plan.id, reference, psData.data?.access_code || null,
+             plan.amount, plan.currency, checkoutUrl, adminUser.id]
+          );
+        }
+      } catch (psErr) {
+        // Non-fatal — school/user created, payment can be retried from login
+        console.error("[register] Paystack init failed:", psErr.message);
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: "School registered. Complete payment to activate your account.",
+        data: {
+          school_code:  upperCode,
+          school_name:  school.name,
+          username:     adminUser.username,
+          plan:         plan.name,
+          checkout_url: checkoutUrl,
+        },
+      });
+
+    } catch (err) {
+      if (err.code === "23505")
+        return res.status(409).json({ success: false, message: "School code or email already exists." });
+      console.error("[register]", err.message);
+      return res.status(500).json({ success: false, message: "Registration failed. Please try again." });
+    }
+  }
+);
+
+// ── GET /api/auth/register/plans — Public: list active plans for registration page
+router.get("/register/plans", async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT id, name, amount, currency, billing_interval, student_limit, ai_enabled, ai_daily_limit
+       FROM payment_plans WHERE is_active=TRUE ORDER BY amount ASC`
+    );
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
+});

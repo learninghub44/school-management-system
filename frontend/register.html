@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Register Your School — Kadem &amp; Zetu SMS</title>
+<script src="/js/config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4338ca 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:#fff;border-radius:24px;padding:44px 40px;width:100%;max-width:520px;box-shadow:0 25px 60px rgba(0,0,0,.3)}
+.logo{text-align:center;margin-bottom:28px}
+.logo-icon{width:60px;height:60px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px}
+.logo-icon svg{width:30px;height:30px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.logo h1{font-size:21px;font-weight:800;color:#0f172a;line-height:1.25}
+.logo .brand-sub{font-size:11px;font-weight:700;color:#4f46e5;letter-spacing:.07em;text-transform:uppercase;margin-top:4px}
+.logo .cbc-tag{font-size:12.5px;color:#64748b;margin-top:5px;font-weight:500}
+
+/* Steps indicator */
+.steps{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:32px}
+.step{display:flex;align-items:center;gap:8px}
+.step-num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;transition:all .25s;flex-shrink:0}
+.step.active .step-num{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff}
+.step.done .step-num{background:#dcfce7;color:#166534}
+.step.pending .step-num{background:#f1f5f9;color:#94a3b8}
+.step-label{font-size:11.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.step.active .step-label{color:#4f46e5}
+.step.done .step-label{color:#166534}
+.step-line{width:32px;height:2px;background:#e2e8f0;margin:0 4px;flex-shrink:0}
+.step.done + .step-line,.step-line.done{background:#86efac}
+
+/* Form fields */
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:11.5px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.fg input,.fg select{width:100%;padding:12px 16px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px;color:#0f172a;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;background:#fff}
+.fg input:focus,.fg select:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+.fg input::placeholder{color:#cbd5e1}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* Plan cards */
+.plans-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:8px}
+.plan-card{border:2px solid #e2e8f0;border-radius:14px;padding:14px 16px;cursor:pointer;transition:all .18s;position:relative}
+.plan-card:hover{border-color:#a5b4fc;background:#fafafe}
+.plan-card.selected{border-color:#4f46e5;background:#eef2ff}
+.plan-card input[type=radio]{position:absolute;opacity:0;width:0}
+.plan-top{display:flex;align-items:center;justify-content:space-between}
+.plan-name{font-size:15px;font-weight:700;color:#0f172a}
+.plan-price{font-size:15px;font-weight:800;color:#4f46e5}
+.plan-interval{font-size:11px;color:#94a3b8;font-weight:500;margin-left:2px}
+.plan-features{margin-top:6px;font-size:12.5px;color:#64748b;display:flex;gap:12px;flex-wrap:wrap}
+.plan-features span{display:flex;align-items:center;gap:4px}
+.plan-badge{position:absolute;top:-1px;right:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:0 0 8px 8px;text-transform:uppercase;letter-spacing:.06em}
+.plan-card.selected .plan-name{color:#4338ca}
+
+/* Buttons */
+.btn-row{display:flex;gap:10px;margin-top:4px}
+.btn-back{flex:1;padding:13px;background:#f1f5f9;border:none;border-radius:12px;color:#64748b;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-back:hover{background:#e2e8f0}
+.btn-next{flex:2;padding:13px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-next:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(79,70,229,.35)}
+.btn-next:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.btn-full{width:100%;padding:14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;margin-top:4px}
+.btn-full:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(79,70,229,.35)}
+.btn-full:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+/* Alerts */
+.alert{padding:12px 16px;border-radius:10px;font-size:13.5px;margin-top:14px;font-weight:500;display:none}
+.alert.show{display:block}
+.alert-err{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+.alert-ok{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+
+/* Success state */
+.success-box{text-align:center;padding:12px 0}
+.success-icon{width:68px;height:68px;background:#dcfce7;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:18px}
+.success-icon svg{width:34px;height:34px;stroke:#16a34a;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.success-box h2{font-size:20px;font-weight:800;color:#0f172a;margin-bottom:8px}
+.success-box p{font-size:14px;color:#64748b;line-height:1.6;margin-bottom:6px}
+.creds-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin:16px 0;text-align:left}
+.creds-box .cred-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13.5px}
+.creds-box .cred-row:not(:last-child){border-bottom:1px solid #f1f5f9}
+.creds-box .cred-label{color:#64748b;font-weight:600}
+.creds-box .cred-val{color:#0f172a;font-weight:700;font-family:monospace}
+.btn-pay{width:100%;padding:15px;background:linear-gradient(135deg,#059669,#047857);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;transition:all .2s}
+.btn-pay:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(5,150,105,.35)}
+.btn-pay:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+.divider{display:flex;align-items:center;gap:10px;margin:20px 0}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:#f1f5f9}
+.divider span{font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.07em}
+
+.footer{text-align:center;margin-top:20px;font-size:11px;color:#94a3b8;font-weight:500}
+.login-link{text-align:center;margin-top:16px;font-size:13px;color:#64748b}
+.login-link a{color:#4f46e5;font-weight:700;text-decoration:none}
+.login-link a:hover{text-decoration:underline}
+
+/* Section heading */
+.section-h{font-size:16px;font-weight:800;color:#0f172a;margin-bottom:4px}
+.section-sub{font-size:13px;color:#64748b;margin-bottom:20px}
+
+/* Checkmark for selected plan */
+.plan-check{width:20px;height:20px;border-radius:50%;border:2px solid #cbd5e1;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .18s}
+.plan-card.selected .plan-check{background:#4f46e5;border-color:#4f46e5}
+.plan-check svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;display:none}
+.plan-card.selected .plan-check svg{display:block}
+
+@media(max-width:500px){.card{padding:32px 20px}.fg-row{grid-template-columns:1fr}.btn-row{flex-direction:column}.btn-back{flex:none}.btn-next{flex:none}}
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Logo -->
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c3.33 2 8.67 2 12 0v-5"/></svg>
+    </div>
+    <h1>Kadem &amp; Zetu<br>School Management System</h1>
+    <div class="brand-sub">Powered by Zetu Business Solutions</div>
+    <div class="cbc-tag">Kenya Competency Based Curriculum</div>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps" id="stepsBar">
+    <div class="step active" id="s1"><div class="step-num">1</div><div class="step-label">School Info</div></div>
+    <div class="step-line" id="line1"></div>
+    <div class="step pending" id="s2"><div class="step-num">2</div><div class="step-label">Choose Plan</div></div>
+    <div class="step-line" id="line2"></div>
+    <div class="step pending" id="s3"><div class="step-num">3</div><div class="step-label">Admin Account</div></div>
+  </div>
+
+  <div id="alert" class="alert"></div>
+
+  <!-- ── STEP 1: School Info ── -->
+  <div id="step1">
+    <div class="section-h">School Details</div>
+    <div class="section-sub">Enter your school's basic information</div>
+
+    <div class="fg">
+      <label>School Name *</label>
+      <input id="school_name" type="text" placeholder="e.g. Kadem Primary School" maxlength="255">
+    </div>
+    <div class="fg-row">
+      <div class="fg">
+        <label>School Code *</label>
+        <input id="school_code" type="text" placeholder="e.g. KPRI001" maxlength="20" style="text-transform:uppercase">
+      </div>
+      <div class="fg">
+        <label>School Level</label>
+        <select id="level">
+          <option value="Primary">Primary</option>
+          <option value="ECDE">ECDE</option>
+          <option value="Junior Secondary">Junior Secondary</option>
+          <option value="Senior Secondary">Senior Secondary</option>
+          <option value="Mixed">Mixed</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg-row">
+      <div class="fg">
+        <label>County</label>
+        <input id="county" type="text" placeholder="e.g. Kisii" maxlength="100">
+      </div>
+      <div class="fg">
+        <label>Sub-County</label>
+        <input id="sub_county" type="text" placeholder="e.g. Kuria West" maxlength="100">
+      </div>
+    </div>
+    <div class="fg">
+      <label>School Phone</label>
+      <input id="phone" type="tel" placeholder="+254 7XX XXX XXX">
+    </div>
+    <button class="btn-full" onclick="goStep2()">Continue &rarr;</button>
+    <div class="login-link">Already registered? <a href="/login.html">Sign in</a></div>
+  </div>
+
+  <!-- ── STEP 2: Choose Plan ── -->
+  <div id="step2" style="display:none">
+    <div class="section-h">Choose a Plan</div>
+    <div class="section-sub">All plans include the full CBC feature set</div>
+    <div class="plans-grid" id="plansGrid">
+      <div style="text-align:center;padding:24px;color:#94a3b8;font-size:13px">Loading plans…</div>
+    </div>
+    <div id="alert2" class="alert" style="display:none"></div>
+    <div class="btn-row">
+      <button class="btn-back" onclick="goStep(1)">&#8592; Back</button>
+      <button class="btn-next" id="btnStep2Next" onclick="goStep3()">Continue &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: Admin Account ── -->
+  <div id="step3" style="display:none">
+    <div class="section-h">Admin Account</div>
+    <div class="section-sub">This becomes your school's principal/admin login</div>
+    <div class="fg">
+      <label>Full Name *</label>
+      <input id="admin_name" type="text" placeholder="e.g. Jane Mwangi" maxlength="255">
+    </div>
+    <div class="fg">
+      <label>Email Address *</label>
+      <input id="admin_email" type="email" placeholder="admin@yourschool.ac.ke">
+    </div>
+    <div class="fg">
+      <label>Password *</label>
+      <input id="admin_password" type="password" placeholder="Min 8 chars — A-Z a-z 0-9" maxlength="72">
+    </div>
+    <div class="fg">
+      <label>Confirm Password *</label>
+      <input id="admin_password2" type="password" placeholder="Repeat password" maxlength="72">
+    </div>
+    <div class="btn-row">
+      <button class="btn-back" onclick="goStep(2)">&#8592; Back</button>
+      <button class="btn-next" id="btnRegister" onclick="submitRegistration()">Register &amp; Pay &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ── SUCCESS ── -->
+  <div id="stepSuccess" style="display:none">
+    <div class="success-box">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h2>School Registered!</h2>
+      <p>Your school has been created. Save these credentials then complete payment to activate.</p>
+      <div class="creds-box" id="credsBox"></div>
+      <p style="font-size:12px;color:#94a3b8;margin-bottom:12px">⚠️ You will be asked to change your password on first login.</p>
+      <button class="btn-pay" id="btnPay" onclick="goPaystack()">Pay Now &amp; Activate &rarr;</button>
+      <div class="divider"><span>or pay later</span></div>
+      <a href="/login.html" style="display:block;text-align:center;color:#4f46e5;font-size:13.5px;font-weight:700;text-decoration:none">Go to Login &rarr;</a>
+    </div>
+  </div>
+
+  <div class="footer">Kadem &amp; Zetu School Management System v5.3 &mdash; CBC Kenya</div>
+</div>
+
+<script>
+const API = (window.API_BASE || "/api");
+let selectedPlanId = null;
+let checkoutUrl    = null;
+let plansData      = [];
+
+// ── Step navigation ──────────────────────────────────────────────
+function showAlert(msg, type = "err", el = "alert") {
+  const a = document.getElementById(el);
+  a.textContent = msg;
+  a.className = `alert show alert-${type}`;
+}
+function clearAlert(el = "alert") {
+  const a = document.getElementById(el);
+  a.className = "alert";
+}
+
+function setStep(n) {
+  [1,2,3,"Success"].forEach(s => {
+    const el = document.getElementById(`step${s}`);
+    if (el) el.style.display = "none";
+  });
+  document.getElementById(`step${n}`).style.display = "";
+  // Update steps bar
+  if (n === "Success") return;
+  ["s1","s2","s3"].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.className = "step " + (i+1 < n ? "done" : i+1 === n ? "active" : "pending");
+  });
+  document.getElementById("line1").className = "step-line" + (n > 1 ? " done" : "");
+  document.getElementById("line2").className = "step-line" + (n > 2 ? " done" : "");
+  clearAlert();
+}
+
+function goStep(n) { setStep(n); }
+
+// ── Step 1 → 2 ──────────────────────────────────────────────────
+function goStep2() {
+  const name = document.getElementById("school_name").value.trim();
+  const code = document.getElementById("school_code").value.trim().toUpperCase();
+  if (!name) return showAlert("School name is required.");
+  if (!code || !/^[A-Z0-9]{2,20}$/.test(code)) return showAlert("School code must be 2–20 letters/numbers.");
+  clearAlert();
+  setStep(2);
+  loadPlans();
+}
+
+// ── Load plans ───────────────────────────────────────────────────
+async function loadPlans() {
+  const grid = document.getElementById("plansGrid");
+  try {
+    const res  = await fetch(`${API}/auth/register/plans`);
+    const data = await res.json();
+    if (!data.success || !data.data.length) {
+      grid.innerHTML = "<div style='text-align:center;color:#b91c1c;font-size:13px'>No plans available. Contact support.</div>";
+      return;
+    }
+    plansData = data.data;
+    grid.innerHTML = plansData.map((p, i) => `
+      <label class="plan-card${i===0?" selected":""}" id="pc${p.id}" onclick="selectPlan(${p.id})">
+        <input type="radio" name="plan" value="${p.id}" ${i===0?"checked":""}>
+        ${p.name==="Growth"?'<div class="plan-badge">Popular</div>':""}
+        <div class="plan-top">
+          <div>
+            <div class="plan-name">${p.name}</div>
+            <div class="plan-features">
+              <span>👥 ${p.student_limit ? p.student_limit+" students" : "Unlimited"}</span>
+              ${p.ai_enabled ? `<span>🤖 AI ${p.ai_daily_limit ? p.ai_daily_limit+"/day" : "unlimited"}</span>` : ""}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div>
+              <span class="plan-price">KES ${Number(p.amount).toLocaleString()}</span>
+              <span class="plan-interval">/${p.billing_interval}</span>
+            </div>
+            <div class="plan-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></div>
+          </div>
+        </div>
+      </label>`).join("");
+    // Default select first
+    selectedPlanId = plansData[0].id;
+  } catch {
+    grid.innerHTML = "<div style='text-align:center;color:#b91c1c;font-size:13px'>Failed to load plans. Please refresh.</div>";
+  }
+}
+
+function selectPlan(id) {
+  selectedPlanId = id;
+  document.querySelectorAll(".plan-card").forEach(c => c.classList.remove("selected"));
+  document.getElementById(`pc${id}`)?.classList.add("selected");
+}
+
+// ── Step 2 → 3 ──────────────────────────────────────────────────
+function goStep3() {
+  if (!selectedPlanId) return showAlert("Please select a plan.", "err", "alert2");
+  clearAlert("alert2");
+  setStep(3);
+}
+
+// ── Submit registration ──────────────────────────────────────────
+async function submitRegistration() {
+  const admin_name  = document.getElementById("admin_name").value.trim();
+  const admin_email = document.getElementById("admin_email").value.trim();
+  const admin_pass  = document.getElementById("admin_password").value;
+  const admin_pass2 = document.getElementById("admin_password2").value;
+
+  if (!admin_name) return showAlert("Full name is required.");
+  if (!admin_email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(admin_email)) return showAlert("Valid email is required.");
+  if (admin_pass.length < 8) return showAlert("Password must be at least 8 characters.");
+  if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(admin_pass)) return showAlert("Password needs uppercase, lowercase and a number.");
+  if (admin_pass !== admin_pass2) return showAlert("Passwords do not match.");
+
+  const btn = document.getElementById("btnRegister");
+  btn.disabled = true;
+  btn.textContent = "Registering…";
+  clearAlert();
+
+  try {
+    const body = {
+      school_name:    document.getElementById("school_name").value.trim(),
+      school_code:    document.getElementById("school_code").value.trim().toUpperCase(),
+      level:          document.getElementById("level").value,
+      county:         document.getElementById("county").value.trim() || undefined,
+      sub_county:     document.getElementById("sub_county").value.trim() || undefined,
+      phone:          document.getElementById("phone").value.trim() || undefined,
+      admin_name, admin_email,
+      admin_password: admin_pass,
+      plan_id:        selectedPlanId,
+    };
+
+    const res  = await fetch(`${API}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      const msg = data.errors?.map(e => e.msg).join(", ") || data.message || "Registration failed.";
+      showAlert(msg);
+      btn.disabled = false;
+      btn.textContent = "Register & Pay →";
+      return;
+    }
+
+    // Show success
+    checkoutUrl = data.data.checkout_url;
+    const plan  = plansData.find(p => p.id === selectedPlanId);
+    document.getElementById("credsBox").innerHTML = `
+      <div class="cred-row"><span class="cred-label">School Code</span><span class="cred-val">${data.data.school_code}</span></div>
+      <div class="cred-row"><span class="cred-label">Username</span><span class="cred-val">${data.data.username}</span></div>
+      <div class="cred-row"><span class="cred-label">Email</span><span class="cred-val">${admin_email}</span></div>
+      <div class="cred-row"><span class="cred-label">Plan</span><span class="cred-val">${data.data.plan}</span></div>
+    `;
+    if (!checkoutUrl) {
+      document.getElementById("btnPay").textContent = "Payment unavailable — login and pay from dashboard";
+      document.getElementById("btnPay").disabled = true;
+    }
+    document.getElementById("stepsBar").style.display = "none";
+    setStep("Success");
+
+  } catch {
+    showAlert("Network error. Please check your connection and try again.");
+    btn.disabled = false;
+    btn.textContent = "Register & Pay →";
+  }
+}
+
+function goPaystack() {
+  if (checkoutUrl) window.location.href = checkoutUrl;
+}
+</script>
+</body>
+</html>
