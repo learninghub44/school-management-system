@@ -2,6 +2,7 @@ name = "school-management-system"
 main = "backend/worker-entry.js"
 compatibility_date = "2025-06-01"
 compatibility_flags = ["nodejs_compat"]
+keep_vars = true
 
 [alias]
 "compression"         = "./backend/stubs/compression.js"
