@@ -7,7 +7,7 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "db:migrate": "node -e \"require('dotenv').config(); const db=require('./config/db'); const fs=require('fs'); db.query(fs.readFileSync('./cbc_schema.sql','utf8')).then(()=>{ console.log('Schema applied'); process.exit(0); }).catch(e=>{ console.error(e); process.exit(1); });\"",
-    "deploy": "wrangler deploy",
+    "deploy": "wrangler deploy --keep-vars",
     "dev:worker": "wrangler dev"
   },
   "dependencies": {
