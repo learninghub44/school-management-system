@@ -3,6 +3,11 @@ main = "backend/worker-entry.js"
 compatibility_date = "2025-06-01"
 compatibility_flags = ["nodejs_compat"]
 
+[alias]
+"compression"         = "./backend/stubs/compression.js"
+"morgan"              = "./backend/stubs/morgan.js"
+"express-rate-limit"  = "./backend/stubs/express-rate-limit.js"
+
 [vars]
 NODE_ENV = "production"
 JWT_EXPIRES = "10h"

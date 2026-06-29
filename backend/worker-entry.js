@@ -1,38 +1,22 @@
 /**
- * Cloudflare Workers entry — ESM module wrapping the CJS Express app.
+ * Cloudflare Workers entry — ESM wrapper around the CJS Express app.
  *
- * Why ESM? wrangler requires `export default { fetch }` for ES Module Workers.
- * Why createRequire? The Express app is CommonJS — we bridge via Node.js createRequire.
- *
- * The key trick: stub problematic modules (compression, morgan, express-rate-limit)
- * BEFORE requiring server.js by patching Module._load via createRequire's Module.
+ * Stubbing strategy: wrangler [alias] in wrangler.toml redirects
+ * compression / morgan / express-rate-limit to no-op stubs at bundle time.
+ * No runtime module patching needed.
  */
 import { createRequire } from "module";
 import { Buffer }        from "buffer";
 
 const require = createRequire("/worker-entry.js");
-const Module  = require("module");
 
-// ── Stub modules that use Node.js APIs unavailable in Workers ─────
-const STUBS = {
-  compression:          () => (req, res, next) => next(),
-  morgan:               () => (req, res, next) => next(),
-  "express-rate-limit": () => { const fn = () => (req, res, next) => next(); fn.default = fn; return fn; },
-};
-
-const _origLoad = Module._load.bind(Module);
-Module._load = function (id, parent, isMain) {
-  if (STUBS[id]) return STUBS[id]();
-  return _origLoad(id, parent, isMain);
-};
-
-// ── Patch process so startup checks don't kill the Worker ─────────
+// ── Patch process so startup guards don't crash the Worker ────────
 if (!globalThis.process)     globalThis.process     = {};
 if (!globalThis.process.env) globalThis.process.env = {};
 if (!globalThis.process.on)  globalThis.process.on  = () => {};
-// Replace exit with a throw — prevents startup guards from crashing
+// Replace exit with throw — prevents JWT/DATABASE_URL guards from killing Worker
 globalThis.process.exit = (code) => {
-  throw new Error(`[worker] process.exit(${code}) — JWT_SECRET or DATABASE_URL missing`);
+  throw new Error(`[worker] process.exit(${code}) — check JWT_SECRET / DATABASE_URL secrets`);
 };
 
 // ── Inject Workers env bindings → process.env ─────────────────────
@@ -53,15 +37,15 @@ let _app = null;
 function getApp(env) {
   if (_app) return _app;
   injectEnv(env);
-  // Re-install exit stub after env injection (server.js has its own guard)
+  // Re-patch exit after injection (server.js runs its own guards on require)
   globalThis.process.exit = (code) => {
-    throw new Error(`[worker] startup check failed (exit ${code})`);
+    throw new Error(`[worker] startup guard failed (exit ${code}) — missing secret`);
   };
   _app = require("./server.js");
   return _app;
 }
 
-// ── Shim: Workers Request/Response ↔ Express req/res ─────────────
+// ── Shim: Workers Request → Node-style req ────────────────────────
 function makeNodeReq(request, bodyBuf) {
   const url  = new URL(request.url);
   const hdrs = {};
@@ -75,18 +59,19 @@ function makeNodeReq(request, bodyBuf) {
     headers:    hdrs,
     body:       null,
     params:     {},
-    // Fake Node.js Readable stream so body-parser reads the buffer
-    on(ev, fn)           { if (ev === "data" && bodyBuf?.byteLength) fn(Buffer.from(bodyBuf)); if (ev === "end") fn(); return this; },
-    once(ev, fn)         { return this.on(ev, fn); },
-    removeListener()     { return this; },
-    resume()             { return this; },
-    pipe(d)              { return d; },
+    // Fake Node.js Readable so express.json() body-parser can read the buffer
+    on(ev, fn)       { if (ev === "data" && bodyBuf?.byteLength) fn(Buffer.from(bodyBuf)); if (ev === "end") fn(); return this; },
+    once(ev, fn)     { return this.on(ev, fn); },
+    removeListener() { return this; },
+    resume()         { return this; },
+    pipe(d)          { return d; },
     socket:     { remoteAddress: "127.0.0.1", encrypted: true },
     connection: { remoteAddress: "127.0.0.1" },
-    get(h)               { return hdrs[h.toLowerCase()]; },
+    get(h)           { return hdrs[h.toLowerCase()]; },
   };
 }
 
+// ── Shim: Node-style res → Workers Response ───────────────────────
 function makeNodeRes(resolve) {
   const chunks = [];
   const hdrs   = {};
@@ -102,7 +87,7 @@ function makeNodeRes(resolve) {
     resolve(new Response(body, { status, headers: hdrs }));
   };
 
-  const res = {
+  return {
     statusCode:  200,
     headersSent: false,
     locals:      {},
@@ -112,34 +97,26 @@ function makeNodeRes(resolve) {
     removeHeader(k)  { delete hdrs[k.toLowerCase()]; return this; },
     getHeaders()     { return { ...hdrs }; },
     hasHeader(k)     { return k.toLowerCase() in hdrs; },
-    writeHead(s, h)  {
-      status = s;
-      if (h) for (const [k,v] of Object.entries(h)) hdrs[k.toLowerCase()] = String(v);
-      return this;
-    },
-    write(c)     { chunks.push(c); return true; },
-    end(c)       { if (c != null) chunks.push(c); flush(); },
-    send(data)   {
+    writeHead(s, h)  { status = s; if (h) for (const [k,v] of Object.entries(h)) hdrs[k.toLowerCase()] = String(v); return this; },
+    write(c)         { chunks.push(c); return true; },
+    end(c)           { if (c != null) chunks.push(c); flush(); },
+    send(data)       {
       if (!hdrs["content-type"]) hdrs["content-type"] = "application/json";
       if (typeof data === "object" && data !== null) chunks.push(JSON.stringify(data));
       else if (data != null) chunks.push(String(data));
       flush();
     },
-    json(data)   { hdrs["content-type"] = "application/json"; chunks.push(JSON.stringify(data)); flush(); },
-    status(s)    { status = s; return this; },
-    type(t)      { hdrs["content-type"] = t; return this; },
-    set(k, v)    { hdrs[k.toLowerCase()] = String(v); return this; },
-    get(k)       { return hdrs[k.toLowerCase()]; },
-    redirect(s, u) {
-      if (typeof s === "string") { u = s; s = 302; }
-      status = s; hdrs["location"] = u; flush();
-    },
-    on()         { return this; },
-    emit()       { return this; },
-    once()       { return this; },
+    json(data)       { hdrs["content-type"] = "application/json"; chunks.push(JSON.stringify(data)); flush(); },
+    status(s)        { status = s; return this; },
+    type(t)          { hdrs["content-type"] = t; return this; },
+    set(k, v)        { hdrs[k.toLowerCase()] = String(v); return this; },
+    get(k)           { return hdrs[k.toLowerCase()]; },
+    redirect(s, u)   { if (typeof s === "string") { u = s; s = 302; } status = s; hdrs["location"] = u; flush(); },
+    on()             { return this; },
+    emit()           { return this; },
+    once()           { return this; },
     removeListener() { return this; },
   };
-  return res;
 }
 
 // ── Workers fetch handler ─────────────────────────────────────────
@@ -157,32 +134,24 @@ export default {
         const req = makeNodeReq(request, bodyBuf);
         const res = makeNodeRes(resolve);
 
-        // Default content-type for JSON bodies
         if (bodyBuf?.byteLength && !req.headers["content-type"]) {
           req.headers["content-type"] = "application/json";
         }
 
-        const timer = setTimeout(() => {
-          reject(new Error("Worker timeout after 25s"));
-        }, 25_000);
+        const timer = setTimeout(() => reject(new Error("Worker timeout 25s")), 25_000);
+        const done  = (fn) => (...args) => { clearTimeout(timer); fn(...args); };
 
-        const origEnd  = res.end.bind(res);
-        const origSend = res.send.bind(res);
-        const origJson = res.json.bind(res);
-        res.end  = (c) => { clearTimeout(timer); origEnd(c);  };
-        res.send = (c) => { clearTimeout(timer); origSend(c); };
-        res.json = (c) => { clearTimeout(timer); origJson(c); };
+        res.end  = done(res.end.bind(res));
+        res.send = done(res.send.bind(res));
+        res.json = done(res.json.bind(res));
 
         try {
           app(req, res, (err) => {
             clearTimeout(timer);
-            const body = err
-              ? JSON.stringify({ error: err.message })
-              : JSON.stringify({ error: "Not Found" });
-            resolve(new Response(body, {
-              status: err ? 500 : 404,
-              headers: { "content-type": "application/json" },
-            }));
+            resolve(new Response(
+              JSON.stringify({ error: err ? err.message : "Not Found" }),
+              { status: err ? 500 : 404, headers: { "content-type": "application/json" } }
+            ));
           });
         } catch (err) {
           clearTimeout(timer);
