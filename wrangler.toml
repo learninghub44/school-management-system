@@ -7,6 +7,9 @@ compatibility_flags = ["nodejs_compat"]
 "compression"         = "./backend/stubs/compression.js"
 "morgan"              = "./backend/stubs/morgan.js"
 "express-rate-limit"  = "./backend/stubs/express-rate-limit.js"
+"body-parser"         = "./backend/stubs/body-parser.js"
+"iconv-lite"          = "./backend/stubs/iconv-lite.js"
+"raw-body"            = "./backend/stubs/raw-body.js"
 
 [vars]
 NODE_ENV = "production"

@@ -33,14 +33,29 @@ function makeNodeReq(request, bodyBuf) {
   const url  = new URL(request.url);
   const hdrs = {};
   for (const [k, v] of request.headers.entries()) hdrs[k.toLowerCase()] = v;
+
+  // Pre-parse body so body-parser stub skips streams entirely
+  let _workerBody = undefined;
+  if (bodyBuf?.byteLength) {
+    const ct = (hdrs["content-type"] || "").split(";")[0].trim();
+    try {
+      if (ct === "application/x-www-form-urlencoded") {
+        _workerBody = Object.fromEntries(new URLSearchParams(Buffer.from(bodyBuf).toString("utf8")));
+      } else {
+        _workerBody = JSON.parse(Buffer.from(bodyBuf).toString("utf8"));
+      }
+    } catch { _workerBody = {}; }
+  }
+
   return {
-    method:     request.method,
-    url:        url.pathname + url.search,
-    path:       url.pathname,
-    query:      Object.fromEntries(url.searchParams),
-    headers:    hdrs,
-    body:       null,
-    params:     {},
+    method:      request.method,
+    url:         url.pathname + url.search,
+    path:        url.pathname,
+    query:       Object.fromEntries(url.searchParams),
+    headers:     hdrs,
+    body:        null,
+    _workerBody,
+    params:      {},
     on(ev, fn)       { if (ev === "data" && bodyBuf?.byteLength) fn(Buffer.from(bodyBuf)); if (ev === "end") fn(); return this; },
     once(ev, fn)     { return this.on(ev, fn); },
     removeListener() { return this; },
