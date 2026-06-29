@@ -10,7 +10,7 @@
 import { createRequire } from "module";
 import { Buffer }        from "buffer";
 
-const require = createRequire(import.meta.url);
+const require = createRequire("/worker-entry.js");
 const Module  = require("module");
 
 // ── Stub modules that use Node.js APIs unavailable in Workers ─────
