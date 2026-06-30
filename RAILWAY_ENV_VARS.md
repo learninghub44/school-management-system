@@ -12,7 +12,7 @@ Set these in your Railway project → Variables tab.
 | `DATABASE_URL` | Your PostgreSQL provider's connection/pooler URI |
 | `ALLOWED_ORIGINS` | Your Railway domain e.g. `https://school-management-system-production.up.railway.app` — add custom domain here too once set |
 | `GROQ_API_KEY` | Your Groq API key |
-| `GROQ_MODEL` | `llama3-8b-8192` |
+| `GROQ_MODEL` | `openai/gpt-oss-20b` |
 | `PAYSTACK_SECRET_KEY` | Your Paystack live secret key |
 | `PAYSTACK_CALLBACK_URL` | `https://YOUR-RAILWAY-DOMAIN.up.railway.app/subscription.html` |
 | `PESAPAL_BASE_URL` | `https://pay.pesapal.com/v3/api` |

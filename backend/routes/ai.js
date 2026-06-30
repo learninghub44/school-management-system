@@ -65,7 +65,7 @@ function getGroqClient() {
 async function createGroqResponse(input, systemPrompt = ASSISTANT_IDENTITY) {
   const client = getGroqClient();
   const response = await client.chat.completions.create({
-    model: process.env.GROQ_MODEL || "llama3-8b-8192",
+    model: process.env.GROQ_MODEL || "openai/gpt-oss-20b",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user",   content: input },
