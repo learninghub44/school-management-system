@@ -172,9 +172,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
     <div class="logo-icon">
       <svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c3.33 2 8.67 2 12 0v-5"/></svg>
     </div>
-    <h1>Kadem &amp; Zetu<br>School Management System</h1>
-    <div class="brand-sub">Powered by Zetu Business Solutions</div>
-    <div class="cbc-tag">Kenya Competency Based Curriculum</div>
+    <h1>Register Your School</h1>
+    <div class="cbc-tag">Kadem &amp; Zetu SMS — CBC Kenya</div>
   </div>
 
   <!-- Steps -->
@@ -191,7 +190,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
   <!-- ── STEP 1: School Info ── -->
   <div id="step1">
     <div class="section-h">School Details</div>
-    <div class="section-sub">Enter your school's basic information</div>
 
     <div class="fg">
       <label>School Name *</label>
@@ -234,7 +232,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
   <!-- ── STEP 2: Choose Plan ── -->
   <div id="step2" style="display:none">
     <div class="section-h">Choose a Plan</div>
-    <div class="section-sub">All plans include the full CBC feature set</div>
     <div class="plans-grid" id="plansGrid">
       <div style="text-align:center;padding:24px;color:#94a3b8;font-size:13px">Loading plans…</div>
     </div>
@@ -248,7 +245,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
   <!-- ── STEP 3: Admin Account ── -->
   <div id="step3" style="display:none">
     <div class="section-h">Admin Account</div>
-    <div class="section-sub">This becomes your school's principal/admin login</div>
     <div class="fg">
       <label>Full Name *</label>
       <input id="admin_name" type="text" placeholder="e.g. Jane Mwangi" maxlength="255">
@@ -282,16 +278,16 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
         <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
       <h2>School Registered!</h2>
-      <p>Your school has been created. Save these credentials then complete payment to activate.</p>
+      <p>Save these credentials, then complete payment to activate.</p>
       <div class="creds-box" id="credsBox"></div>
-      <p style="font-size:12px;color:#94a3b8;margin-bottom:12px">⚠️ You will be asked to change your password on first login.</p>
+      <p style="font-size:12px;color:#94a3b8;margin-bottom:12px">⚠️ Change password on first login.</p>
       <button class="btn-pay" id="btnPay" onclick="goPaystack()">Pay Now &amp; Activate &rarr;</button>
       <div class="divider"><span>or pay later</span></div>
       <a href="/login.html" style="display:block;text-align:center;color:#4f46e5;font-size:13.5px;font-weight:700;text-decoration:none">Go to Login &rarr;</a>
     </div>
   </div>
 
-  <div class="footer">Kadem &amp; Zetu School Management System v5.3 &mdash; CBC Kenya</div>
+  <div class="footer">Kadem &amp; Zetu SMS — CBC Kenya</div>
 </div>
 
 <script>

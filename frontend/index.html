@@ -70,6 +70,16 @@ nav{
   text-decoration:none;
 }
 .nav-cta:hover{background:#86efac;transform:translateY(-1px)}
+.nav-cta-secondary{
+  background:transparent;color:var(--text-muted);
+  border:1px solid var(--border,#3a3a4a);border-radius:8px;
+  padding:9px 18px;font-size:14px;font-weight:600;
+  font-family:var(--font-body);cursor:pointer;
+  transition:color .2s,border-color .2s;
+  text-decoration:none;margin-right:8px;
+}
+.nav-cta-secondary:hover{color:var(--accent);border-color:var(--accent)}
+.mobile-menu .nav-cta-secondary{font-size:18px;padding:12px 32px;margin:0}
 
 /* ── HAMBURGER ── */
 .nav-hamburger{
@@ -482,6 +492,7 @@ footer{
     <a href="#cbc">CBC Aligned</a>
     <a href="#testimonials">Schools</a>
   </div>
+  <a href="/register.html" class="nav-cta-secondary">Register School</a>
   <a href="/login.html" class="nav-cta">Sign In →</a>
   <button class="nav-hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
     <span></span><span></span><span></span>
@@ -493,6 +504,7 @@ footer{
   <a href="#features" class="mobile-link">Features</a>
   <a href="#cbc" class="mobile-link">CBC Aligned</a>
   <a href="#testimonials" class="mobile-link">Schools</a>
+  <a href="/register.html" class="nav-cta-secondary">Register School</a>
   <a href="/login.html" class="nav-cta">Sign In →</a>
 </div>
 

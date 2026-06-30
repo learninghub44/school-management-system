@@ -2,14 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sign In — Kadem &amp; Zetu School Management System</title>
-<!-- Apply theme before paint to prevent flash -->
+<title>Sign In — Kadem &amp; Zetu SMS</title>
 <script>
 (function(){
   var t=localStorage.getItem('theme')||'system';
-  var d=document.documentElement;
-  if(t==='dark'||( t==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches)){d.setAttribute('data-theme','dark');}
-  else{d.setAttribute('data-theme','light');}
+  var dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
 })();
 </script>
 <script src="/js/config.js"></script>
@@ -18,113 +16,66 @@
 <style>
 :root{
   --bg:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4338ca 100%);
-  --card:#fff;--card-shadow:0 25px 60px rgba(0,0,0,.3);
+  --card:#fff;--card-shadow:0 20px 50px rgba(0,0,0,.28);
   --text:#0f172a;--text-muted:#64748b;--text-hint:#94a3b8;
-  --border:#e2e8f0;--input-bg:#fff;--input-focus-shadow:rgba(79,70,229,.12);
-  --support-bg:#f8fafc;--support-border:#e2e8f0;
-  --footer:#94a3b8;
+  --border:#e2e8f0;--input-bg:#fff;--focus-ring:rgba(79,70,229,.12);
 }
 [data-theme=dark]{
   --bg:linear-gradient(135deg,#0f0c29 0%,#1e1b4b 50%,#2d2a6e 100%);
-  --card:#1e1b4b;--card-shadow:0 25px 60px rgba(0,0,0,.6);
+  --card:#1e1b4b;--card-shadow:0 20px 50px rgba(0,0,0,.55);
   --text:#e2e8f0;--text-muted:#94a3b8;--text-hint:#64748b;
-  --border:#312e81;--input-bg:#2d2a6e;--input-focus-shadow:rgba(129,140,248,.18);
-  --support-bg:#2d2a6e;--support-border:#312e81;
-  --footer:#64748b;
+  --border:#312e81;--input-bg:#2d2a6e;--focus-ring:rgba(129,140,248,.18);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;transition:background .3s}
-.card{background:var(--card);border-radius:20px;padding:32px 36px;width:100%;max-width:380px;box-shadow:var(--card-shadow);position:relative;transition:background .3s}
-/* Theme toggle */
-.theme-toggle{position:absolute;top:18px;right:18px;display:flex;gap:4px;background:var(--support-bg);border:1px solid var(--border);border-radius:10px;padding:3px}
-.theme-btn{border:none;background:transparent;cursor:pointer;padding:5px 8px;border-radius:7px;font-size:13px;line-height:1;color:var(--text-muted);transition:background .15s,color .15s}
-.theme-btn.active{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff}
-.logo{text-align:center;margin-bottom:20px}
-.logo-icon{width:52px;height:52px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px}
-.logo-icon svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.logo h1{font-size:18px;font-weight:800;color:var(--text);line-height:1.25}
-.logo .brand-sub{font-size:10px;font-weight:700;color:#4f46e5;letter-spacing:.07em;text-transform:uppercase;margin-top:3px}
-.logo .cbc-tag{font-size:11.5px;color:var(--text-muted);margin-top:4px;font-weight:500}
-/* Form */
-.fg{margin-bottom:16px}
-.fg label{display:block;font-size:11.5px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
-.fg input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;color:var(--text);font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;background:var(--input-bg)}
-.fg input:focus{border-color:#4f46e5;box-shadow:0 0 0 3px var(--input-focus-shadow)}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:var(--card);border-radius:18px;padding:30px 32px;width:100%;max-width:360px;box-shadow:var(--card-shadow);position:relative}
+.theme-toggle{position:absolute;top:14px;right:14px;display:flex;gap:2px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;padding:2px}
+.theme-btn{border:none;background:transparent;cursor:pointer;padding:4px 7px;border-radius:6px;font-size:12px;color:var(--text-muted)}
+.theme-btn.active{background:linear-gradient(135deg,#4f46e5,#7c3aed)}
+.logo{text-align:center;margin-bottom:22px}
+.logo-icon{width:46px;height:46px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px}
+.logo-icon svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.logo h1{font-size:16px;font-weight:800;color:var(--text)}
+.logo p{font-size:11.5px;color:var(--text-muted);margin-top:3px}
+.fg{margin-bottom:13px}
+.fg input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;color:var(--text);font-family:inherit;outline:none;background:var(--input-bg);transition:border-color .15s,box-shadow .15s}
+.fg input:focus{border-color:#4f46e5;box-shadow:0 0 0 3px var(--focus-ring)}
 .fg input::placeholder{color:var(--text-hint)}
-.hint{font-size:12px;color:var(--text-hint);margin:-8px 0 14px 2px}
-/* Captcha */
-.captcha-wrap{margin:14px 0;display:flex;justify-content:center}
-/* Buttons */
-.btn-submit{width:100%;padding:14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;margin-top:4px}
-.btn-submit:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(79,70,229,.35)}
-.btn-submit:disabled{opacity:.7;cursor:not-allowed;transform:none}
-.alert{padding:12px 16px;border-radius:10px;font-size:13.5px;margin-top:14px;font-weight:500;display:none}
+.captcha-wrap{margin:12px 0;display:flex;justify-content:center}
+.btn-submit{width:100%;padding:12px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:10px;color:#fff;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s,box-shadow .15s}
+.btn-submit:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(79,70,229,.32)}
+.btn-submit:disabled{opacity:.65;cursor:not-allowed;transform:none}
+.alert{padding:10px 13px;border-radius:9px;font-size:13px;margin-top:12px;font-weight:500;display:none}
 .alert.show{display:block}
-.alert-err{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
-.alert-ok{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
-/* Support */
-.support{margin-top:24px;border-top:1px solid var(--border);padding-top:20px}
-.support-title{text-align:center;font-size:11px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px}
-.support-links{display:flex;flex-direction:column;gap:10px}
-.support-link{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;text-decoration:none;transition:background .15s,border-color .15s;background:var(--support-bg);border:1px solid var(--support-border)}
-.support-link:hover{background:#ede9fe;border-color:#c4b5fd}
-.support-link.phone:hover{background:#f0fdf4;border-color:#86efac}
-.support-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.support-icon svg{width:18px;height:18px;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
-.support-link.email .support-icon{background:#ede9fe}
-.support-link.email .support-icon svg{stroke:#4f46e5}
-.support-link.phone .support-icon{background:#dcfce7}
-.support-link.phone .support-icon svg{stroke:#16a34a}
-.support-info{display:flex;flex-direction:column}
-.support-label{font-size:10px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
-.support-link.email .support-value{font-size:13px;font-weight:600;color:#4f46e5}
-.support-link.phone .support-value{font-size:13px;font-weight:600;color:#166534}
-.support-arrow{margin-left:auto;flex-shrink:0;opacity:.35}
-.support-arrow svg{width:14px;height:14px;stroke:#64748b;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-.footer{text-align:center;margin-top:20px;font-size:11px;color:var(--footer);font-weight:500}
+.alert-err{background:#fee2e2;color:#b91c1c}
+.alert-ok{background:#dcfce7;color:#166534}
+.foot{text-align:center;margin-top:18px;font-size:12.5px;color:var(--text-muted)}
+.foot a{color:#4f46e5;font-weight:700;text-decoration:none}
+.support-line{text-align:center;margin-top:14px;font-size:11.5px;color:var(--text-hint)}
+.support-line a{color:var(--text-muted);text-decoration:none;font-weight:600}
 </style>
 </head>
 <body>
 <div class="card">
-
-  <!-- Theme toggle -->
   <div class="theme-toggle">
-    <button class="theme-btn" id="themeLight" onclick="setTheme('light')" title="Light">☀️</button>
-    <button class="theme-btn" id="themeSystem" onclick="setTheme('system')" title="System">⚙️</button>
-    <button class="theme-btn" id="themeDark" onclick="setTheme('dark')" title="Dark">🌙</button>
+    <button class="theme-btn" id="themeLight" onclick="setTheme('light')">☀️</button>
+    <button class="theme-btn" id="themeSystem" onclick="setTheme('system')">⚙️</button>
+    <button class="theme-btn" id="themeDark" onclick="setTheme('dark')">🌙</button>
   </div>
 
-  <!-- Logo & Brand -->
   <div class="logo">
     <div class="logo-icon">
-      <svg viewBox="0 0 24 24">
-        <path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/>
-        <path d="M6 12v5c3.33 2 8.67 2 12 0v-5"/>
-      </svg>
+      <svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c3.33 2 8.67 2 12 0v-5"/></svg>
     </div>
-    <h1>Kadem &amp; Zetu<br>School Management System</h1>
-    <div class="brand-sub">Powered by Zetu Business Solutions</div>
-    <div class="cbc-tag">Kenya Competency Based Curriculum</div>
+    <h1>Kadem &amp; Zetu SMS</h1>
+    <p>Sign in to your school account</p>
   </div>
 
-  <!-- Login Form -->
   <form id="loginForm">
-    <div class="fg">
-      <label>School Code</label>
-      <input id="school_code" type="text" placeholder="e.g. KPRI001" autocomplete="organization" maxlength="20" style="text-transform:uppercase">
-    </div>
-    <p class="hint">Enter the school code issued by your administrator.</p>
+    <div class="fg"><input id="school_code" type="text" placeholder="School Code" autocomplete="organization" maxlength="20" style="text-transform:uppercase"></div>
+    <div class="fg"><input id="username" type="text" placeholder="Username or Email" autocomplete="username"></div>
+    <div class="fg"><input id="password" type="password" placeholder="Password" autocomplete="current-password"></div>
 
-    <div class="fg">
-      <label>Username or Email</label>
-      <input id="username" type="text" placeholder="username or email" autocomplete="username">
-    </div>
-    <div class="fg">
-      <label>Password</label>
-      <input id="password" type="password" placeholder="Password" autocomplete="current-password">
-    </div>
-
-    <!-- Cloudflare Turnstile CAPTCHA -->
     <div class="captcha-wrap">
       <div class="cf-turnstile" data-sitekey="0x4AAAAAAA_REPLACE_WITH_YOUR_SITE_KEY" data-callback="onTurnstileSuccess" data-expired-callback="onTurnstileExpired" data-theme="auto"></div>
     </div>
@@ -133,59 +84,25 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);min-height:
     <button class="btn-submit" id="loginBtn" type="submit">Sign In</button>
   </form>
 
-  <!-- Support Section -->
-  <div class="support">
-    <div class="support-title">Need Help? Contact Support</div>
-    <div class="support-links">
-      <a class="support-link email" href="mailto:support@cbcerp.co.ke">
-        <div class="support-icon">
-          <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg>
-        </div>
-        <div class="support-info">
-          <span class="support-label">Email Support</span>
-          <span class="support-value">support@cbcerp.co.ke</span>
-        </div>
-        <div class="support-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
-      </a>
-      <a class="support-link phone" href="tel:+254701059192">
-        <div class="support-icon">
-          <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-        </div>
-        <div class="support-info">
-          <span class="support-label">Call / WhatsApp</span>
-          <span class="support-value">+254 701 059 192</span>
-        </div>
-        <div class="support-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
-      </a>
-    </div>
-  </div>
-
-  <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--text-muted)">
-    New school? <a href="/register.html" style="color:#4f46e5;font-weight:700;text-decoration:none">Register &amp; choose a plan &rarr;</a>
-  </div>
-  <div class="footer">Kadem &amp; Zetu School Management System v5.3 &mdash; CBC Kenya</div>
+  <p class="foot">New school? <a href="/register.html">Register here</a></p>
+  <p class="support-line">Need help? <a href="mailto:support@cbcerp.co.ke">support@cbcerp.co.ke</a> · <a href="tel:+254701059192">+254 701 059 192</a></p>
 </div>
 
 <script>
-// ── Theme toggle ─────────────────────────────────────────────────
-var _turnstileToken = '';
-function setTheme(t) {
-  localStorage.setItem('theme', t);
-  var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme:dark)').matches);
-  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-  document.querySelectorAll('.theme-btn').forEach(function(b){ b.classList.remove('active'); });
-  document.getElementById('theme' + t.charAt(0).toUpperCase() + t.slice(1)).classList.add('active');
+window._turnstileToken = '';
+function setTheme(t){
+  localStorage.setItem('theme',t);
+  var dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+  document.querySelectorAll('.theme-btn').forEach(function(b){b.classList.remove('active')});
+  document.getElementById('theme'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active');
 }
 (function(){
-  var t = localStorage.getItem('theme') || 'system';
-  document.getElementById('theme' + t.charAt(0).toUpperCase() + t.slice(1)).classList.add('active');
-  window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', function(){
-    if(localStorage.getItem('theme')==='system') setTheme('system');
-  });
+  var t=localStorage.getItem('theme')||'system';
+  document.getElementById('theme'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active');
 })();
-// ── Turnstile callbacks ──────────────────────────────────────────
-function onTurnstileSuccess(token){ _turnstileToken = token; }
-function onTurnstileExpired(){ _turnstileToken = ''; }
+function onTurnstileSuccess(token){ window._turnstileToken = token; }
+function onTurnstileExpired(){ window._turnstileToken = ''; }
 </script>
 <script type="module" src="/js/login.js"></script>
 </body>
