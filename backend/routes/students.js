@@ -6,6 +6,8 @@
  */
 "use strict";
 const express = require("express");
+const bcrypt  = require("bcryptjs");
+const crypto  = require("crypto");
 const { body, validationResult } = require("express-validator");
 const db           = require("../config/db");
 const auth         = require("../middleware/authMiddleware");
@@ -339,5 +341,81 @@ router.post("/promote", auth, roleM(MANAGE), async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error." });
   }
 });
+
+// ── POST /api/students/:id/guardians — link a parent account ───────
+// Creates a PARENT user if the email is new, or links an existing PARENT
+// account (so the same login works across siblings). MANAGE roles only —
+// this is the one write path into the otherwise read-only parent portal.
+router.post("/:id/guardians", auth, roleM(MANAGE), validateUUID("id"),
+  [
+    body("email").isEmail().normalizeEmail(),
+    body("name").trim().notEmpty().isLength({ max: 150 }),
+    body("phone").optional().matches(/^\+?[\d\s\-]{7,20}$/),
+    body("relationship").isIn(["Mother", "Father", "Guardian", "Other"]),
+    body("is_primary").optional().isBoolean(),
+  ],
+  async (req, res) => {
+    const errs = validationResult(req);
+    if (!errs.isEmpty())
+      return res.status(400).json({ success: false, errors: errs.array() });
+    try {
+      const sid = getSchoolId(req);
+      const { rows: st } = await db.query("SELECT school_id FROM students WHERE id=$1", [req.params.id]);
+      if (!st.length) return res.status(404).json({ success: false, message: "Student not found." });
+      if (req.user.role !== "SUPER_ADMIN" && st[0].school_id !== sid)
+        return res.status(403).json({ success: false, message: "Access denied." });
+
+      const { email, name, phone, relationship, is_primary } = req.body;
+      const studentSchoolId = st[0].school_id;
+
+      // Reuse an existing PARENT account for this school+email if one exists
+      // (covers siblings sharing one parent login), otherwise create one.
+      const { rows: existing } = await db.query(
+        "SELECT id FROM users WHERE email=$1 AND school_id=$2 AND role='PARENT'",
+        [email, studentSchoolId]
+      );
+
+      let parentUserId, tempPassword = null;
+      if (existing.length) {
+        parentUserId = existing[0].id;
+      } else {
+        // Username derived from email local-part, deduped with a short suffix on conflict
+        const base = email.split("@")[0].replace(/[^a-zA-Z0-9._-]/g, "").slice(0, 40) || "parent";
+        let username = base, suffix = 0;
+        while (true) {
+          const { rows: dup } = await db.query("SELECT id FROM users WHERE username=$1", [username]);
+          if (!dup.length) break;
+          suffix += 1; username = `${base}${suffix}`;
+        }
+        tempPassword = crypto.randomBytes(6).toString("base64url"); // shown once in the response
+        const hash = await bcrypt.hash(tempPassword, 12);
+        const { rows: created } = await db.query(
+          `INSERT INTO users (school_id, username, email, password_hash, name, phone, role, must_change_password)
+           VALUES ($1,$2,$3,$4,$5,$6,'PARENT',TRUE) RETURNING id`,
+          [studentSchoolId, username, email, hash, name, phone || null]
+        );
+        parentUserId = created[0].id;
+      }
+
+      const { rows: link } = await db.query(
+        `INSERT INTO guardians (school_id, user_id, student_id, relationship, is_primary, created_by)
+         VALUES ($1,$2,$3,$4,COALESCE($5,FALSE),$6)
+         ON CONFLICT (user_id, student_id) DO UPDATE SET relationship=EXCLUDED.relationship, is_primary=EXCLUDED.is_primary
+         RETURNING id`,
+        [studentSchoolId, parentUserId, req.params.id, relationship, is_primary, req.user.id]
+      );
+
+      await audit(req, "LINK_GUARDIAN", "guardians", link[0].id, null, { student_id: req.params.id, email });
+      return res.status(201).json({
+        success: true,
+        message: tempPassword ? "Parent account created and linked." : "Existing parent account linked to this student.",
+        data: { guardian_id: link[0].id, parent_user_id: parentUserId, temp_password: tempPassword },
+      });
+    } catch (err) {
+      console.error("[students/guardians]", err.message);
+      return res.status(500).json({ success: false, message: "Server error." });
+    }
+  }
+);
 
 module.exports = router;

@@ -190,6 +190,7 @@ app.use("/api/portfolio",     authMiddleware, requirePasswordChange, requireSubs
 app.use("/api/observations",  authMiddleware, requirePasswordChange, requireSubscription, require("./routes/observations"));
 app.use("/api/interventions", authMiddleware, requirePasswordChange, requireSubscription, require("./routes/interventions"));
 app.use("/api/moderation",    authMiddleware, requirePasswordChange, requireSubscription, require("./routes/moderation"));
+app.use("/api/parent",        authMiddleware, requirePasswordChange, requireSubscription, require("./routes/parent"));
 
 // ── Health check ──────────────────────────────────────────────────
 app.get("/api/health", async (req, res) => {
