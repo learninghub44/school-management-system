@@ -114,13 +114,25 @@ export async function apiFetch(path, { method = "GET", body = null, params = nul
     const res = await fetch(fullUrl, opts);
     let data;
     try { data = await res.json(); }
-    catch { data = { success: false, message: `HTTP ${res.status}` }; }
+    catch {
+      data = { success: false, message: friendlyStatusMessage(res.status) };
+    }
     data._status = res.status;
     return data;
   } catch (e) {
     console.error("API error:", path, e.message);
     return { success: false, message: "Network error. Check your connection.", _networkError: true };
   }
+}
+
+// Fallback message when a response has no JSON body — this happens for raw
+// platform-level errors (e.g. a Cloudflare edge 503) that never reach our
+// app code, so there's no API-provided message to show.
+function friendlyStatusMessage(status) {
+  if (status === 503) return "The service is temporarily unavailable. Please try again in a moment — if this keeps happening, contact support.";
+  if (status >= 500)  return "Something went wrong on our end. Please try again, and contact support if it continues.";
+  if (status === 429) return "Too many requests — please wait a moment and try again.";
+  return `Request failed (HTTP ${status}). Please try again.`;
 }
 
 // ── verifySession ─────────────────────────────────────────────────

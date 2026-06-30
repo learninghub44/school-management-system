@@ -8,21 +8,61 @@ let query, pool;
 if (isWorker) {
   // Lazy-init — DATABASE_URL isn't available at module load time in Workers.
   // It's injected per-request by worker-entry.js injectEnv().
-  const { neon, neonConfig } = require("@neondatabase/serverless");
-  neonConfig.fetchConnectionCache = true;
+  const { neon } = require("@neondatabase/serverless");
+  // NOTE: fetchConnectionCache is intentionally left at its default (no longer
+  // forced to `true`). Forcing it on caches a connection at module/isolate
+  // scope — if the DB password is ever rotated (as happened earlier this
+  // project), a Worker isolate that's still warm can keep retrying a now-dead
+  // cached connection. That failure happens at the transport layer, below our
+  // try/catch, so it doesn't return our JSON error response — it surfaces as
+  // a raw platform 503 from Cloudflare's edge instead of a normal API error.
 
   let _sql = null;
+  let _sqlUrl = null;
   const getSql = () => {
-    if (!_sql) {
+    // Re-create the client if DATABASE_URL changed (e.g. secret rotated and
+    // a new isolate picked it up) — cheap check, avoids reusing a dead client.
+    if (!_sql || _sqlUrl !== process.env.DATABASE_URL) {
       if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL not set");
       _sql = neon(process.env.DATABASE_URL);
+      _sqlUrl = process.env.DATABASE_URL;
     }
     return _sql;
   };
 
+  // Errors that indicate a broken/stale connection rather than a bad query —
+  // worth one fresh retry before giving up.
+  function isTransientConnError(err) {
+    const msg = String(err?.message || "").toLowerCase();
+    return (
+      msg.includes("fetch failed") ||
+      msg.includes("network") ||
+      msg.includes("econnreset") ||
+      msg.includes("socket") ||
+      msg.includes("timeout") ||
+      msg.includes("connection") ||
+      err?.code === "ECONNRESET"
+    );
+  }
+
   query = async (text, params) => {
-    const rows = await getSql()(text, params || []);
-    return { rows, rowCount: rows.length };
+    try {
+      const rows = await getSql()(text, params || []);
+      return { rows, rowCount: rows.length };
+    } catch (err) {
+      if (isTransientConnError(err)) {
+        console.warn("[db] Transient connection error, retrying once:", err.message);
+        _sql = null; // force a fresh client on retry
+        try {
+          const rows = await getSql()(text, params || []);
+          return { rows, rowCount: rows.length };
+        } catch (retryErr) {
+          retryErr.isDbConnectionError = true;
+          throw retryErr;
+        }
+      }
+      throw err;
+    }
   };
   pool = { query };
 

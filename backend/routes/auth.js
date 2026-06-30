@@ -192,8 +192,23 @@ router.post("/login",
         must_change_password: user.must_change_password,
       });
     } catch (err) {
-      console.error("Login error:", err.message);
-      return res.status(500).json({ success: false, message: "Server error." });
+      // Log full diagnostics (stack + DB error code) — previously only
+      // err.message was logged, which hid the actual cause of intermittent
+      // login failures (e.g. a stale DB connection after credential rotation).
+      console.error("[login] Error:", err.message, "| code:", err.code, "| stack:", err.stack);
+
+      if (err.isDbConnectionError || err.code === "ECONNRESET" || /fetch failed|network|timeout/i.test(err.message || "")) {
+        return res.status(503).json({
+          success: false,
+          code: "DB_UNAVAILABLE",
+          message: "We couldn't reach the database right now. This is usually temporary — please try again in a few seconds. If it keeps happening, contact support.",
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: "Something went wrong while signing you in. Please try again, and contact support if the problem continues.",
+      });
     }
   }
 );
