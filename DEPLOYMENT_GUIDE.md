@@ -2,13 +2,13 @@
 
 ## Stack
 - **Backend**: Node.js 18+ / Express on [Render](https://render.com)
-- **Database**: PostgreSQL on [Supabase](https://supabase.com)
+- **Database**: PostgreSQL on [Neon](https://neon.tech)
 - **Frontend**: Static files served by Express (or Cloudflare Pages)
 
 ---
 
-## 1. Database Setup (Supabase)
-1. Create a new Supabase project
+## 1. Database Setup (Neon)
+1. Create a new Neon project
 2. Go to **SQL Editor** and run `backend/cbc_schema.sql`
 3. Copy the **Connection String** (URI format) → you'll need this for `DATABASE_URL`
 
@@ -23,7 +23,7 @@
 
 | Key | Value |
 |-----|-------|
-| `DATABASE_URL` | Your Supabase connection string |
+| `DATABASE_URL` | Your Neon connection string |
 | `JWT_SECRET` | 64-char random string (`openssl rand -base64 48`) |
 | `JWT_EXPIRES` | `10h` |
 | `NODE_ENV` | `production` |
@@ -33,7 +33,7 @@
 ---
 
 ## 3. Create First Super Admin
-Run this SQL in Supabase SQL Editor (replace the password hash):
+Run this SQL in Neon's SQL Editor (replace the password hash):
 
 ```sql
 -- Generate hash with: node -e "const b=require('bcryptjs'); b.hash('YourPassword123',12).then(console.log)"

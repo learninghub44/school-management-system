@@ -9,7 +9,7 @@ cbc-school-erp.pages.dev  (Cloudflare Pages — frontend)
 YOUR-SERVICE.onrender.com  (Render — Node.js backend)
          │
          ▼
-Supabase PostgreSQL (database)
+Neon PostgreSQL (database)
 ```
 
 ---
@@ -26,7 +26,7 @@ Supabase PostgreSQL (database)
    |-----|-------|
    | `NODE_ENV` | `production` |
    | `PORT` | `3000` |
-   | `DATABASE_URL` | Your Supabase connection string |
+   | `DATABASE_URL` | Your Neon connection string |
    | `JWT_SECRET` | Random 64-char string (run: `openssl rand -base64 48`) |
    | `JWT_EXPIRES` | `10h` |
    | `ALLOWED_ORIGINS` | `https://cbc-school-erp.pages.dev` |
@@ -38,7 +38,7 @@ Supabase PostgreSQL (database)
 
 ## Step 2 — Run the Database Schema
 
-In Supabase SQL Editor, run the contents of `backend/cbc_schema.sql`
+In Neon's SQL Editor, run the contents of `backend/cbc_schema.sql`
 
 Then create the first Super Admin:
 ```sql

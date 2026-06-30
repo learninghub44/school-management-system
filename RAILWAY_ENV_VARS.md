@@ -9,7 +9,7 @@ Set these in your Railway project → Variables tab.
 | `NODE_ENV` | `production` |
 | `JWT_SECRET` | Generate a strong random secret |
 | `JWT_EXPIRES` | `10h` |
-| `DATABASE_URL` | Supabase → Project Settings → Database → Transaction pooler URI (port 6543) |
+| `DATABASE_URL` | Your PostgreSQL provider's connection/pooler URI |
 | `ALLOWED_ORIGINS` | Your Railway domain e.g. `https://school-management-system-production.up.railway.app` — add custom domain here too once set |
 | `GROQ_API_KEY` | Your Groq API key |
 | `GROQ_MODEL` | `llama3-8b-8192` |
@@ -31,4 +31,4 @@ Set these in your Railway project → Variables tab.
 
 ## Notes
 - Frontend is served by the Express backend — no separate frontend deployment needed.
-- `DATABASE_URL`: use the **Transaction pooler** connection string from Supabase (port 6543), not the direct connection.
+- `DATABASE_URL`: use the pooled connection string from your PostgreSQL provider, not the direct connection.

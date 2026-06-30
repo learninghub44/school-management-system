@@ -3,9 +3,12 @@ const fs = require("fs");
 const path = require("path");
 
 const runSchema = async () => {
-    // Corrected pooler URL and URL-encoded password
-    const connectionString = "postgresql://postgres.dbjpzxwxcyscnaytqnfi:47ty7890%40CHRIS@aws-1-eu-central-1.pooler.supabase.com:5432/postgres";
-    
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+        console.error("DATABASE_URL environment variable is not set.");
+        process.exit(1);
+    }
+
     const client = new Client({
         connectionString,
     });
