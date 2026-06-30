@@ -64,6 +64,26 @@ body{max-width:100vw}
     <div class="fg"><label>Parent Phone</label><input id="s-pphone" type="tel" maxlength="20"></div>
   </div>
   <div class="fg"><label>Address</label><textarea id="s-addr" maxlength="300"></textarea></div>
+
+  <div style="border-top:1px solid var(--border,#e2e8f0);margin-top:4px;padding-top:14px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <input type="checkbox" id="s-create-parent-login" style="width:auto">
+      <label for="s-create-parent-login" style="margin:0;font-weight:700">Create a parent login for this student</label>
+    </div>
+    <div class="fg-row" id="s-parent-login-fields" style="display:none">
+      <div class="fg"><label>Parent Email *</label><input id="s-parent-email" type="email" maxlength="150" placeholder="parent@example.com"></div>
+      <div class="fg"><label>Relationship *</label>
+        <select id="s-parent-relationship">
+          <option value="">Select</option>
+          <option>Mother</option><option>Father</option><option>Guardian</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);display:none" id="s-parent-login-hint">
+      Uses the Parent/Guardian Name and Phone above. If this email already has a parent account at this school (e.g. a sibling), it's reused — same login, no new password. Otherwise a new account is created and a one-time temporary password is shown after you submit.
+    </div>
+  </div>
+
   <div id="s-alert"></div>
   <div class="modal-actions">
     <button class="btn btn-ghost" data-close="modal-student">Cancel</button>
@@ -1314,6 +1334,9 @@ document.getElementById("btnSubmitGuardian")?.addEventListener("click", async ()
 document.getElementById("btnAddStudent")?.addEventListener("click", async () => {
   resetModal("modal-student");
   openModal("modal-student");
+  document.getElementById("s-create-parent-login").checked = false;
+  document.getElementById("s-parent-login-fields").style.display = "none";
+  document.getElementById("s-parent-login-hint").style.display = "none";
   // Auto-generate admission number
   const admEl = document.getElementById("s-adm");
   admEl.value = "Generating…";
@@ -1325,6 +1348,11 @@ document.getElementById("btnAddStudent")?.addEventListener("click", async () => 
   admEl.disabled = false;
 });
 
+document.getElementById("s-create-parent-login")?.addEventListener("change", (e) => {
+  document.getElementById("s-parent-login-fields").style.display = e.target.checked ? "flex" : "none";
+  document.getElementById("s-parent-login-hint").style.display   = e.target.checked ? "block" : "none";
+});
+
 document.getElementById("btnSubmitStudent")?.addEventListener("click", async () => {
   const fname   = document.getElementById("s-fname").value.trim();
   const lname   = document.getElementById("s-lname").value.trim();
@@ -1332,8 +1360,19 @@ document.getElementById("btnSubmitStudent")?.addEventListener("click", async () 
   const gender  = document.getElementById("s-gender").value;
   const classId = document.getElementById("s-class").value;
   const alertEl = document.getElementById("s-alert");
+  const parentName  = document.getElementById("s-parent").value.trim();
+  const parentPhone = document.getElementById("s-pphone").value.trim();
+  const createLogin = document.getElementById("s-create-parent-login").checked;
+  const parentEmail = document.getElementById("s-parent-email").value.trim();
+  const relationship = document.getElementById("s-parent-relationship").value;
+
   if (!fname || !lname || !gender || !classId)
     return showAlert(alertEl, "First name, last name, gender and class are required.");
+  if (createLogin && (!parentEmail || !relationship))
+    return showAlert(alertEl, "Parent email and relationship are required to create a parent login.");
+  if (createLogin && !parentName)
+    return showAlert(alertEl, "Parent/Guardian Name is required to create a parent login.");
+
   setLoading("btnSubmitStudent", true);
   const r = await students.create({
     first_name:     fname,
@@ -1345,16 +1384,52 @@ document.getElementById("btnSubmitStudent")?.addEventListener("click", async () 
     date_of_birth:  document.getElementById("s-dob").value            || null,
     class_id:       classId,
     admission_date: document.getElementById("s-admdate").value        || null,
-    parent_name:    document.getElementById("s-parent").value.trim()  || null,
-    parent_phone:   document.getElementById("s-pphone").value.trim()  || null,
+    parent_name:    parentName  || null,
+    parent_phone:   parentPhone || null,
     address:        document.getElementById("s-addr").value.trim()    || null,
     school_id:      me.school_id,
   });
-  setLoading("btnSubmitStudent", false);
-  if (r?.success) {
+
+  if (!r?.success) {
+    setLoading("btnSubmitStudent", false);
+    return showAlert(alertEl, r?.message || "Failed to add student.");
+  }
+
+  const newStudentId = r.data?.id || r.id;
+
+  if (!createLogin || !newStudentId) {
+    setLoading("btnSubmitStudent", false);
     showAlert(alertEl, "Student added successfully.", "ok");
     setTimeout(() => { closeModal("modal-student"); loadStudents(); }, 1200);
-  } else showAlert(alertEl, r?.message || "Failed to add student.");
+    return;
+  }
+
+  // Student created — now link/create the parent login
+  const gr = await students.addGuardian(newStudentId, {
+    name: parentName,
+    email: parentEmail,
+    phone: parentPhone || undefined,
+    relationship,
+    is_primary: true,
+  });
+  setLoading("btnSubmitStudent", false);
+
+  if (!gr?.success) {
+    showAlert(alertEl, `Student added, but parent login failed: ${gr?.message || "Server error."} You can retry from the "Parents" button on the student's row.`);
+    setTimeout(() => { closeModal("modal-student"); loadStudents(); }, 2500);
+    return;
+  }
+
+  const tempPw = gr.data?.temp_password;
+  alertEl.innerHTML = tempPw
+    ? `<div class="alert alert-ok show" style="display:block">
+         Student and parent login created. Share these details securely (shown once only):<br>
+         <strong>Username/Email:</strong> ${esc(parentEmail)}<br>
+         <strong>Temporary password:</strong> <span style="font-family:var(--mono);font-weight:700">${esc(tempPw)}</span><br>
+         They'll set a new password on first login at /parent.html using the school code.
+       </div>`
+    : `<div class="alert alert-ok show" style="display:block">Student added. This parent email already had an account at this school (e.g. a sibling) — it's now linked, same login as before.</div>`;
+  setTimeout(() => { closeModal("modal-student"); loadStudents(); }, tempPw ? 6000 : 2000);
 });
 
 // ── Teachers ──────────────────────────────────────────────────────
