@@ -374,9 +374,12 @@ router.post("/register",
       const { rows: existing } = await db.query(
         `SELECT s.id, s.name,
                 ss.status AS sub_status,
-                COALESCE(u.id, u2.id) AS admin_id,
-                COALESCE(u.username, u2.username) AS username,
-                COALESCE(u.email, u2.email) AS admin_email
+                u.id AS principal_id,
+                u.username AS principal_username,
+                u.email AS principal_email,
+                u.last_login AS principal_last_login,
+                u2.id AS email_user_id,
+                u2.school_id AS email_user_school_id
          FROM schools s
          LEFT JOIN school_subscriptions ss ON ss.school_id = s.id
          LEFT JOIN users u ON u.school_id = s.id AND u.role = 'PRINCIPAL'
@@ -391,15 +394,39 @@ router.post("/register",
         if (hasActiveSub)
           return res.status(409).json({ success: false, message: "School code already taken by an active school." });
 
-        // School exists but payment not completed — verify email matches then resume
-        if (ex.admin_email && ex.admin_email !== admin_email)
-          return res.status(409).json({ success: false, message: "School exists but email doesn\'t match. Contact support." });
+        const principalExists = !!ex.principal_id;
+        const emailMismatch = principalExists && ex.principal_email !== admin_email;
+        const principalNeverLoggedIn = !ex.principal_last_login;
+
+        // The email submitted now belongs to a DIFFERENT school's account — always block, regardless of login state.
+        if (ex.email_user_id && ex.email_user_school_id && ex.email_user_school_id !== ex.id)
+          return res.status(409).json({ success: false, message: "Email already registered to another school." });
+
+        let adminId = ex.principal_id;
+        let adminUsername = ex.principal_username;
+        const password_hash = await bcrypt.hash(admin_password, 12);
+
+        if (emailMismatch) {
+          if (!principalNeverLoggedIn) {
+            // This account has actually been used before — don't silently overwrite it.
+            return res.status(409).json({ success: false, message: "School exists but email doesn\'t match. Contact support." });
+          }
+          // Abandoned/never-used registration (payment never completed, never logged in) — safe to
+          // restart it with the newly submitted email/name/password rather than blocking the user.
+          const generatedUsername = `${upperCode.toLowerCase()}_admin`;
+          const { rows: updated } = await db.query(
+            `UPDATE users
+               SET email = $1, name = $2, username = $3, password_hash = $4, must_change_password = TRUE
+             WHERE id = $5
+             RETURNING id, username`,
+            [admin_email, admin_name, generatedUsername, password_hash, ex.principal_id]
+          );
+          adminId = updated[0].id;
+          adminUsername = updated[0].username;
+        }
 
         // If no user was ever created (e.g. previous transaction rolled back), create one now
-        let adminId = ex.admin_id;
-        let adminUsername = ex.username;
         if (!adminId) {
-          const password_hash = await bcrypt.hash(admin_password, 12);
           const generatedUsername = `${upperCode.toLowerCase()}_admin`;
           const { rows: newUser } = await db.query(
             `INSERT INTO users (school_id, username, email, name, password_hash, role, is_active, must_change_password)
