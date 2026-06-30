@@ -288,4 +288,187 @@ router.post("/risk-detection", auth, requireSubscription, requireAiEnabled, aiBu
   }
 );
 
+// ── GET /ai/student-risk-scan/:student_id — DATA-GROUNDED risk insight ──
+// Unlike /risk-detection (which trusts whatever the caller pastes in),
+// this pulls the student's real assessments, attendance, and existing
+// interventions straight from the DB, so the AI is reasoning over actual
+// records instead of free-text claims — far lower hallucination risk.
+const SCAN_ROLES = ["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL", "HOD", "TEACHER", "BURSAR"];
+const ESCALATE_ROLES = ["SUPER_ADMIN", "PRINCIPAL", "DEPUTY_PRINCIPAL", "HOD", "TEACHER"];
+
+function parseRiskLevel(text) {
+  const m = /RISK LEVEL[^:]*:?\s*(Low|Medium|High|Critical)/i.exec(text || "");
+  return m ? m[1].replace(/^\w/, c => c.toUpperCase()) : "Medium";
+}
+
+async function gatherStudentRiskData(req, studentId) {
+  const sid = req.user.role === "SUPER_ADMIN" ? (req.query.school_id || null) : req.user.school_id;
+  const params = sid ? [studentId, sid] : [studentId];
+  const schoolFilter = sid ? "AND s.school_id = $2" : "";
+
+  const { rows: studentRows } = await db.query(
+    `SELECT s.id, s.first_name, s.last_name, s.admission_number, s.school_id,
+            c.name AS class_name, sc.current_term, sc.academic_year
+     FROM students s
+     LEFT JOIN classes c ON c.id = s.current_class_id OR c.id = s.class_id
+     LEFT JOIN schools sc ON sc.id = s.school_id
+     WHERE s.id = $1 ${schoolFilter}`,
+    params
+  );
+  if (!studentRows.length) return null;
+  const student = studentRows[0];
+
+  const { rows: assessments } = await db.query(
+    `SELECT la.name AS subject, a.achievement_level, a.score, a.term, a.academic_year
+     FROM assessments a
+     JOIN learning_areas la ON la.id = a.learning_area_id
+     WHERE a.student_id = $1
+     ORDER BY a.assessment_date DESC LIMIT 20`,
+    [student.id]
+  );
+
+  const { rows: attRows } = await db.query(
+    `SELECT status, COUNT(*)::int AS cnt
+     FROM attendance
+     WHERE student_id = $1 AND date >= CURRENT_DATE - INTERVAL '30 days'
+     GROUP BY status`,
+    [student.id]
+  );
+  const attTotal = attRows.reduce((sum, r) => sum + r.cnt, 0);
+  const present = attRows.find(r => r.status === "Present")?.cnt || 0;
+  const attendanceSummary = attTotal
+    ? `${present}/${attTotal} days present in the last 30 days (${Math.round((present / attTotal) * 100)}%)`
+    : "No attendance records in the last 30 days.";
+
+  const { rows: priorInterventions } = await db.query(
+    `SELECT reason, status, risk_level, created_at
+     FROM interventions WHERE student_id = $1
+     ORDER BY created_at DESC LIMIT 5`,
+    [student.id]
+  );
+
+  return { student, assessments, attendanceSummary, priorInterventions };
+}
+
+router.get("/student-risk-scan/:student_id", auth, requireSubscription, requireAiEnabled, roleM(SCAN_ROLES),
+  aiBurstLimit, aiDailyQuota, validateUUID("student_id"),
+  async (req, res) => {
+    try {
+      const data = await gatherStudentRiskData(req, req.params.student_id);
+      if (!data) return res.status(404).json({ success: false, message: "Student not found." });
+      const { student, assessments, attendanceSummary, priorInterventions } = data;
+
+      const assessmentLines = assessments
+        .map(a => `- ${a.subject} (T${a.term} ${a.academic_year}): ${a.achievement_level}${a.score != null ? ` (${a.score}%)` : ""}`)
+        .join("\n") || "No assessment records on file.";
+
+      const interventionLines = priorInterventions
+        .map(i => `- [${i.status}/${i.risk_level}] ${i.reason} (${new Date(i.created_at).toLocaleDateString()})`)
+        .join("\n") || "None on file.";
+
+      const input = [
+        `Analyse this learner's REAL school records and identify academic risk indicators.`,
+        `Student: ${student.first_name} ${student.last_name} (${student.admission_number})`,
+        student.class_name ? `Class: ${student.class_name}` : "",
+        `Recent Assessment Results (most recent 20):\n${assessmentLines}`,
+        `Attendance (last 30 days): ${attendanceSummary}`,
+        `Prior Interventions on Record:\n${interventionLines}`,
+        "",
+        "Only use the data given above — do not invent scores, subjects, or events not listed.",
+        "Provide a structured risk report with three sections:",
+        "1. RISK LEVEL — Overall risk: Low / Medium / High / Critical, with one-sentence justification",
+        "2. KEY RISK INDICATORS — bullet list of specific warning signs found in this data",
+        "3. RECOMMENDED ACTIONS — concrete next steps for the teacher or school admin",
+        "Be direct, brief, and actionable. This will be read by a school administrator.",
+      ].filter(Boolean).join("\n\n");
+
+      const output = await Promise.race([
+        createGroqResponse(input),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("AI_TIMEOUT")), 25000)),
+      ]);
+      const risk_level = parseRiskLevel(output);
+
+      await logAiUsage(req, "student_risk_scan", input.length);
+      await audit(req, "AI_STUDENT_RISK_SCAN", "students", student.id, null, { risk_level });
+
+      return res.json({
+        success: true,
+        student: { id: student.id, name: `${student.first_name} ${student.last_name}`, admission_number: student.admission_number, class_name: student.class_name },
+        risk_level,
+        output,
+        quota: req.aiQuota || null,
+      });
+    } catch (err) {
+      if (err.message === "AI_TIMEOUT")
+        return res.status(504).json({ success: false, message: "AI request timed out." });
+      console.error("AI student-risk-scan:", err.message);
+      return res.status(500).json({ success: false, message: "AI request failed." });
+    }
+  }
+);
+
+// ── POST /ai/student-risk-scan/:student_id/escalate — turns the AI
+// insight into a real, actionable record: a row in `interventions` that
+// shows up in the existing Interventions workflow (GET /api/interventions,
+// status tracking, follow-up notes, etc.). The scan is re-run server-side
+// against live data rather than trusting a client-supplied risk level or
+// AI text, so the stored record can't be spoofed by the caller.
+router.post("/student-risk-scan/:student_id/escalate", auth, requireSubscription, requireAiEnabled, roleM(ESCALATE_ROLES),
+  aiBurstLimit, aiDailyQuota, validateUUID("student_id"),
+  [body("intervention_plan").optional().trim().isLength({ max: 1000 })],
+  async (req, res) => {
+    try {
+      const data = await gatherStudentRiskData(req, req.params.student_id);
+      if (!data) return res.status(404).json({ success: false, message: "Student not found." });
+      const { student, assessments, attendanceSummary, priorInterventions } = data;
+
+      const assessmentLines = assessments
+        .map(a => `- ${a.subject} (T${a.term} ${a.academic_year}): ${a.achievement_level}${a.score != null ? ` (${a.score}%)` : ""}`)
+        .join("\n") || "No assessment records on file.";
+      const interventionLines = priorInterventions
+        .map(i => `- [${i.status}/${i.risk_level}] ${i.reason}`)
+        .join("\n") || "None on file.";
+
+      const input = [
+        `Analyse this learner's REAL school records and identify academic risk indicators.`,
+        `Student: ${student.first_name} ${student.last_name} (${student.admission_number})`,
+        `Recent Assessment Results:\n${assessmentLines}`,
+        `Attendance (last 30 days): ${attendanceSummary}`,
+        `Prior Interventions on Record:\n${interventionLines}`,
+        "",
+        "Only use the data given above — do not invent scores, subjects, or events not listed.",
+        "Provide: 1. RISK LEVEL (Low/Medium/High/Critical + one-sentence reason). 2. KEY RISK INDICATORS (bullets). 3. RECOMMENDED ACTIONS (bullets).",
+      ].join("\n\n");
+
+      const output = await Promise.race([
+        createGroqResponse(input),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("AI_TIMEOUT")), 25000)),
+      ]);
+      const risk_level = parseRiskLevel(output);
+      const reasonLine = (output.match(/RISK LEVEL[^\n]*\n?([^\n]*)/i) || [])[0]?.slice(0, 500)
+        || `AI-flagged ${risk_level} risk based on recent assessments/attendance.`;
+
+      const { rows } = await db.query(
+        `INSERT INTO interventions
+           (school_id, student_id, flagged_by, reason, intervention_plan, risk_level, ai_recommendations, term, academic_year)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+         RETURNING *`,
+        [student.school_id, student.id, req.user.id, reasonLine,
+         req.body.intervention_plan || null, risk_level, output,
+         student.current_term || null, student.academic_year || null]
+      );
+
+      await logAiUsage(req, "student_risk_escalate", input.length);
+      await audit(req, "AI_RISK_ESCALATE", "interventions", rows[0].id, null, { student_id: student.id, risk_level });
+
+      return res.status(201).json({ success: true, intervention: rows[0], quota: req.aiQuota || null });
+    } catch (err) {
+      if (err.message === "AI_TIMEOUT")
+        return res.status(504).json({ success: false, message: "AI request timed out." });
+      console.error("AI student-risk-scan escalate:", err.message);
+      return res.status(500).json({ success: false, message: "AI request failed." });
+    }
+  }
+);
+
 module.exports = router;
