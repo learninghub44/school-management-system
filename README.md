@@ -81,7 +81,7 @@ Every tenant-owned table carries `school_id`. Non-super-admin users are locked t
 
 1. Create a PostgreSQL database, for example on [Neon](https://neon.tech).
 2. Run `backend/cbc_schema.sql` in the SQL editor.
-3. Create a backend env file:
+3. Run `backend/migration_post_schema.sql` — adds a few school-branding columns the app already depends on but that aren't in the base schema, plus recommended performance indexes. Idempotent, safe to re-run.
 
 ```bash
 cd backend
@@ -120,11 +120,13 @@ node -e "require('bcryptjs').hash('YourPassword123',12).then(console.log)"
 Then run in PostgreSQL:
 
 ```sql
-INSERT INTO users (username, email, password_hash, name, role, must_change_password)
-VALUES ('superadmin', 'admin@yourschool.com', '<BCRYPT_HASH>', 'System Admin', 'SUPER_ADMIN', TRUE);
+INSERT INTO users (username, email, password_hash, name, role, must_change_password, school_id)
+VALUES ('superadmin', 'admin@yourschool.com', '<BCRYPT_HASH>', 'System Admin', 'SUPER_ADMIN', TRUE, NULL);
 ```
 
-Login at `/login.html?school=ADMIN` with username `superadmin`.
+`school_id` must be `NULL` for `SUPER_ADMIN` — the schema's `super_admin_no_school` constraint rejects any other value.
+
+Login at `/login.html?school=ADMIN100` with username `superadmin` and no school code entered in the form (or `ADMIN100`, which the backend treats as "no school" — see `backend/routes/auth.js`).
 
 ## Key API Endpoints
 
