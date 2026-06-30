@@ -983,6 +983,23 @@ async function loadOverview() {
     finance?.summary?.({ school_id: me.school_id, academic_year: new Date().getFullYear().toString() }).catch(()=>null),
     exams?.list?.({ school_id: me.school_id, academic_year: new Date().getFullYear().toString() }).catch(()=>null),
   ]);
+
+  // If the school's payment isn't active/completed, the API correctly 402s
+  // every protected route. Without this check the dashboard would otherwise
+  // render misleading "0 students / 0 teachers" stats — indistinguishable
+  // from a genuinely empty new school — instead of explaining why there's
+  // no data. The yellow banner above (checkSubscriptionBanner) already flags
+  // this; this just stops the stats grid from contradicting it.
+  if (rDash?._status === 402) {
+    document.getElementById("statsGrid").innerHTML = `
+      <div class="stat-card" style="grid-column:1/-1;text-align:center;padding:32px 16px">
+        <div style="font-weight:700;font-size:15px;margin-bottom:6px">Dashboard data is hidden</div>
+        <div style="color:var(--muted);font-size:13.5px;margin-bottom:16px">${esc(rDash?.message || "An active subscription is required to view this data.")}</div>
+        ${CAN_PAY ? `<a class="btn btn-primary" href="/subscription.html">Choose a Plan</a>` : `<span class="badge bgray">Ask your Principal or Deputy Principal to subscribe</span>`}
+      </div>`;
+    return;
+  }
+
   const d  = rDash?.data || {};
   const f  = rFin?.data  || {};
   const ex = rExams?.data || [];
