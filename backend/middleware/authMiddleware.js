@@ -47,7 +47,7 @@ async function authMiddleware(req, res, next) {
     const token = header.split(" ")[1];
     let payload;
     try {
-      payload = jwt.verify(token, process.env.JWT_SECRET);
+      payload = jwt.verify(token, (globalThis.WORKER_ENV?.JWT_SECRET) || process.env.JWT_SECRET);
     } catch {
       return res.status(401).json({ success: false, message: "Invalid or expired token." });
     }

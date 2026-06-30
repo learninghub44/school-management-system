@@ -14,8 +14,16 @@ const auth = require("../middleware/authMiddleware");
 const { audit } = require("../middleware/auditLog");
 
 const router = express.Router();
-const JWT_SECRET  = process.env.JWT_SECRET;
-const JWT_EXPIRES = process.env.JWT_EXPIRES || "10h";
+// JWT secret/expiry must be read INSIDE the request handler, not at module
+// load time — in Cloudflare Workers, secrets are only injected into
+// process.env per-request (see worker-entry.js injectEnv()), and are not
+// yet available when this module is first imported at cold start. Reading
+// them into a top-level const here would silently lock JWT_SECRET to
+// `undefined` for the lifetime of the isolate, causing jwt.sign() to throw
+// on every successful login (500 error) while wrong-password attempts
+// (which never reach jwt.sign) looked completely fine.
+function getJwtSecret()  { return (globalThis.WORKER_ENV?.JWT_SECRET)  || process.env.JWT_SECRET; }
+function getJwtExpires() { return (globalThis.WORKER_ENV?.JWT_EXPIRES) || process.env.JWT_EXPIRES || "10h"; }
 
 // ── Cloudflare Turnstile CAPTCHA verification ─────────────────────
 async function verifyTurnstile(token, ip) {
@@ -170,7 +178,7 @@ router.post("/login",
         must_change_password: user.must_change_password,
       };
 
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+      const token = jwt.sign(payload, getJwtSecret(), { expiresIn: getJwtExpires() });
 
       await audit(
         { user: payload, headers: req.headers, socket: req.socket },
