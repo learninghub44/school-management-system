@@ -281,10 +281,28 @@ label{display:block;font-size:11.5px;font-weight:600;color:var(--text3);letter-s
 </div>
 </div>
 
+<!-- SCHOOL PAYMENTS -->
+<div class="modal-bg" id="modal-payments">
+<div class="modal">
+  <div class="modal-hdr">
+    <h3 id="payments-title">Payment History</h3>
+    <button class="modal-close" data-close="modal-payments">×</button>
+  </div>
+  <div style="font-size:12.5px;color:var(--text3);margin-bottom:14px">
+    "Verify with Paystack" checks the payment directly against Paystack's API and only activates if Paystack confirms success — safe to use anytime.
+    "Mark as paid" force-activates without checking Paystack — only use this for confirmed offline/manual payments (e.g. bank transfer), never to bypass a real declined or incomplete payment.
+  </div>
+  <div id="payments-list"><div class="empty">Loading…</div></div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" data-close="modal-payments">Close</button>
+  </div>
+</div>
+</div>
+
 <div id="app"></div>
 
 <script type="module">
-import { guardPage, esc, apiFetch, clearSession, schools, users, verifySession, logout, ai} from "/js/api.js";
+import { guardPage, esc, apiFetch, clearSession, schools, users, verifySession, logout, ai, subscriptions} from "/js/api.js";
 
 function openModal(id)  { document.getElementById(id)?.classList.add("open"); }
 function closeModal(id) { document.getElementById(id)?.classList.remove("open"); }
@@ -616,6 +634,9 @@ function renderSchoolsTable(data, tblId, compact=false) {
             data-act="toggle-school" data-id="${esc(s.id)}" data-active="${s.is_active}">
             ${s.is_active?"Deactivate":"Activate"}
           </button>
+          <button class="btn btn-sm btn-ghost" data-act="view-payments" data-id="${esc(s.id)}" data-name="${esc(s.name)}">
+            Payments
+          </button>
         </div></td>`}
     </tr>`).join("")}
   </tbody></table>`;
@@ -625,6 +646,8 @@ function renderSchoolsTable(data, tblId, compact=false) {
       if (r?.success) { await fetchSchools(); loadSchools(); loadDashboard(); }
       else alert(r?.message || "Error.");
     }));
+    tbl.querySelectorAll("[data-act='view-payments']").forEach(b => b.addEventListener("click", () =>
+      openPaymentsModal(b.dataset.id, b.dataset.name)));
   }
 }
 
@@ -635,6 +658,75 @@ async function loadSchools() {
   renderSchoolsTable(filtered, "schoolsTbl", false);
 }
 document.getElementById("filterSchool").addEventListener("input", loadSchools);
+
+// ── School payment history (view / verify / manual activate) ───────
+let currentPaymentsSchoolId = null;
+
+function statusBadge(status) {
+  const map = {
+    completed: { cls: "bg",    label: "Completed" },
+    pending:   { cls: "by",    label: "Pending"    },
+    failed:    { cls: "br",    label: "Failed"     },
+  };
+  const m = map[status] || { cls: "bgray", label: status || "Unknown" };
+  return `<span class="badge ${m.cls}">${esc(m.label)}</span>`;
+}
+
+async function loadPaymentsList() {
+  const listEl = document.getElementById("payments-list");
+  listEl.innerHTML = '<div class="empty">Loading…</div>';
+  const r = await subscriptions.payments({ school_id: currentPaymentsSchoolId });
+  const data = r?.data || [];
+  if (!data.length) {
+    listEl.innerHTML = '<div class="empty">No payment attempts recorded for this school.</div>';
+    return;
+  }
+  listEl.innerHTML = `<table><thead><tr>
+    <th>Date</th><th>Plan</th><th>Amount</th><th>Reference</th><th>Status</th><th>Actions</th>
+  </tr></thead><tbody>
+    ${data.map(p => `<tr>
+      <td>${new Date(p.created_at).toLocaleDateString("en-KE",{day:"2-digit",month:"short",year:"numeric"})}</td>
+      <td>${esc(p.plan_name)}</td>
+      <td>${esc(p.currency||"KES")} ${Number(p.amount).toLocaleString("en-KE")}</td>
+      <td style="font-family:var(--mono,monospace);font-size:11.5px">${esc(p.merchant_reference||"–")}</td>
+      <td>${statusBadge(p.status)}</td>
+      <td>${p.status !== "completed" ? `<div class="action-btns">
+        <button class="btn btn-sm btn-ghost" data-verify="${esc(p.merchant_reference)}">Verify with Paystack</button>
+        <button class="btn btn-sm btn-warn" data-activate="${esc(p.id)}">Mark as paid</button>
+      </div>` : ""}</td>
+    </tr>`).join("")}
+  </tbody></table>`;
+
+  listEl.querySelectorAll("[data-verify]").forEach(b => b.addEventListener("click", async () => {
+    b.disabled = true; b.textContent = "Checking…";
+    const r = await subscriptions.verifyPaystack(b.dataset.verify);
+    if (r?.success) {
+      alert(r.paid
+        ? "Paystack confirmed this payment succeeded — subscription has been activated."
+        : `Paystack reports this payment as "${r.status || "not successful"}" — not activated. The school will need to try paying again.`);
+    } else {
+      alert(r?.message || "Could not verify with Paystack.");
+    }
+    await loadPaymentsList();
+  }));
+
+  listEl.querySelectorAll("[data-activate]").forEach(b => b.addEventListener("click", async () => {
+    if (!confirm("This force-activates the subscription WITHOUT checking Paystack. Only do this if you've personally confirmed the school paid through another channel (e.g. bank transfer). Continue?"))
+      return;
+    b.disabled = true; b.textContent = "Activating…";
+    const r = await subscriptions.activatePayment(b.dataset.activate);
+    if (r?.success) alert("Subscription activated.");
+    else alert(r?.message || "Could not activate.");
+    await loadPaymentsList();
+  }));
+}
+
+async function openPaymentsModal(schoolId, schoolName) {
+  currentPaymentsSchoolId = schoolId;
+  document.getElementById("payments-title").textContent = `Payment History — ${schoolName}`;
+  openModal("modal-payments");
+  await loadPaymentsList();
+}
 
 async function loadUsers() {
   document.getElementById("usersTbl").innerHTML='<div class="empty">Loading…</div>';

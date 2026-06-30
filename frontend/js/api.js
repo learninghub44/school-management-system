@@ -249,10 +249,11 @@ export const subscriptions = {
   plans:          ()      => apiFetch("/subscriptions/plans"),
   createPlan:     (d)     => apiFetch("/subscriptions/plans",       { method: "POST", body: d }),
   updatePlan:     (id, d) => apiFetch(`/subscriptions/plans/${id}`, { method: "PUT",  body: d }),
-  me:             ()      => apiFetch("/subscriptions/me"),
-  payments:       ()      => apiFetch("/subscriptions/payments"),
+  me:             (p)     => apiFetch("/subscriptions/me",          { params: p }),
+  payments:       (p)     => apiFetch("/subscriptions/payments",    { params: p }),
   checkout:       (d)     => apiFetch("/subscriptions/paystack/checkout", { method: "POST", body: d }),
   activatePayment:(id)    => apiFetch(`/subscriptions/payments/${id}/activate`, { method: "POST" }),
+  verifyPaystack: (ref)   => apiFetch(`/subscriptions/paystack/verify/${encodeURIComponent(ref)}`),
 };
 
 export const ai = {
