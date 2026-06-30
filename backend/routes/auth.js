@@ -326,11 +326,6 @@ router.post("/register",
 
     const upperCode = school_code.trim().toUpperCase();
 
-    // Early check — fail loudly if Paystack key missing rather than silently returning null checkout_url
-    if (!process.env.PAYSTACK_SECRET_KEY) {
-      return res.status(503).json({ success: false, message: "Payment service not configured. Contact support." });
-    }
-
     try {
       // 1. Check plan exists
       const { rows: plans } = await db.query(
@@ -383,14 +378,14 @@ router.post("/register",
         }
 
         const reference = `REG-${Date.now()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
-        const callbackUrl = (process.env.PAYSTACK_CALLBACK_URL || `${req.protocol}://${req.get("host")}/subscription.html`)
-          .replace(/^https?:\/\/https?:\/\//, "https://").replace(/([^:])\/\/+/g, "$1/").replace(/\/$/, "");
+        const paystackKey = (globalThis.WORKER_ENV?.PAYSTACK_SECRET_KEY) || process.env.PAYSTACK_SECRET_KEY;
+        const callbackUrl = (globalThis.WORKER_ENV?.PAYSTACK_CALLBACK_URL) || process.env.PAYSTACK_CALLBACK_URL || `${req.protocol}://${req.get("host")}/subscription.html`;
 
         let checkoutUrl = null;
         try {
           const psRes = await fetch("https://api.paystack.co/transaction/initialize", {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${paystackKey}` },
             body: JSON.stringify({
               email: admin_email,
               amount: Math.round(Number(plan.amount) * 100),
@@ -466,10 +461,8 @@ router.post("/register",
 
       // 5. Initiate Paystack checkout
       const reference = `REG-${Date.now()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
-      const callbackUrl = (process.env.PAYSTACK_CALLBACK_URL || `${req.protocol}://${req.get("host")}/subscription.html`)
-        .replace(/^https?:\/\/https?:\/\//, "https://")
-        .replace(/([^:])\/\/+/g, "$1/")
-        .replace(/\/$/, "");
+      const paystackKey = (globalThis.WORKER_ENV?.PAYSTACK_SECRET_KEY) || process.env.PAYSTACK_SECRET_KEY;
+      const callbackUrl = (globalThis.WORKER_ENV?.PAYSTACK_CALLBACK_URL) || process.env.PAYSTACK_CALLBACK_URL || `${req.protocol}://${req.get("host")}/subscription.html`;
 
       let checkoutUrl = null;
       try {
@@ -477,7 +470,7 @@ router.post("/register",
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+            Authorization: `Bearer ${paystackKey}`,
           },
           body: JSON.stringify({
             email: admin_email,

@@ -16,6 +16,9 @@ import app        from "./server.js";
 // ── Inject Workers env bindings → process.env per request ─────────
 function injectEnv(env) {
   globalThis.WORKER_RUNTIME = true;
+  // Store the raw env object so routes can always read secrets reliably
+  // (esbuild may inline `undefined` for process.env.X it can't resolve at build time)
+  globalThis.WORKER_ENV = env;
   if (!globalThis.process)     globalThis.process     = {};
   if (!globalThis.process.env) globalThis.process.env = {};
   const keys = [
