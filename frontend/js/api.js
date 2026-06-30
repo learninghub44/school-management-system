@@ -211,6 +211,8 @@ export const students = {
   create:  (d)     => apiFetch("/students",         { method: "POST", body: d }),
   update:  (id, d) => apiFetch(`/students/${id}`,   { method: "PUT",  body: d }),
   promote: (d)     => apiFetch("/students/promote", { method: "POST", body: d }),
+  guardians:     (id)    => apiFetch(`/students/${id}/guardians`),
+  addGuardian:   (id, d) => apiFetch(`/students/${id}/guardians`, { method: "POST", body: d }),
 };
 
 export const assignments = {

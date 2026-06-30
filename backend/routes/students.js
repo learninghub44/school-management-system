@@ -342,6 +342,31 @@ router.post("/promote", auth, roleM(MANAGE), async (req, res) => {
   }
 });
 
+// ── GET /api/students/:id/guardians — list linked parent accounts ──
+router.get("/:id/guardians", auth, roleM(READ), validateUUID("id"), async (req, res) => {
+  try {
+    const sid = getSchoolId(req);
+    const { rows: st } = await db.query("SELECT school_id FROM students WHERE id=$1", [req.params.id]);
+    if (!st.length) return res.status(404).json({ success: false, message: "Student not found." });
+    if (req.user.role !== "SUPER_ADMIN" && st[0].school_id !== sid)
+      return res.status(403).json({ success: false, message: "Access denied." });
+
+    const { rows } = await db.query(
+      `SELECT g.id AS guardian_id, g.relationship, g.is_primary, g.created_at,
+              u.id AS parent_user_id, u.name, u.email, u.username, u.is_active
+       FROM guardians g
+       JOIN users u ON u.id = g.user_id
+       WHERE g.student_id = $1
+       ORDER BY g.is_primary DESC, g.created_at ASC`,
+      [req.params.id]
+    );
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error("[students/guardians GET]", err.message);
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
 // ── POST /api/students/:id/guardians — link a parent account ───────
 // Creates a PARENT user if the email is new, or links an existing PARENT
 // account (so the same login works across siblings). MANAGE roles only —
