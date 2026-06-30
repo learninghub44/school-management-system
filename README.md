@@ -2,7 +2,7 @@
 
 Multi-tenant CBC (Competency Based Curriculum) school management system for Kenyan schools — built and maintained by [Zetu Business Solutions](https://github.com/learninghub44).
 
-![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
+![License](https://img.shields.io/badge/license-Proprietary-red.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)
 ![Database](https://img.shields.io/badge/database-PostgreSQL%20(Neon)-336791?logo=postgresql&logoColor=white)
 ![Deploy](https://img.shields.io/badge/deploy-Cloudflare%20Workers-F38020?logo=cloudflare&logoColor=white)
@@ -220,4 +220,4 @@ Found a security issue? Please open a private report rather than a public issue.
 
 ## License
 
-Licensed under the [Apache License 2.0](LICENSE).
+All rights reserved. This is proprietary, closed-source software belonging to Zetu Business Solutions — no use, copying, modification, or distribution is permitted without prior written permission. See [LICENSE](LICENSE) for full terms.
