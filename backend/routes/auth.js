@@ -17,6 +17,29 @@ const router = express.Router();
 const JWT_SECRET  = process.env.JWT_SECRET;
 const JWT_EXPIRES = process.env.JWT_EXPIRES || "10h";
 
+// ── Cloudflare Turnstile CAPTCHA verification ─────────────────────
+async function verifyTurnstile(token, ip) {
+  if (!token) return false;
+  const secret = (globalThis.WORKER_ENV?.TURNSTILE_SECRET_KEY) || process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) {
+    // Dev mode: skip CAPTCHA if secret not configured
+    console.warn("[turnstile] TURNSTILE_SECRET_KEY not set — skipping verification");
+    return true;
+  }
+  try {
+    const r = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret, response: token, remoteip: ip }),
+    });
+    const data = await r.json();
+    return data.success === true;
+  } catch (e) {
+    console.error("[turnstile] Verification error:", e.message);
+    return false;
+  }
+}
+
 // Dummy hash for constant-time comparison when user not found (prevents timing attacks)
 const DUMMY_HASH = "$2b$12$hWsOkHoESichkRBu8Yynqei4G/cjWZmAYNITOYnjNGDi2vTdv5YLy";
 
@@ -33,10 +56,16 @@ router.post("/login",
     if (!errs.isEmpty())
       return res.status(400).json({ success: false, message: "Invalid request." });
 
+    const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress;
+
+    // CAPTCHA verification
+    const captchaOk = await verifyTurnstile(req.body.cf_turnstile_response, ip);
+    if (!captchaOk)
+      return res.status(400).json({ success: false, message: "CAPTCHA verification failed. Please try again." });
+
     const { username, password } = req.body;
     const raw_school_code = req.body.school_code?.trim().toUpperCase() || null;
     const school_code = raw_school_code === "ADMIN100" ? null : raw_school_code;
-    const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress;
 
     try {
       let user = null;
@@ -318,6 +347,12 @@ router.post("/register",
     const errs = validationResult(req);
     if (!errs.isEmpty())
       return res.status(400).json({ success: false, errors: errs.array() });
+
+    // CAPTCHA verification
+    const regIp = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress;
+    const captchaOk = await verifyTurnstile(req.body.cf_turnstile_response, regIp);
+    if (!captchaOk)
+      return res.status(400).json({ success: false, message: "CAPTCHA verification failed. Please try again." });
 
     const {
       school_name, school_code, county, sub_county, level, phone,

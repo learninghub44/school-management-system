@@ -88,6 +88,7 @@ if (loginForm) {
       username,
       password,
       school_code: schoolCode || undefined,
+      cf_turnstile_response: window._turnstileToken || '',
     });
 
     if (!result?.success) {

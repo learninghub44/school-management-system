@@ -25,7 +25,7 @@ function injectEnv(env) {
     "NODE_ENV","JWT_SECRET","JWT_EXPIRES","DATABASE_URL",
     "ALLOWED_ORIGINS","PAYSTACK_SECRET_KEY","PAYSTACK_CALLBACK_URL",
     "GROQ_API_KEY","GROQ_MODEL","PLATFORM_SUPPORT_EMAIL",
-    "DB_POOL_MIN","DB_POOL_MAX",
+    "DB_POOL_MIN","DB_POOL_MAX","TURNSTILE_SECRET_KEY",
   ];
   for (const k of keys) {
     if (env[k] !== undefined) globalThis.process.env[k] = String(env[k]);

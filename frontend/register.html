@@ -4,6 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Register Your School — Kadem &amp; Zetu SMS</title>
 <script src="/js/config.js"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script>
 (function(){
   const t = localStorage.getItem("theme") || "system";
@@ -264,6 +265,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
       <label>Confirm Password *</label>
       <input id="admin_password2" type="password" placeholder="Repeat password" maxlength="72">
     </div>
+    <!-- Cloudflare Turnstile CAPTCHA -->
+    <div style="display:flex;justify-content:center;margin:14px 0">
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAAA_REPLACE_WITH_YOUR_SITE_KEY" data-callback="onRegTurnstileSuccess" data-expired-callback="onRegTurnstileExpired" data-theme="auto"></div>
+    </div>
     <div class="btn-row">
       <button class="btn-back" onclick="goStep(2)">&#8592; Back</button>
       <button class="btn-next" id="btnRegister" onclick="submitRegistration()">Register &amp; Pay &rarr;</button>
@@ -294,6 +299,11 @@ const API = (window.API_BASE || "/api");
 let selectedPlanId = null;
 let checkoutUrl    = null;
 let plansData      = [];
+
+// ── Turnstile callbacks ──────────────────────────────────────────
+window._regTurnstileToken = '';
+function onRegTurnstileSuccess(token){ window._regTurnstileToken = token; }
+function onRegTurnstileExpired(){ window._regTurnstileToken = ''; }
 
 // ── Theme ──────────────────────────────────────────────────────
 (function initTheme() {
@@ -425,6 +435,7 @@ async function submitRegistration() {
   if (admin_pass.length < 8) return showAlert("Password must be at least 8 characters.");
   if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(admin_pass)) return showAlert("Password needs uppercase, lowercase and a number.");
   if (admin_pass !== admin_pass2) return showAlert("Passwords do not match.");
+  if (!window._regTurnstileToken) return showAlert("Please complete the CAPTCHA verification.");
 
   const btn = document.getElementById("btnRegister");
   btn.disabled = true;
@@ -442,6 +453,7 @@ async function submitRegistration() {
       admin_name, admin_email,
       admin_password: admin_pass,
       plan_id:        selectedPlanId,
+      cf_turnstile_response: window._regTurnstileToken,
     };
 
     const res  = await fetch(`${API}/auth/register`, {
