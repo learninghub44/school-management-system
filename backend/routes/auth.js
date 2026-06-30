@@ -58,10 +58,10 @@ router.post("/login",
 
     const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress;
 
-    // CAPTCHA verification
-    const captchaOk = await verifyTurnstile(req.body.cf_turnstile_response, ip);
-    if (!captchaOk)
-      return res.status(400).json({ success: false, message: "CAPTCHA verification failed. Please try again." });
+    // CAPTCHA verification — TEMPORARILY DISABLED, see git history / verifyTurnstile() above to re-enable
+    // const captchaOk = await verifyTurnstile(req.body.cf_turnstile_response, ip);
+    // if (!captchaOk)
+    //   return res.status(400).json({ success: false, message: "CAPTCHA verification failed. Please try again." });
 
     const { username, password } = req.body;
     const raw_school_code = req.body.school_code?.trim().toUpperCase() || null;
@@ -348,11 +348,11 @@ router.post("/register",
     if (!errs.isEmpty())
       return res.status(400).json({ success: false, errors: errs.array() });
 
-    // CAPTCHA verification
+    // CAPTCHA verification — TEMPORARILY DISABLED, see git history / verifyTurnstile() above to re-enable
     const regIp = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress;
-    const captchaOk = await verifyTurnstile(req.body.cf_turnstile_response, regIp);
-    if (!captchaOk)
-      return res.status(400).json({ success: false, message: "CAPTCHA verification failed. Please try again." });
+    // const captchaOk = await verifyTurnstile(req.body.cf_turnstile_response, regIp);
+    // if (!captchaOk)
+    //   return res.status(400).json({ success: false, message: "CAPTCHA verification failed. Please try again." });
 
     const {
       school_name, school_code, county, sub_county, level, phone,
