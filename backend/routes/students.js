@@ -408,7 +408,7 @@ router.post("/promote", auth, roleM(MANAGE), async (req, res) => {
 
 // ── GET /api/students/promotion-history — list promotion records ──
 // Used to audit who was promoted when, especially for Grade 6/9 transitions
-router.get("/promotion-history", auth, roleM(VIEW), async (req, res) => {
+router.get("/promotion-history", auth, roleM(READ), async (req, res) => {
   try {
     const sid = req.user.role === "SUPER_ADMIN" ? req.query.school_id : req.user.school_id;
     if (!sid) return res.status(400).json({ success: false, message: "school_id required." });
