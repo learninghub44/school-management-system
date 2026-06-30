@@ -40,6 +40,7 @@ function roleDestination(role) {
     HOD: "/school-admin.html",
     TEACHER: "/teacher.html",
     BURSAR: "/bursar.html",
+    PARENT: "/parent.html",
   }[role] || "/school-admin.html";
 }
 

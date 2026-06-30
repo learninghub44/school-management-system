@@ -69,6 +69,7 @@ export function guardPage(allowedRoles = []) {
       HOD:              "/school-admin.html",
       TEACHER:          "/teacher.html",
       BURSAR:           "/bursar.html",
+      PARENT:           "/parent.html",
     }[user.role] || "/login.html";
     window.location.replace(dest);
     return null;
@@ -293,4 +294,11 @@ export const moderation = {
   createYear:   (d)      => apiFetch("/moderation/academic-years",      { method: "POST", body: d }),
   bulkAssess:   (d)      => apiFetch("/moderation/bulk-assess",         { method: "POST", body: d }),
   bulkPromote:  (d)      => apiFetch("/moderation/bulk-promote",        { method: "POST", body: d }),
+};
+
+export const parentPortal = {
+  children:     ()      => apiFetch("/parent/children"),
+  reportCards:  (id, p) => apiFetch(`/parent/children/${id}/report-cards`, { params: p }),
+  attendance:   (id, p) => apiFetch(`/parent/children/${id}/attendance`,   { params: p }),
+  fees:         (id, p) => apiFetch(`/parent/children/${id}/fees`,        { params: p }),
 };

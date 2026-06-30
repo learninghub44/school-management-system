@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Parent Portal — Kadem & Zetu SMS</title>
+<script src="/js/config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+#app{display:flex;min-height:100vh}
+@media(max-width:768px){
+  #app{display:block}
+  .main{width:100%!important;min-width:0!important}
+  .topbar{padding:12px 16px!important}
+  .content{padding:14px!important}
+  .stat-grid{grid-template-columns:1fr 1fr!important}
+  .table-wrap{overflow-x:auto}
+  table{min-width:480px}
+}
+.child-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.child-tab{padding:10px 16px;border-radius:12px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
+.child-tab.active{border-color:#5a4bda;background:#5a4bda14;color:#5a4bda}
+.cc-grid,.val-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:10px}
+.cc-item{background:#f8f9fc;border-radius:10px;padding:10px 12px}
+.cc-item strong{display:block;font-size:13px;margin-bottom:4px}
+.lvl-pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700}
+.lvl-EE{background:#d1fae5;color:#065f46}
+.lvl-ME{background:#dbeafe;color:#1e40af}
+.lvl-AE{background:#fef3c7;color:#92400e}
+.lvl-BE{background:#fee2e2;color:#991b1b}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+import { guardPage, esc, verifySession, clearSession, parentPortal } from "/js/api.js";
+import { buildSidebar, setupNav, injectStyles } from "/js/layout.js";
+injectStyles();
+
+let me = guardPage(["PARENT"]);
+if (!me) throw new Error();
+const vRes = await verifySession();
+if (!vRes.ok && vRes.reason !== "network") {
+  clearSession();
+  window.location.replace("/login.html");
+  throw new Error("Redirecting");
+}
+if (vRes.ok) me = vRes.user;
+
+const NAV = [
+  { panel: "overview",      icon: "chart",      label: "Overview" },
+  { panel: "reportcards",   icon: "assessment", label: "Report Cards" },
+  { panel: "attendance",    icon: "attendance", label: "Attendance" },
+  { panel: "fees",          icon: "card",       label: "Fees" },
+];
+
+document.getElementById("app").innerHTML =
+  buildSidebar(NAV, "overview") + `
+<div class="main">
+  <header class="topbar">
+    <button class="mob-menu-btn" id="mobMenuBtn" aria-label="Open menu"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    <h3 id="pageTitle">Overview</h3>
+    <div class="topbar-right">${esc(me.school_name || "")} · Parent</div>
+  </header>
+  <div class="content">
+
+    <div id="childTabs" class="child-tabs"></div>
+
+    <!-- OVERVIEW -->
+    <div class="panel active" id="panel-overview">
+      <div class="stat-grid" id="overviewStats"><div class="empty">Loading…</div></div>
+      <div class="card">
+        <div class="card-hdr"><h4>Latest Published Report Card</h4></div>
+        <div class="card-body" id="overviewLatestCard"><div class="empty">Select a child above.</div></div>
+      </div>
+    </div>
+
+    <!-- REPORT CARDS -->
+    <div class="panel" id="panel-reportcards">
+      <div class="card">
+        <div class="card-hdr"><h4>Report Cards</h4></div>
+        <div class="card-body" id="reportCardsList"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <div class="panel" id="panel-attendance">
+      <div class="card">
+        <div class="card-hdr"><h4>Attendance Summary</h4></div>
+        <div class="card-body" id="attendanceSummary"><div class="empty">Loading…</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><h4>Recent Records</h4></div>
+        <div class="card-body"><div class="table-wrap" id="attendanceTbl"><div class="empty">Loading…</div></div></div>
+      </div>
+    </div>
+
+    <!-- FEES -->
+    <div class="panel" id="panel-fees">
+      <div class="stat-grid" id="feesStats"><div class="empty">Loading…</div></div>
+      <div class="card">
+        <div class="card-hdr"><h4>Recent Payments</h4></div>
+        <div class="card-body"><div class="table-wrap" id="paymentsTbl"><div class="empty">Loading…</div></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>`;
+
+setupNav({
+  overview:    () => loadOverview(),
+  reportcards: () => loadReportCards(),
+  attendance:  () => loadAttendance(),
+  fees:        () => loadFees(),
+});
+
+// ── State ─────────────────────────────────────────────────────────
+let children = [];
+let activeChildId = null;
+
+function childInitials(c) {
+  return ((c.first_name || "")[0] || "") + ((c.last_name || "")[0] || "");
+}
+
+function renderChildTabs() {
+  const el = document.getElementById("childTabs");
+  if (!children.length) { el.innerHTML = ""; return; }
+  el.innerHTML = children.map(c => `
+    <div class="child-tab${c.id === activeChildId ? " active" : ""}" data-child="${esc(c.id)}">
+      ${esc(c.first_name)} ${esc(c.last_name)}
+      <span style="opacity:.65;font-weight:500">· ${esc(c.class_label || "—")}</span>
+    </div>`).join("");
+  el.querySelectorAll(".child-tab").forEach(t => {
+    t.addEventListener("click", () => {
+      activeChildId = t.dataset.child;
+      renderChildTabs();
+      const activePanel = document.querySelector(".nav-item.active")?.dataset.panel || "overview";
+      ({ overview: loadOverview, reportcards: loadReportCards, attendance: loadAttendance, fees: loadFees }[activePanel] || loadOverview)();
+    });
+  });
+}
+
+async function ensureChildren() {
+  if (children.length) return;
+  const r = await parentPortal.children();
+  children = r?.data || [];
+  if (!activeChildId && children.length) activeChildId = children[0].id;
+  renderChildTabs();
+}
+
+// ── Overview ──────────────────────────────────────────────────────
+async function loadOverview() {
+  await ensureChildren();
+  const statsEl = document.getElementById("overviewStats");
+  const cardEl  = document.getElementById("overviewLatestCard");
+  if (!activeChildId) { statsEl.innerHTML = `<div class="empty">No children linked to this account yet. Contact the school office.</div>`; return; }
+
+  const child = children.find(c => c.id === activeChildId);
+  const [attRes, feesRes, cardsRes] = await Promise.all([
+    parentPortal.attendance(activeChildId),
+    parentPortal.fees(activeChildId),
+    parentPortal.reportCards(activeChildId),
+  ]);
+  const att = attRes?.data?.summary || {};
+  const fees = feesRes?.data || {};
+  const balance = (Number(fees.total_billed) || 0) - (Number(fees.total_paid) || 0);
+  const cards = cardsRes?.data || [];
+
+  statsEl.innerHTML = `
+    <div class="stat-card"><div class="val">${esc(child?.class_label || "—")}</div><div class="lbl">Class</div></div>
+    <div class="stat-card"><div class="val">${esc(att.attendance_rate ?? "—")}%</div><div class="lbl">Attendance Rate</div></div>
+    <div class="stat-card"><div class="val">KES ${esc(balance.toLocaleString())}</div><div class="lbl">Fee Balance</div></div>
+    <div class="stat-card"><div class="val">${esc(String(cards.length))}</div><div class="lbl">Report Cards</div></div>
+  `;
+
+  if (!cards.length) {
+    cardEl.innerHTML = `<div class="empty">No published report card yet for this child.</div>`;
+    return;
+  }
+  cardEl.innerHTML = renderReportCard(cards[0]);
+}
+
+// ── Report Cards ──────────────────────────────────────────────────
+function competencyRow(label, val) {
+  const names = { 1: "Not Observed", 2: "Approaching", 3: "Meets", 4: "Exceptional" };
+  return `<div class="cc-item"><strong>${esc(label)}</strong>${val ? names[val] || "—" : "—"}</div>`;
+}
+
+function renderReportCard(rc) {
+  return `
+    <div style="margin-bottom:14px">
+      <strong>${esc(rc.class_label || "")} · Term ${esc(String(rc.term))}, ${esc(rc.academic_year)}</strong>
+    </div>
+    ${rc.class_teacher_remark ? `<p><em>Class Teacher:</em> ${esc(rc.class_teacher_remark)}</p>` : ""}
+    ${rc.principal_remark ? `<p><em>Principal:</em> ${esc(rc.principal_remark)}</p>` : ""}
+    <h4 style="margin-top:18px">Core Competencies</h4>
+    <div class="cc-grid">
+      ${competencyRow("Communication", rc.cc_communication)}
+      ${competencyRow("Critical Thinking", rc.cc_critical_thinking)}
+      ${competencyRow("Creativity", rc.cc_creativity)}
+      ${competencyRow("Citizenship", rc.cc_citizenship)}
+      ${competencyRow("Digital Literacy", rc.cc_digital_literacy)}
+      ${competencyRow("Learning to Learn", rc.cc_learning_to_learn)}
+      ${competencyRow("Self-Efficacy", rc.cc_self_efficacy)}
+    </div>
+    <h4 style="margin-top:18px">Values</h4>
+    <div class="val-grid">
+      ${competencyRow("Respect", rc.val_respect)}
+      ${competencyRow("Responsibility", rc.val_responsibility)}
+      ${competencyRow("Integrity", rc.val_integrity)}
+      ${competencyRow("Unity", rc.val_unity)}
+      ${competencyRow("Peace", rc.val_peace)}
+      ${competencyRow("Patriotism", rc.val_patriotism)}
+      ${competencyRow("Social Justice", rc.val_social_justice)}
+    </div>
+  `;
+}
+
+async function loadReportCards() {
+  await ensureChildren();
+  const el = document.getElementById("reportCardsList");
+  if (!activeChildId) { el.innerHTML = `<div class="empty">No children linked to this account.</div>`; return; }
+  el.innerHTML = `<div class="empty">Loading…</div>`;
+  const r = await parentPortal.reportCards(activeChildId);
+  const cards = r?.data || [];
+  if (!cards.length) { el.innerHTML = `<div class="empty">No published report cards yet.</div>`; return; }
+  el.innerHTML = cards.map(rc => `<div class="card" style="box-shadow:none;border:1.5px solid #e2e8f0;margin-bottom:14px"><div class="card-body">${renderReportCard(rc)}</div></div>`).join("");
+}
+
+// ── Attendance ────────────────────────────────────────────────────
+async function loadAttendance() {
+  await ensureChildren();
+  const sumEl = document.getElementById("attendanceSummary");
+  const tblEl = document.getElementById("attendanceTbl");
+  if (!activeChildId) { sumEl.innerHTML = `<div class="empty">No children linked to this account.</div>`; tblEl.innerHTML = ""; return; }
+
+  const r = await parentPortal.attendance(activeChildId);
+  const { records = [], summary = {} } = r?.data || {};
+
+  sumEl.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="val">${esc(String(summary.present ?? 0))}</div><div class="lbl">Present</div></div>
+      <div class="stat-card"><div class="val">${esc(String(summary.absent ?? 0))}</div><div class="lbl">Absent</div></div>
+      <div class="stat-card"><div class="val">${esc(String(summary.late ?? 0))}</div><div class="lbl">Late</div></div>
+      <div class="stat-card"><div class="val">${esc(summary.attendance_rate ?? "—")}%</div><div class="lbl">Rate</div></div>
+    </div>`;
+
+  if (!records.length) { tblEl.innerHTML = `<div class="empty">No attendance records yet.</div>`; return; }
+  tblEl.innerHTML = `
+    <table><thead><tr><th>Date</th><th>Status</th><th>Remarks</th></tr></thead><tbody>
+      ${records.map(a => `<tr><td>${esc(a.date?.slice(0,10) || "")}</td><td>${esc(a.status)}</td><td>${esc(a.remarks || "—")}</td></tr>`).join("")}
+    </tbody></table>`;
+}
+
+// ── Fees ──────────────────────────────────────────────────────────
+async function loadFees() {
+  await ensureChildren();
+  const statsEl = document.getElementById("feesStats");
+  const tblEl   = document.getElementById("paymentsTbl");
+  if (!activeChildId) { statsEl.innerHTML = `<div class="empty">No children linked to this account.</div>`; tblEl.innerHTML = ""; return; }
+
+  const r = await parentPortal.fees(activeChildId);
+  const d = r?.data || {};
+  const billed = Number(d.total_billed) || 0;
+  const paid   = Number(d.total_paid)   || 0;
+  const balance = billed - paid;
+
+  statsEl.innerHTML = `
+    <div class="stat-card"><div class="val">KES ${esc(billed.toLocaleString())}</div><div class="lbl">Total Billed</div></div>
+    <div class="stat-card"><div class="val">KES ${esc(paid.toLocaleString())}</div><div class="lbl">Total Paid</div></div>
+    <div class="stat-card"><div class="val">KES ${esc(balance.toLocaleString())}</div><div class="lbl">Balance</div></div>
+  `;
+
+  const payments = d.recent_payments || [];
+  if (!payments.length) { tblEl.innerHTML = `<div class="empty">No payments recorded yet.</div>`; return; }
+  tblEl.innerHTML = `
+    <table><thead><tr><th>Receipt</th><th>Amount</th><th>Date</th><th>Method</th><th>Term</th></tr></thead><tbody>
+      ${payments.map(p => `<tr><td>${esc(p.receipt_number)}</td><td>KES ${esc(Number(p.amount_paid).toLocaleString())}</td><td>${esc(p.payment_date?.slice(0,10) || "")}</td><td>${esc(p.payment_method)}</td><td>${esc(String(p.term))}, ${esc(p.academic_year)}</td></tr>`).join("")}
+    </tbody></table>`;
+}
+
+loadOverview();
+</script>
+</body>
+</html>
