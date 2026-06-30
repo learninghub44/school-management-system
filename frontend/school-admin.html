@@ -217,6 +217,33 @@ body{max-width:100vw}
   </div>
 </div></div>
 
+
+<!-- PROMOTE STUDENTS -->
+<div class="modal-bg" id="modal-promote">
+<div class="modal" style="max-width:560px">
+  <div class="modal-hdr"><h3>Promote Students to Next Class</h3><button class="modal-close" data-close="modal-promote">×</button></div>
+  <div id="promote-knec-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px">
+    <strong>⚠ KNEC Registration Reminder</strong><br>
+    Before promoting this class, confirm that all candidates have been registered on the
+    <a href="https://cba.knec.ac.ke" target="_blank" style="color:#92400e;font-weight:600">KNEC CBA Portal</a>
+    for their national transition assessment. Registration must be done with your school's Assessment Centre credentials
+    before the KNEC deadline — promoting students in this system does <em>not</em> register them with KNEC.
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label>From Class (current) *</label><select id="pro-from"><option value="">Select class…</option></select></div>
+    <div class="fg"><label>To Class (destination) *</label><select id="pro-to"><option value="">Select class…</option></select></div>
+  </div>
+  <div id="pro-student-list" style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:4px">
+    <div class="empty" style="padding:16px 0">Select a source class to see students.</div>
+  </div>
+  <div style="font-size:12px;color:var(--muted);margin-top:6px" id="pro-count"></div>
+  <div id="pro-alert"></div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" data-close="modal-promote">Cancel</button>
+    <button class="btn btn-primary" id="btnSubmitPromote">Promote Selected</button>
+  </div>
+</div></div>
+
 <!-- ASSIGN TEACHER -->
 <div class="modal-bg" id="modal-assign">
 <div class="modal">
@@ -624,7 +651,10 @@ document.getElementById("app").innerHTML =
       <div class="card">
         <div class="card-hdr">
           <h4>Classes</h4>
-          <button class="btn btn-primary" id="btnAddClass">+ Add Class</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" id="btnPromoteStudents">⬆ Promote Students</button>
+            <button class="btn btn-primary" id="btnAddClass">+ Add Class</button>
+          </div>
         </div>
         <div class="card-body">
           <div class="table-wrap" id="classesTbl"><div class="empty">Loading…</div></div>
@@ -927,6 +957,50 @@ document.getElementById("app").innerHTML =
           <div id="set-alert"></div>
           <div class="modal-actions" style="justify-content:flex-start">
             <button class="btn btn-primary" id="btnSaveSettings">Save Changes</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><h4>🇰🇪 KNEC / CBC Quick Links</h4></div>
+        <div class="card-body">
+          <p style="color:var(--muted);font-size:13px;margin-bottom:14px">
+            Official portals and contacts for national assessments under Kenya's CBC curriculum.
+            Use your school's <strong>Assessment Centre credentials</strong> to log in to the KNEC portals.
+          </p>
+          <div style="display:grid;gap:10px">
+            <a href="https://cba.knec.ac.ke" target="_blank" rel="noopener"
+               style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;text-decoration:none;color:inherit;transition:background .15s"
+               onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background=''">
+              <span style="font-size:20px">🏛</span>
+              <div>
+                <div style="font-weight:600;font-size:13.5px">KNEC CBA Portal — cba.knec.ac.ke</div>
+                <div style="font-size:12px;color:var(--muted)">Register KPSEA (Grade 6), KJSEA (Grade 9) &amp; Senior School candidates. Principal use.</div>
+              </div>
+            </a>
+            <a href="https://knec-portal.ac.ke" target="_blank" rel="noopener"
+               style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;text-decoration:none;color:inherit;transition:background .15s"
+               onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background=''">
+              <span style="font-size:20px">📋</span>
+              <div>
+                <div style="font-weight:600;font-size:13.5px">KNEC Portal — knec-portal.ac.ke</div>
+                <div style="font-size:12px;color:var(--muted)">General registration, results, and school account management.</div>
+              </div>
+            </a>
+            <a href="https://www.knec.ac.ke" target="_blank" rel="noopener"
+               style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;text-decoration:none;color:inherit;transition:background .15s"
+               onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background=''">
+              <span style="font-size:20px">📰</span>
+              <div>
+                <div style="font-weight:600;font-size:13.5px">KNEC Website — knec.ac.ke</div>
+                <div style="font-size:12px;color:var(--muted)">Circulars, deadlines, assessment frameworks, and official notices.</div>
+              </div>
+            </a>
+          </div>
+          <div style="margin-top:16px;padding:12px 14px;background:var(--surface2,#f8fafc);border-radius:8px;font-size:12.5px;color:var(--muted)">
+            <strong style="color:var(--text)">KNEC Direct Contacts</strong><br>
+            KPSEA queries: <a href="mailto:kpsea@knec.ac.ke">kpsea@knec.ac.ke</a> &nbsp;·&nbsp;
+            KJSEA queries: <a href="mailto:kjsea@knec.ac.ke">kjsea@knec.ac.ke</a> &nbsp;·&nbsp;
+            Senior School: <a href="mailto:kcse@knec.ac.ke">kcse@knec.ac.ke</a>
           </div>
         </div>
       </div>
@@ -1562,6 +1636,77 @@ document.getElementById("btnSubmitClass")?.addEventListener("click", async () =>
     showAlert(alertEl, "Class created.", "ok");
     setTimeout(async () => { closeModal("modal-class"); await fetchClasses(); loadClasses(); }, 1200);
   } else showAlert(alertEl, r?.message || "Failed to create class.");
+});
+
+
+// ── Promote Students ──────────────────────────────────────────────
+const EXAM_GRADES = new Set(["Grade 6", "Grade 9"]);
+
+document.getElementById("btnPromoteStudents")?.addEventListener("click", () => {
+  const fromSel = document.getElementById("pro-from");
+  const toSel   = document.getElementById("pro-to");
+  fromSel.innerHTML = '<option value="">Select class…</option>';
+  toSel.innerHTML   = '<option value="">Select class…</option>';
+  allClasses.forEach(c => {
+    const label = `${c.grade}${c.pathway ? " (" + c.pathway + ")" : ""}${c.stream ? " – " + c.stream : ""} (${c.academic_year})`;
+    fromSel.insertAdjacentHTML("beforeend", `<option value="${esc(String(c.id))}" data-grade="${esc(c.grade)}">${esc(label)}</option>`);
+    toSel.insertAdjacentHTML("beforeend",   `<option value="${esc(String(c.id))}">${esc(label)}</option>`);
+  });
+  document.getElementById("pro-student-list").innerHTML = '<div class="empty" style="padding:16px 0">Select a source class to see students.</div>';
+  document.getElementById("pro-count").textContent = "";
+  document.getElementById("pro-alert").innerHTML = "";
+  document.getElementById("promote-knec-banner").style.display = "none";
+  openModal("modal-promote");
+});
+
+document.getElementById("pro-from")?.addEventListener("change", async function () {
+  const classId = this.value;
+  const banner  = document.getElementById("promote-knec-banner");
+  const listEl  = document.getElementById("pro-student-list");
+  const countEl = document.getElementById("pro-count");
+  // Show KNEC banner for Grade 6 / Grade 9
+  const selOpt  = this.options[this.selectedIndex];
+  const grade   = selOpt?.dataset?.grade || "";
+  banner.style.display = EXAM_GRADES.has(grade) ? "" : "none";
+  if (!classId) { listEl.innerHTML = '<div class="empty" style="padding:16px 0">Select a source class to see students.</div>'; countEl.textContent = ""; return; }
+  listEl.innerHTML = '<div class="empty" style="padding:16px 0">Loading students…</div>';
+  const r = await students.list({ school_id: me.school_id, class_id: classId, is_active: true });
+  const data = r?.data || [];
+  if (!data.length) { listEl.innerHTML = '<div class="empty" style="padding:16px 0">No active students in this class.</div>'; countEl.textContent = ""; return; }
+  listEl.innerHTML = `<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);font-weight:600;cursor:pointer">
+    <input type="checkbox" id="pro-select-all" checked> Select / Deselect All
+  </label>` + data.map(s => `<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;cursor:pointer">
+    <input type="checkbox" class="pro-student-chk" value="${esc(String(s.id))}" checked>
+    <span>${esc(s.full_name)} <span style="color:var(--muted);font-size:12px">(Adm: ${esc(s.admission_number || "–")})</span></span>
+  </label>`).join("");
+  const updateCount = () => {
+    const n = document.querySelectorAll(".pro-student-chk:checked").length;
+    countEl.textContent = `${n} of ${data.length} student${data.length !== 1 ? "s" : ""} selected`;
+  };
+  updateCount();
+  document.getElementById("pro-select-all").addEventListener("change", function () {
+    document.querySelectorAll(".pro-student-chk").forEach(c => c.checked = this.checked);
+    updateCount();
+  });
+  document.querySelectorAll(".pro-student-chk").forEach(c => c.addEventListener("change", updateCount));
+});
+
+document.getElementById("btnSubmitPromote")?.addEventListener("click", async () => {
+  const fromId     = document.getElementById("pro-from").value;
+  const toId       = document.getElementById("pro-to").value;
+  const alertEl    = document.getElementById("pro-alert");
+  const studentIds = [...document.querySelectorAll(".pro-student-chk:checked")].map(c => c.value);
+  if (!fromId) return showAlert(alertEl, "Please select the source class.");
+  if (!toId)   return showAlert(alertEl, "Please select the destination class.");
+  if (fromId === toId) return showAlert(alertEl, "Source and destination class must be different.");
+  if (!studentIds.length) return showAlert(alertEl, "No students selected to promote.");
+  setLoading("btnSubmitPromote", true);
+  const r = await students.promote({ student_ids: studentIds, new_class_id: toId, school_id: me.school_id });
+  setLoading("btnSubmitPromote", false);
+  if (r?.success) {
+    showAlert(alertEl, r.message || `${studentIds.length} student(s) promoted successfully.`, "ok");
+    setTimeout(() => { closeModal("modal-promote"); loadClasses(); }, 1800);
+  } else showAlert(alertEl, r?.message || "Promotion failed.");
 });
 
 // ── Assignments ───────────────────────────────────────────────────
