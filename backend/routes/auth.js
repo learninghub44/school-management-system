@@ -326,6 +326,11 @@ router.post("/register",
 
     const upperCode = school_code.trim().toUpperCase();
 
+    // Early check — fail loudly if Paystack key missing rather than silently returning null checkout_url
+    if (!process.env.PAYSTACK_SECRET_KEY) {
+      return res.status(503).json({ success: false, message: "Payment service not configured. Contact support." });
+    }
+
     try {
       // 1. Check plan exists
       const { rows: plans } = await db.query(
@@ -339,11 +344,14 @@ router.post("/register",
       const { rows: existing } = await db.query(
         `SELECT s.id, s.name,
                 ss.status AS sub_status,
-                u.id AS admin_id, u.username, u.email AS admin_email
+                COALESCE(u.id, u2.id) AS admin_id,
+                COALESCE(u.username, u2.username) AS username,
+                COALESCE(u.email, u2.email) AS admin_email
          FROM schools s
          LEFT JOIN school_subscriptions ss ON ss.school_id = s.id
          LEFT JOIN users u ON u.school_id = s.id AND u.role = 'PRINCIPAL'
-         WHERE s.school_code = $1`, [upperCode]
+         LEFT JOIN users u2 ON u2.email = $2
+         WHERE s.school_code = $1`, [upperCode, admin_email]
       );
 
       if (existing.length) {
@@ -356,6 +364,23 @@ router.post("/register",
         // School exists but payment not completed — verify email matches then resume
         if (ex.admin_email && ex.admin_email !== admin_email)
           return res.status(409).json({ success: false, message: "School exists but email doesn\'t match. Contact support." });
+
+        // If no user was ever created (e.g. previous transaction rolled back), create one now
+        let adminId = ex.admin_id;
+        let adminUsername = ex.username;
+        if (!adminId) {
+          const password_hash = await bcrypt.hash(admin_password, 12);
+          const generatedUsername = `${upperCode.toLowerCase()}_admin`;
+          const { rows: newUser } = await db.query(
+            `INSERT INTO users (school_id, username, email, name, password_hash, role, is_active, must_change_password)
+             VALUES ($1, $2, $3, $4, $5, 'PRINCIPAL', TRUE, TRUE)
+             ON CONFLICT (email) DO UPDATE SET school_id=$1, username=$2, name=$4, password_hash=$5, role='PRINCIPAL'
+             RETURNING id, username`,
+            [ex.id, generatedUsername, admin_email, admin_name, password_hash]
+          );
+          adminId = newUser[0].id;
+          adminUsername = newUser[0].username;
+        }
 
         const reference = `REG-${Date.now()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
         const callbackUrl = (process.env.PAYSTACK_CALLBACK_URL || `${req.protocol}://${req.get("host")}/subscription.html`)
@@ -373,7 +398,7 @@ router.post("/register",
               reference,
               callback_url: callbackUrl,
               metadata: { school_id: ex.id, plan_id: plan.id, school_name: ex.name, plan_name: plan.name,
-                          interval: plan.billing_interval, created_by: ex.admin_id, self_registered: true },
+                          interval: plan.billing_interval, created_by: adminId, self_registered: true },
             }),
           });
           const psData = await psRes.json();
@@ -383,7 +408,7 @@ router.post("/register",
               `INSERT INTO subscription_payments
                  (school_id, plan_id, merchant_reference, order_tracking_id, amount, currency, status, checkout_url, created_by)
                VALUES ($1,$2,$3,$4,$5,$6,'pending',$7,$8)`,
-              [ex.id, plan.id, reference, psData.data?.access_code || null, plan.amount, plan.currency, checkoutUrl, ex.admin_id]
+              [ex.id, plan.id, reference, psData.data?.access_code || null, plan.amount, plan.currency, checkoutUrl, adminId]
             );
           }
         } catch (psErr) {
@@ -393,7 +418,7 @@ router.post("/register",
         return res.status(200).json({
           success: true,
           message: "Registration found but payment incomplete. Complete payment to activate.",
-          data: { school_code: upperCode, school_name: ex.name, username: ex.username,
+          data: { school_code: upperCode, school_name: ex.name, username: adminUsername,
                   plan: plan.name, checkout_url: checkoutUrl, resumed: true },
         });
       }
