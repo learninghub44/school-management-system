@@ -3,6 +3,7 @@ const express = require("express");
 const { body, validationResult } = require("express-validator");
 const requireSubscription = require("../middleware/subscriptionMiddleware");
 const auth = require("../middleware/authMiddleware");
+const roleM = require("../middleware/roleMiddleware");
 const db = require("../config/db");
 const { audit } = require("../middleware/auditLog");
 const { aiBurstLimit, aiDailyQuota, logAiUsage } = require("../middleware/aiRateLimit");
