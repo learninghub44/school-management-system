@@ -211,6 +211,8 @@ export const students = {
   create:  (d)     => apiFetch("/students",         { method: "POST", body: d }),
   update:  (id, d) => apiFetch(`/students/${id}`,   { method: "PUT",  body: d }),
   promote: (d)     => apiFetch("/students/promote", { method: "POST", body: d }),
+  promotionHistory: (p) => apiFetch("/students/promotion-history", { params: p }),
+  knecRegistration: (id, d) => apiFetch(`/students/${id}/knec-registration`, { method: "PATCH", body: d }),
   guardians:     (id)    => apiFetch(`/students/${id}/guardians`),
   addGuardian:   (id, d) => apiFetch(`/students/${id}/guardians`, { method: "POST", body: d }),
 };

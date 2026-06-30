@@ -143,6 +143,7 @@ router.post("/", auth, roleM(MANAGE),
     body("middle_name").optional().trim().isLength({ max: 80 }),
     body("admission_number").optional().trim().isLength({ max: 30 }),
     body("upi_number").optional().trim().isLength({ max: 30 }),
+    body("assessment_number").optional().trim().isLength({ max: 30 }),
     body("gender").isIn(["Male", "Female"]),
     body("class_id").notEmpty().isInt({ min: 1 }),
     body("date_of_birth").optional().isDate(),
@@ -169,7 +170,7 @@ router.post("/", auth, roleM(MANAGE),
         return res.status(403).json({ success: false, message: "Class does not belong to your school." });
 
       const {
-        first_name, middle_name, last_name, upi_number,
+        first_name, middle_name, last_name, upi_number, assessment_number,
         gender, date_of_birth, class_id, admission_date,
         parent_name, parent_phone, address
       } = req.body;
@@ -217,12 +218,13 @@ router.post("/", auth, roleM(MANAGE),
       const { rows } = await db.query(
         `INSERT INTO students
          (school_id, first_name, middle_name, last_name, admission_number, upi_number,
-          gender, date_of_birth, class_id, admission_date, parent_name, parent_phone, address)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+          assessment_number, gender, date_of_birth, class_id, admission_date, parent_name, parent_phone, address)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
          RETURNING *`,
         [
           cls[0].school_id, first_name, middle_name || null, last_name,
-          admission_number, upi_number || null, gender, date_of_birth || null,
+          admission_number, upi_number || null, assessment_number || null,
+          gender, date_of_birth || null,
           class_id, admission_date || null, parent_name || null,
           parent_phone || null, address || null
         ]
@@ -270,29 +272,35 @@ router.put("/:id", auth, roleM(MANAGE), validateUUID("id"),
 
       const {
         first_name, middle_name, last_name, gender, date_of_birth, class_id,
-        parent_name, parent_phone, address, upi_number, is_active
+        parent_name, parent_phone, address, upi_number, assessment_number,
+        kpsea_registered, kjsea_registered, is_active
       } = req.body;
 
       const { rows } = await db.query(
         `UPDATE students SET
-           first_name   = COALESCE($1,  first_name),
-           middle_name  = COALESCE($2,  middle_name),
-           last_name    = COALESCE($3,  last_name),
-           gender       = COALESCE($4,  gender),
-           date_of_birth= COALESCE($5,  date_of_birth),
-           class_id     = COALESCE($6,  class_id),
-           parent_name  = COALESCE($7,  parent_name),
-           parent_phone = COALESCE($8,  parent_phone),
-           address      = COALESCE($9,  address),
-           upi_number   = COALESCE($10, upi_number),
-           is_active    = COALESCE($11, is_active),
-           updated_at   = NOW()
-         WHERE id = $12
+           first_name        = COALESCE($1,  first_name),
+           middle_name       = COALESCE($2,  middle_name),
+           last_name         = COALESCE($3,  last_name),
+           gender            = COALESCE($4,  gender),
+           date_of_birth     = COALESCE($5,  date_of_birth),
+           class_id          = COALESCE($6,  class_id),
+           parent_name       = COALESCE($7,  parent_name),
+           parent_phone      = COALESCE($8,  parent_phone),
+           address           = COALESCE($9,  address),
+           upi_number        = COALESCE($10, upi_number),
+           is_active         = COALESCE($11, is_active),
+           assessment_number = COALESCE($12, assessment_number),
+           kpsea_registered  = COALESCE($13, kpsea_registered),
+           kjsea_registered  = COALESCE($14, kjsea_registered),
+           updated_at        = NOW()
+         WHERE id = $15
          RETURNING *`,
         [
           first_name||null, middle_name||null, last_name||null, gender||null,
           date_of_birth||null, class_id||null, parent_name||null, parent_phone||null,
-          address||null, upi_number||null, is_active??null, req.params.id
+          address||null, upi_number||null, is_active??null,
+          assessment_number||null, kpsea_registered??null, kjsea_registered??null,
+          req.params.id
         ]
       );
       await audit(req, "UPDATE_STUDENT", "students", req.params.id, ex[0], rows[0]);
@@ -304,39 +312,147 @@ router.put("/:id", auth, roleM(MANAGE), validateUUID("id"),
 );
 
 // ── POST /api/students/promote ────────────────────────────────────
+// CBC policy: Grade 6→7 (KPSEA) and Grade 9→10 (KJSEA) are 100%
+// transitions — every learner moves regardless of assessment score.
+// This endpoint updates class_id AND logs a permanent promotion_history row.
 router.post("/promote", auth, roleM(MANAGE), async (req, res) => {
   try {
-    const { student_ids, new_class_id } = req.body;
+    const { student_ids, new_class_id, academic_year, notes } = req.body;
     if (!Array.isArray(student_ids) || !student_ids.length || !new_class_id)
       return res.status(400).json({ success: false, message: "student_ids[] and new_class_id required." });
 
     const sid = req.user.role === "SUPER_ADMIN" ? req.body.school_id : req.user.school_id;
 
-    // Verify destination class belongs to school
-    const { rows: cls } = await db.query(
-      "SELECT school_id FROM classes WHERE id=$1", [new_class_id]
+    // Verify destination class belongs to school and get its grade/stage
+    const { rows: destCls } = await db.query(
+      "SELECT id, school_id, grade, stage FROM classes WHERE id=$1", [new_class_id]
     );
-    if (!cls.length)
+    if (!destCls.length)
       return res.status(404).json({ success: false, message: "Destination class not found." });
-    if (req.user.role !== "SUPER_ADMIN" && cls[0].school_id !== sid)
+    if (req.user.role !== "SUPER_ADMIN" && destCls[0].school_id !== sid)
       return res.status(403).json({ success: false, message: "Class does not belong to your school." });
 
-    // Verify all student_ids belong to the same school
+    // Fetch students with their current class grade/stage for history logging
     const { rows: studs } = await db.query(
-      "SELECT id, school_id FROM students WHERE id = ANY($1)", [student_ids]
+      `SELECT s.id, s.school_id, s.class_id,
+              c.grade AS from_grade, c.stage AS from_stage
+       FROM students s
+       LEFT JOIN classes c ON c.id = s.class_id
+       WHERE s.id = ANY($1)`,
+      [student_ids]
     );
     for (const s of studs) {
       if (req.user.role !== "SUPER_ADMIN" && s.school_id !== sid)
         return res.status(403).json({ success: false, message: `Student ${s.id} does not belong to your school.` });
     }
 
+    const schoolId  = destCls[0].school_id;
+    const toGrade   = destCls[0].grade;
+    const toStage   = destCls[0].stage;
+    const acYear    = academic_year || String(new Date().getFullYear());
+
+    // Determine promotion type based on grade transition
+    const getPromotionType = (fromGrade) => {
+      if (fromGrade === "Grade 6" && toGrade === "Grade 7") return "KPSEA Transition";
+      if (fromGrade === "Grade 9" && toGrade === "Grade 10") return "KJSEA Transition";
+      return "Normal";
+    };
+
+    // Update class_id for all students
     const { rowCount } = await db.query(
       "UPDATE students SET class_id=$1, updated_at=NOW() WHERE id=ANY($2) AND school_id=$3",
-      [new_class_id, student_ids, cls[0].school_id]
+      [new_class_id, student_ids, schoolId]
     );
+
+    // Log promotion_history for each student (best-effort — don't fail if table missing)
+    try {
+      for (const s of studs) {
+        const promotionType = getPromotionType(s.from_grade);
+        await db.query(
+          `INSERT INTO promotion_history
+             (school_id, student_id, from_class_id, to_class_id,
+              from_grade, to_grade, from_stage, to_stage,
+              academic_year, promoted_by, promotion_type, notes)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+          [
+            schoolId, s.id, s.class_id || null, new_class_id,
+            s.from_grade || null, toGrade,
+            s.from_stage || null, toStage,
+            acYear, req.user.id, promotionType, notes || null
+          ]
+        );
+      }
+    } catch (histErr) {
+      // Table may not exist yet on older DBs — promotion still succeeds
+      console.warn("promotion_history insert skipped:", histErr.message);
+    }
+
     await audit(req, "PROMOTE_STUDENTS", "students", null, null,
-      { count: rowCount, new_class_id });
-    return res.json({ success: true, message: `${rowCount} student(s) promoted.` });
+      { count: rowCount, new_class_id, to_grade: toGrade, to_stage: toStage });
+
+    const isTransition = studs.some(s =>
+      s.from_grade === "Grade 6" || s.from_grade === "Grade 9"
+    );
+    return res.json({
+      success: true,
+      message: `${rowCount} student(s) promoted to ${toGrade}.`,
+      to_grade: toGrade,
+      to_stage: toStage,
+      is_stage_transition: isTransition,
+    });
+  } catch (err) {
+    console.error("promote error:", err.stack);
+    return res.status(500).json({ success: false, message: "Server error during promotion." });
+  }
+});
+
+// ── GET /api/students/promotion-history — list promotion records ──
+// Used to audit who was promoted when, especially for Grade 6/9 transitions
+router.get("/promotion-history", auth, roleM(VIEW), async (req, res) => {
+  try {
+    const sid = req.user.role === "SUPER_ADMIN" ? req.query.school_id : req.user.school_id;
+    if (!sid) return res.status(400).json({ success: false, message: "school_id required." });
+    const p = [sid];
+    let q = `SELECT ph.*,
+               s.first_name || ' ' || s.last_name AS student_name,
+               s.admission_number,
+               u.first_name || ' ' || u.last_name AS promoted_by_name
+             FROM promotion_history ph
+             JOIN students s ON s.id = ph.student_id
+             LEFT JOIN users u ON u.id = ph.promoted_by
+             WHERE ph.school_id = $1`;
+    if (req.query.academic_year) { p.push(req.query.academic_year); q += ` AND ph.academic_year=$${p.length}`; }
+    if (req.query.promotion_type) { p.push(req.query.promotion_type); q += ` AND ph.promotion_type=$${p.length}`; }
+    if (req.query.student_id)    { p.push(req.query.student_id);    q += ` AND ph.student_id=$${p.length}`; }
+    q += " ORDER BY ph.promoted_at DESC LIMIT 200";
+    const { rows } = await db.query(q, p);
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error("promotion-history error:", err.stack);
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
+// ── PATCH /api/students/:id/knec-registration — mark KPSEA/KJSEA registered ──
+// Lets a principal tick off that a Grade 6 or 9 student has been registered
+// on cba.knec.ac.ke before the KNEC deadline
+router.patch("/:id/knec-registration", auth, roleM(MANAGE), async (req, res) => {
+  try {
+    const { kpsea_registered, kjsea_registered } = req.body;
+    if (kpsea_registered === undefined && kjsea_registered === undefined)
+      return res.status(400).json({ success: false, message: "Provide kpsea_registered or kjsea_registered." });
+    const sid = req.user.role === "SUPER_ADMIN" ? req.body.school_id : req.user.school_id;
+    const sets = [], p = [];
+    if (kpsea_registered !== undefined) { sets.push(`kpsea_registered=$${p.push(kpsea_registered)}`); }
+    if (kjsea_registered !== undefined) { sets.push(`kjsea_registered=$${p.push(kjsea_registered)}`); }
+    sets.push("updated_at=NOW()");
+    p.push(req.params.id); p.push(sid);
+    const { rows } = await db.query(
+      `UPDATE students SET ${sets.join(",")} WHERE id=$${p.length-1} AND school_id=$${p.length} RETURNING id, kpsea_registered, kjsea_registered`,
+      p
+    );
+    if (!rows.length) return res.status(404).json({ success: false, message: "Student not found." });
+    return res.json({ success: true, data: rows[0] });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Server error." });
   }

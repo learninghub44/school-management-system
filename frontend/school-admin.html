@@ -47,7 +47,10 @@ body{max-width:100vw}
   <div class="fg"><label>Middle Name</label><input id="s-mname" maxlength="80"></div>
   <div class="fg-row">
     <div class="fg"><label>Admission No (auto-generated)</label><input id="s-adm" maxlength="30" placeholder="Loading…" style="background:#f8fafc;color:#64748b;font-weight:600"></div>
-    <div class="fg"><label>UPI No</label><input id="s-upi" maxlength="30"></div>
+    <div class="fg"><label>UPI / NEMIS No</label><input id="s-upi" maxlength="30"></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label>KNEC Assessment No <span style="color:var(--muted);font-weight:400;font-size:12px">(from cba.knec.ac.ke)</span></label><input id="s-assessment-no" maxlength="30" placeholder="Tracks learner Grade 3 → Grade 12"></div>
   </div>
   <div class="fg-row">
     <div class="fg"><label>Gender *</label>
@@ -1453,7 +1456,8 @@ document.getElementById("btnSubmitStudent")?.addEventListener("click", async () 
     last_name:      lname,
     middle_name:    document.getElementById("s-mname").value.trim()   || null,
     admission_number: adm || undefined,
-    upi_number:     document.getElementById("s-upi").value.trim()     || null,
+    upi_number:        document.getElementById("s-upi").value.trim()              || null,
+    assessment_number: document.getElementById("s-assessment-no").value.trim()    || null,
     gender,
     date_of_birth:  document.getElementById("s-dob").value            || null,
     class_id:       classId,
@@ -1673,12 +1677,31 @@ document.getElementById("pro-from")?.addEventListener("change", async function (
   const r = await students.list({ school_id: me.school_id, class_id: classId, is_active: true });
   const data = r?.data || [];
   if (!data.length) { listEl.innerHTML = '<div class="empty" style="padding:16px 0">No active students in this class.</div>'; countEl.textContent = ""; return; }
+  // Check how many are unregistered for KNEC (Grade 6 = KPSEA, Grade 9 = KJSEA)
+  const isKPSEA = (grade === "Grade 6");
+  const isKJSEA = (grade === "Grade 9");
+  const regField = isKPSEA ? "kpsea_registered" : isKJSEA ? "kjsea_registered" : null;
+  const unregistered = regField ? data.filter(s => !s[regField]) : [];
+  if (regField && unregistered.length) {
+    document.getElementById("promote-knec-banner").innerHTML =
+      `<strong>⚠ KNEC Registration Reminder</strong><br>
+      <strong>${unregistered.length}</strong> student(s) in this class are NOT yet marked as registered for
+      ${isKPSEA ? "KPSEA" : "KJSEA"} on <a href="https://cba.knec.ac.ke" target="_blank" style="color:#92400e;font-weight:600">cba.knec.ac.ke</a>.
+      Please register them on the KNEC portal before the deadline, then tick them off in each student's profile.
+      Promoting in this system does <em>not</em> register them with KNEC.`;
+    document.getElementById("promote-knec-banner").style.display = "";
+  }
   listEl.innerHTML = `<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);font-weight:600;cursor:pointer">
     <input type="checkbox" id="pro-select-all" checked> Select / Deselect All
-  </label>` + data.map(s => `<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;cursor:pointer">
+  </label>` + data.map(s => {
+    const notReg = regField && !s[regField];
+    return `<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;cursor:pointer${notReg ? ";background:#fef9c3;border-radius:4px" : ""}">
     <input type="checkbox" class="pro-student-chk" value="${esc(String(s.id))}" checked>
-    <span>${esc(s.full_name)} <span style="color:var(--muted);font-size:12px">(Adm: ${esc(s.admission_number || "–")})</span></span>
-  </label>`).join("");
+    <span>${esc(s.full_name)} <span style="color:var(--muted);font-size:12px">(Adm: ${esc(s.admission_number || "–")})</span>
+    ${notReg ? `<span style="font-size:11px;color:#92400e;font-weight:600;margin-left:4px">⚠ Not KNEC-registered</span>` : ""}
+    </span>
+  </label>`;
+  }).join("");
   const updateCount = () => {
     const n = document.querySelectorAll(".pro-student-chk:checked").length;
     countEl.textContent = `${n} of ${data.length} student${data.length !== 1 ? "s" : ""} selected`;
