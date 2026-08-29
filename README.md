@@ -198,6 +198,33 @@ school-management-system/
 
 ---
 
+## 🌍 Deploy Anywhere
+
+This project has **no required hosting platform and no required database provider**. `DATABASE_URL` is a plain Postgres connection string — point it at Railway, Render, Neon, Supabase, or a self-hosted Postgres instance and it works the same. Pick whichever of these fits you:
+
+| Option | Best for | Config file |
+|---|---|---|
+| **Docker (any VPS/cloud)** | Full control, one container, works literally anywhere Docker runs | `Dockerfile`, `docker-compose.yml` |
+| **Railway** | Zero-config PaaS, builds the same Dockerfile | `railway.toml` |
+| **Render** | Zero-config PaaS, builds `backend/` directly with `npm` | `render.yaml` |
+| **Cloudflare Workers + Pages** | Edge deployment, generous free tier | `wrangler.toml`, `frontend/_worker.js` |
+
+**Docker (recommended if you want zero platform lock-in):**
+
+```bash
+cp backend/.env.example backend/.env   # fill in your secrets
+docker compose up -d --build           # app + Postgres, all local/self-hosted
+# or, to use an external Postgres instead of the bundled one:
+docker build -t school-erp .
+docker run -p 5000:5000 --env-file backend/.env school-erp
+```
+
+This serves the backend API **and** the static frontend from a single container on port 5000 — no CORS setup, no separate frontend host needed.
+
+**Cloudflare Workers note:** the Workers deploy path (`backend/worker-entry.js`) auto-detects your database from `DATABASE_URL` — Neon URLs get the optimized `@neondatabase/serverless` client, any other Postgres URL falls back to standard `pg` over a Workers TCP socket. See the comments in `wrangler.toml` for pooling recommendations if you use a non-Neon database there at production scale.
+
+---
+
 # 🚀 Getting Started
 
 ## Prerequisites
@@ -228,15 +255,10 @@ Clone the repository:
 
 ```bash
 git clone https://github.com/learninghub44/school-management-system.git
-```
-
-Navigate into the project:
-
-```bash
 cd school-management-system
 ```
 
-Install dependencies:
+Install backend dependencies (this is an npm workspaces repo — `backend` and `frontend` are the workspace members):
 
 ```bash
 npm install
@@ -246,23 +268,11 @@ npm install
 
 ## ⚙️ Environment Configuration
 
-Create an environment file based on the provided example:
-
 ```bash
-cp .env.example .env
+cp backend/.env.example backend/.env
 ```
 
-On Windows, you can also create the `.env` file manually.
-
-Configure the required environment variables.
-
-Example:
-
-```env
-DATABASE_URL=your_database_connection_string
-API_URL=your_api_url
-AUTH_SECRET=your_secret
-```
+Fill in `backend/.env` — see the comments in that file for what each variable does. The only hard requirement is `DATABASE_URL`, and it accepts **any Postgres connection string** (Railway, Render, Neon, Supabase, self-hosted, a local `docker compose` Postgres — whatever you point it at). There is no dependency on a specific database or hosting provider.
 
 > Never commit `.env` files containing real credentials, API keys, passwords, or secrets to GitHub.
 
@@ -270,19 +280,21 @@ AUTH_SECRET=your_secret
 
 ## ▶️ Running the Application
 
-Start the development server:
+**Backend only** (frontend served separately, e.g. by Cloudflare Pages/Netlify/nginx):
 
 ```bash
-npm run dev
+npm run dev        # nodemon, from repo root
+# or
+cd backend && npm start
 ```
 
-The application will normally become available at:
+**Backend + frontend from one process** (handy for local dev or any single-host deploy):
 
-```text
-http://localhost:3000
+```bash
+SERVE_FRONTEND=true npm start
 ```
 
-The exact command and port depend on the project's current configuration.
+Either way the API is at `http://localhost:5000/api`, and with `SERVE_FRONTEND=true` the site itself is at `http://localhost:5000/`.
 
 ---
 

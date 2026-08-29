@@ -1,39 +1,56 @@
-# Kadem & Zetu School Management System v4.0 — Deployment Guide
+# Kadem & Zetu School Management System v4.3 — Deployment Guide
 
 ## Stack
-- **Backend**: Node.js 18+ / Express on [Render](https://render.com)
-- **Database**: PostgreSQL on [Neon](https://neon.tech)
-- **Frontend**: Static files served by Express (or Cloudflare Pages)
+- **Backend**: Node.js 18+ / Express — deployable to Docker/any VPS, Railway, Render, or Cloudflare Workers (pick one; see `README.md` → "Deploy Anywhere")
+- **Database**: PostgreSQL — any provider. `backend/config/db.js` auto-detects Neon URLs for the optimized serverless client; every other Postgres (Railway, Render, Supabase, self-hosted) uses the standard `pg` driver
+- **Frontend**: Static files — served by the same Express process (`SERVE_FRONTEND=true`), or separately by Cloudflare Pages/Netlify/nginx/anything that serves static files
+
+This guide walks through one concrete path (Docker, self-contained). For Railway/Render/Cloudflare Workers specifics, see `railway.toml`, `render.yaml`, and `WORKERS_DEPLOY.md` respectively — the app code is identical across all of them.
 
 ---
 
-## 1. Database Setup (Neon)
-1. Create a new Neon project
-2. Go to **SQL Editor** and run `backend/cbc_schema.sql`
-3. Copy the **Connection String** (URI format) → you'll need this for `DATABASE_URL`
+## 1. Database Setup
+
+Any Postgres works. Run `backend/cbc_schema.sql` against it (via `psql`, or your provider's SQL console) and copy the connection string for `DATABASE_URL`.
+
+If you're using `docker compose up` (below), a local Postgres container is provisioned for you automatically — you can skip this step entirely for local/self-hosted use.
 
 ---
 
-## 2. Backend on Render
-1. Create a **Web Service** pointing to your GitHub repo
-2. **Root Directory**: `backend`
-3. **Build Command**: `npm install`
-4. **Start Command**: `npm start`
-5. Add these **Environment Variables**:
+## 2. Backend Deployment
+
+**Option A — Docker (works on any VPS/cloud, includes the frontend):**
+
+```bash
+cp backend/.env.example backend/.env   # fill in DATABASE_URL, JWT_SECRET, etc.
+docker compose up -d --build
+```
+
+The app is now on `http://localhost:5000` (or your server's address) — API and frontend together, no CORS setup needed.
+
+**Option B — Railway / Render (PaaS, no server management):**
+
+Push to GitHub, connect the repo in the Railway or Render dashboard, and set the environment variables listed in `backend/.env.example`. Railway builds the root `Dockerfile`; Render runs `backend/` directly with `npm`. Both configs are already in this repo (`railway.toml`, `render.yaml`).
+
+**Option C — Cloudflare Workers + Pages (edge deployment):**
+
+See `WORKERS_DEPLOY.md`. Set `DATABASE_URL` as a Worker secret — it works with Neon or any other Postgres (see the comments in `wrangler.toml`).
+
+Whichever option you pick, the environment variables are the same set:
 
 | Key | Value |
 |-----|-------|
-| `DATABASE_URL` | Your Neon connection string |
+| `DATABASE_URL` | Any Postgres connection string |
 | `JWT_SECRET` | 64-char random string (`openssl rand -base64 48`) |
 | `JWT_EXPIRES` | `10h` |
 | `NODE_ENV` | `production` |
-| `ALLOWED_ORIGINS` | Your frontend URL |
-| `PORT` | `3000` |
+| `ALLOWED_ORIGINS` | Your frontend's URL(s), comma-separated |
+| `PORT` | `5000` (Railway/Render override this automatically; fine to leave as-is) |
 
 ---
 
 ## 3. Create First Super Admin
-Run this SQL in Neon's SQL Editor (replace the password hash):
+Run this SQL against your database (replace the password hash):
 
 ```sql
 -- Generate hash with: node -e "const b=require('bcryptjs'); b.hash('YourPassword123',12).then(console.log)"

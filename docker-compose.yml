@@ -1,0 +1,51 @@
+# Self-hosted full stack: app + Postgres, all in Docker, no external
+# platform dependency at all. Good for a VPS, local dev, or as a starting
+# point for any container host.
+#
+# Usage:
+#   cp backend/.env.example backend/.env   # fill in secrets
+#   docker compose up -d --build
+#
+# The app will be reachable on http://localhost:5000 (frontend + API,
+# same origin, so no CORS/proxy setup needed).
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cbc_erp
+      POSTGRES_USER: cbc_erp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_local_only}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cbc_erp -d cbc_erp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - backend/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      SERVE_FRONTEND: "true"
+      # Overrides backend/.env's DATABASE_URL to point at the db service above.
+      # Remove this line if you want to use an external Postgres instead
+      # (Railway, Render, Neon, Supabase, etc.) and just set DATABASE_URL
+      # in backend/.env.
+      DATABASE_URL: postgresql://cbc_erp:${POSTGRES_PASSWORD:-changeme_local_only}@db:5432/cbc_erp
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:

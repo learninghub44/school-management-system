@@ -1,5 +1,5 @@
 -- migration_constraints_safe.sql
--- Run this on your existing Supabase DB.
+-- Run this on your existing Postgres DB (Railway, Render, Neon, self-hosted, etc.)
 -- Every statement is wrapped in DO blocks so it skips if already exists.
 -- Safe to run multiple times.
 

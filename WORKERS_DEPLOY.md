@@ -1,4 +1,4 @@
-# Deployment Guide — Cloudflare Workers + Neon
+# Deployment Guide — Cloudflare Workers + Pages
 
 ## Architecture
 
@@ -6,17 +6,27 @@
 Browser → Cloudflare Pages (static HTML/JS/CSS)
               └─ _worker.js proxies /api/* →
                     Cloudflare Workers (Express backend)
-                          └─ Neon Postgres (database)
+                          └─ Postgres (any provider — see below)
 ```
 
-## 1. Neon Database Setup
+This is one of several supported hosting paths — see `README.md` → "Deploy Anywhere" for Docker/Railway/Render alternatives that don't involve Cloudflare at all.
 
+## 1. Database Setup
+
+`backend/config/db.js` picks the driver automatically based on `DATABASE_URL`:
+
+- **Neon** (`*.neon.tech`) → uses `@neondatabase/serverless`, Neon's own HTTP/WebSocket proxy. No pooler needed, simplest option for Workers.
+- **Anything else** (Railway, Render, Supabase, self-hosted Postgres) → uses the standard `pg` driver over a Workers TCP socket (works via the `nodejs_compat` flag already set in `wrangler.toml`). For production-scale traffic, put a connection pooler in front of it — Cloudflare Hyperdrive, or your provider's own pooled connection string.
+
+**With Neon:**
 1. Create a project at https://neon.tech
 2. Copy the **pooled connection string** (not direct) — looks like:
    ```
    postgresql://user:pass@ep-xxx-yyy.us-east-2.aws.neon.tech/dbname?sslmode=require
    ```
 3. Run the schema: open Neon SQL Editor → paste contents of `backend/cbc_schema.sql` → Run
+
+**With any other Postgres:** same idea — get the connection string from your provider (Railway/Render dashboard, Supabase project settings, etc.) and run `backend/cbc_schema.sql` against it via `psql` or the provider's SQL console.
 
 ## 2. Deploy Backend to Cloudflare Workers
 

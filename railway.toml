@@ -1,3 +1,20 @@
-# DEPRECATED — Backend is now deployed on Cloudflare Workers.
-# See WORKERS_DEPLOY.md for the current deployment guide.
-# Kept for reference only.
+# Railway deployment config — one of several valid hosting options for this
+# project (see README.md "Deploy anywhere" section). Railway can build the
+# root Dockerfile directly (serves backend + frontend from one service) or
+# you can use Railway Postgres with any other host for the app itself.
+#
+# Set these in the Railway dashboard (Variables tab):
+#   DATABASE_URL, JWT_SECRET, ALLOWED_ORIGINS, PAYSTACK_SECRET_KEY,
+#   GROQ_API_KEY, PLATFORM_SUPPORT_EMAIL  (see backend/.env.example)
+#
+# Railway auto-injects PORT — the app already reads process.env.PORT.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

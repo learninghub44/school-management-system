@@ -30,6 +30,20 @@ ALLOWED_ORIGINS = "https://cbc-school-erp.pages.dev,https://school-management-sy
 #   wrangler secret put GROQ_API_KEY
 #
 # Or: Cloudflare dashboard → Workers → school-management-system → Settings → Variables → Secrets
+#
+# ── DATABASE_URL and Postgres provider choice ─────────────────────────────
+# DATABASE_URL is NOT locked to Neon. backend/config/db.js auto-detects the
+# provider from the URL:
+#   - *.neon.tech            → uses @neondatabase/serverless (HTTP proxy,
+#                               no pooler needed, fastest path in Workers)
+#   - anything else          → uses standard `pg` over a Workers TCP socket
+#                               (via the nodejs_compat flag above). Works with
+#                               Railway/Render Postgres, Supabase, self-hosted,
+#                               etc. For production traffic, put a pooler in
+#                               front of it — either Cloudflare Hyperdrive
+#                               (https://developers.cloudflare.com/hyperdrive/)
+#                               or your provider's own pooled connection
+#                               string (e.g. Supabase's port-6543 URL).
 
 [observability]
 enabled = true

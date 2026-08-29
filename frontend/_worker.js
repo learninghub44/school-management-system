@@ -1,4 +1,8 @@
-const BACKEND_URL = "https://school-management-system.chrisodhiambo444.workers.dev";
+// Set BACKEND_URL in Cloudflare Pages → Settings → Environment variables
+// (per environment: Production / Preview) to point at wherever the backend
+// API actually lives — a Cloudflare Worker, Railway, Render, a VPS, etc.
+// Falls back to the value below only if the env var isn't set.
+const DEFAULT_BACKEND_URL = "https://school-management-system.chrisodhiambo444.workers.dev";
 
 export default {
   async fetch(request, env) {
@@ -8,6 +12,7 @@ export default {
       return env.ASSETS.fetch(request);
     }
 
+    const BACKEND_URL = env.BACKEND_URL || DEFAULT_BACKEND_URL;
     const target = BACKEND_URL + url.pathname + url.search;
 
     const proxied = new Request(target, {

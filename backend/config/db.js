@@ -8,26 +8,62 @@ let query, pool;
 if (isWorker) {
   // Lazy-init — DATABASE_URL isn't available at module load time in Workers.
   // It's injected per-request by worker-entry.js injectEnv().
-  const { neon } = require("@neondatabase/serverless");
-  // NOTE: fetchConnectionCache is intentionally left at its default (no longer
-  // forced to `true`). Forcing it on caches a connection at module/isolate
-  // scope — if the DB password is ever rotated (as happened earlier this
-  // project), a Worker isolate that's still warm can keep retrying a now-dead
-  // cached connection. That failure happens at the transport layer, below our
-  // try/catch, so it doesn't return our JSON error response — it surfaces as
-  // a raw platform 503 from Cloudflare's edge instead of a normal API error.
+  //
+  // Cloudflare Workers can't hold a raw TCP connection open the way a normal
+  // Node process can, so the DB client here is picked per DATABASE_URL:
+  //
+  //  - Neon URL (*.neon.tech)  → @neondatabase/serverless. Talks to Neon's
+  //    own HTTP/WebSocket proxy, so it "just works" in Workers with no
+  //    connection pooler needed. Fastest, most battle-tested path.
+  //
+  //  - Any other Postgres (Railway, Render, self-hosted, Supabase, etc.) →
+  //    standard `pg`, using Workers' `nodejs_compat` net/tls shims (already
+  //    enabled in wrangler.toml) to open a real TCP socket. This works, but
+  //    each Worker invocation opens its own connection to the database —
+  //    fine for low/medium traffic, but for production load you should put
+  //    a connection pooler in front of it. Two easy options:
+  //      1. Cloudflare Hyperdrive (https://developers.cloudflare.com/hyperdrive/)
+  //         — point Hyperdrive at your Postgres, use its connection string
+  //         as DATABASE_URL, and it pools/caches connections at Cloudflare's
+  //         edge for you. No code changes needed here.
+  //      2. Your Postgres provider's own pooler (Supabase's pooled
+  //         connection string on port 6543, Neon's pooled string, PgBouncer
+  //         in front of a self-hosted DB, etc.) — just use that URL.
+  //
+  // If you're not on Cloudflare Workers at all (Docker/Railway/Render/VPS —
+  // the `else` branch below), none of this applies: it's a normal `pg` Pool
+  // against any Postgres, no restrictions.
+  const isNeonUrl = (url) => /\.neon\.tech/i.test(url || "");
 
-  let _sql = null;
-  let _sqlUrl = null;
-  const getSql = () => {
+  let _client = null;   // { kind: "neon", sql } | { kind: "pg", pool }
+  let _clientUrl = null;
+
+  const getClient = () => {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error("DATABASE_URL not set");
     // Re-create the client if DATABASE_URL changed (e.g. secret rotated and
     // a new isolate picked it up) — cheap check, avoids reusing a dead client.
-    if (!_sql || _sqlUrl !== process.env.DATABASE_URL) {
-      if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL not set");
-      _sql = neon(process.env.DATABASE_URL);
-      _sqlUrl = process.env.DATABASE_URL;
+    if (!_client || _clientUrl !== url) {
+      if (isNeonUrl(url)) {
+        const { neon } = require("@neondatabase/serverless");
+        _client = { kind: "neon", sql: neon(url) };
+      } else {
+        const { Pool } = require("pg");
+        _client = {
+          kind: "pg",
+          pool: new Pool({
+            connectionString: url,
+            ssl: { rejectUnauthorized: false },
+            max: 1, // one Worker invocation = one request-scoped connection
+            connectionTimeoutMillis: 8000,
+            statement_timeout: 20000,
+            query_timeout: 20000,
+          }),
+        };
+      }
+      _clientUrl = url;
     }
-    return _sql;
+    return _client;
   };
 
   // Errors that indicate a broken/stale connection rather than a bad query —
@@ -45,17 +81,24 @@ if (isWorker) {
     );
   }
 
+  const runQuery = async (text, params) => {
+    const client = getClient();
+    if (client.kind === "neon") {
+      const rows = await client.sql(text, params || []);
+      return { rows, rowCount: rows.length };
+    }
+    return client.pool.query(text, params);
+  };
+
   query = async (text, params) => {
     try {
-      const rows = await getSql()(text, params || []);
-      return { rows, rowCount: rows.length };
+      return await runQuery(text, params);
     } catch (err) {
       if (isTransientConnError(err)) {
         console.warn("[db] Transient connection error, retrying once:", err.message);
-        _sql = null; // force a fresh client on retry
+        _client = null; // force a fresh client on retry
         try {
-          const rows = await getSql()(text, params || []);
-          return { rows, rowCount: rows.length };
+          return await runQuery(text, params);
         } catch (retryErr) {
           retryErr.isDbConnectionError = true;
           throw retryErr;

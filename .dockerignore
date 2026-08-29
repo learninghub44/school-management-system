@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+.git
+.env
+**/.env
+*.env.local
+*.log
+.DS_Store
+dist
+build
+.dev.vars
+docs
+DEPLOYMENT_GUIDE.md
+RAILWAY_ENV_VARS.md
+WORKERS_DEPLOY.md
+README.md

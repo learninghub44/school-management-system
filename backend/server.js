@@ -209,10 +209,37 @@ app.use("/api/*", (req, res) =>
 );
 
 // ── Root / non-API fallback ───────────────────────────────────────
-// Frontend is served by Cloudflare Pages — just return 404 for stray requests.
-app.use("*", (req, res) =>
-  res.status(404).json({ success: false, message: "Not found." })
-);
+// By default the frontend is served separately (Cloudflare Pages, Netlify,
+// Vercel, nginx, etc.) and this just returns 404 for stray requests.
+//
+// For self-hosted / Docker / single-container deployments, set
+// SERVE_FRONTEND=true to have this same Node process also serve the static
+// frontend (../frontend) so the whole app runs from one process on one host.
+// No-op in Cloudflare Workers (no filesystem access there).
+const path = require("path");
+const fs   = require("fs");
+const serveFrontend = !isWorkerRuntime && process.env.SERVE_FRONTEND === "true";
+
+if (serveFrontend) {
+  const frontendDir = path.join(__dirname, "..", "frontend");
+  if (fs.existsSync(frontendDir)) {
+    app.use(express.static(frontendDir));
+    app.use("*", (req, res) => {
+      if (req.originalUrl.startsWith("/api")) {
+        return res.status(404).json({ success: false, message: "Endpoint not found." });
+      }
+      res.sendFile(path.join(frontendDir, "index.html"));
+    });
+    console.log("[server] SERVE_FRONTEND=true — serving static frontend from", frontendDir);
+  } else {
+    console.warn("[server] SERVE_FRONTEND=true but frontend dir not found at", frontendDir);
+    app.use("*", (req, res) => res.status(404).json({ success: false, message: "Not found." }));
+  }
+} else {
+  app.use("*", (req, res) =>
+    res.status(404).json({ success: false, message: "Not found." })
+  );
+}
 
 // ── Global error handler ──────────────────────────────────────────
 // eslint-disable-next-line no-unused-vars

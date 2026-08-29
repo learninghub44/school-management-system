@@ -1,6 +1,6 @@
 -- ============================================================
 -- Migration: Fix academic_years schema + ensure exams table
--- Run this on your Supabase SQL editor
+-- Run this against your Postgres database (any provider's SQL console or psql)
 -- ============================================================
 
 -- ── 1. ACADEMIC_YEARS ────────────────────────────────────────────

@@ -1,5 +1,6 @@
-# DEPRECATED — This project is now deployed on Railway (see railway.toml)
-# Kept for reference only. Do not use.
+# Render deployment config — one of several valid hosting options for this
+# project (see README.md "Deploy anywhere" section). Works with any Postgres
+# DATABASE_URL — Render Postgres, Railway, Neon, Supabase, self-hosted, etc.
 
 services:
   - type: web
@@ -24,8 +25,11 @@ services:
       # Paystack (live keys — set in Render dashboard)
       - key: PAYSTACK_SECRET_KEY
         sync: false
+      # NOTE: replace the placeholder domains below with wherever you actually
+      # host the frontend / this Render service — they're examples, not fixed
+      # requirements.
       - key: PAYSTACK_CALLBACK_URL
-        value: https://cbc-school-erp.pages.dev/subscription.html
+        value: https://your-frontend-domain.example/subscription.html
       # Pesapal (live — set in Render dashboard)
       - key: PESAPAL_BASE_URL
         value: https://pay.pesapal.com/v3/api
@@ -34,9 +38,9 @@ services:
       - key: PESAPAL_CONSUMER_SECRET
         sync: false
       - key: PESAPAL_CALLBACK_URL
-        value: https://cbc-school-erp.pages.dev/subscription.html
+        value: https://your-frontend-domain.example/subscription.html
       - key: PESAPAL_IPN_URL
-        value: https://kadem-zetu-sms-api.onrender.com/api/subscriptions/ipn
+        value: https://your-render-service.onrender.com/api/subscriptions/ipn
       - key: PESAPAL_IPN_ID
         sync: false
       # Groq AI
